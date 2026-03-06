@@ -1,3 +1,4 @@
+import 'package:flashcard_app/features/auth/screens/initial_setup_screen.dart';
 import 'package:flutter/material.dart';
 import '../features/auth/screens/login_screen.dart';
 import 'app_routes.dart';
@@ -9,6 +10,11 @@ class AppRouter {
       case AppRoutes.login:
         return MaterialPageRoute(
           builder: (_) => const LoginScreen(),
+        );
+
+      case AppRoutes.initialSetup:
+        return MaterialPageRoute(
+          builder: (_) => const SetupScreen(),
         );
 
       default:

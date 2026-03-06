@@ -14,7 +14,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Study English',
-      initialRoute: AppRoutes.login,
+      initialRoute: AppRoutes.initialSetup,
       onGenerateRoute: AppRouter.generateRoute,
     );
   }
