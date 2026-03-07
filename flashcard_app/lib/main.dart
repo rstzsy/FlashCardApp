@@ -1,3 +1,4 @@
+import 'package:flashcard_app/routes/main_navigation.dart';
 import 'package:flutter/material.dart';
 import '../routes/app_router.dart';
 import '../routes/app_routes.dart';
@@ -14,7 +15,8 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Study English',
-      initialRoute: AppRoutes.initialSetup,
+      // initialRoute: AppRoutes.homeScreen,
+      home: MainNavigation(),
       onGenerateRoute: AppRouter.generateRoute,
     );
   }
