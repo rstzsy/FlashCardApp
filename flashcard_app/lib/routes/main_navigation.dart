@@ -1,6 +1,7 @@
 import 'package:flashcard_app/core/themes/app_colors.dart';
 import 'package:flutter/material.dart';
 import '../features/home/screens/home_screen.dart';
+import '../features/statistic/screens/statistic_screen.dart';
 
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
@@ -15,7 +16,7 @@ class _MainNavigationState extends State<MainNavigation> {
   final List<Widget> pages = [
     const HomeScreen(),
     const Placeholder(),
-    const Placeholder(),
+    const StatisticsScreen(),
     const Placeholder(),
     const Placeholder(),
   ];
@@ -51,7 +52,8 @@ class _MainNavigationState extends State<MainNavigation> {
             children: [
               navItem(Icons.home_outlined, 0),
               navItem(Icons.style, 1),
-              navItem(Icons.sports_esports, 2),
+              navItem(Icons.bar_chart_rounded, 2),
+              navItem(Icons.sports_esports, 3),
               navItem(Icons.person_outline, 4),
             ],
           ),
