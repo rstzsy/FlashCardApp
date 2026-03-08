@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-
 import '../../../core/themes/app_colors.dart';
 
 class FeatureCard extends StatelessWidget {
@@ -19,32 +18,37 @@ class FeatureCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 8),
-      padding: const EdgeInsets.all(15),
+      margin: const EdgeInsets.symmetric(horizontal: 6),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 10)],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.07),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
-
       child: Row(
         children: [
-          // left
-          Expanded(flex: 3, child: Image.asset(image, height: 80)),
+          Image.asset(image, height: 80, width: 80, fit: BoxFit.contain),
 
-          const SizedBox(width: 10),
+          const SizedBox(width: 14),
 
-          // right
           Expanded(
-            flex: 7,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   title,
                   style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF1A1A2E),
+                    height: 1.3,
                   ),
                 ),
 
@@ -54,14 +58,21 @@ class FeatureCard extends StatelessWidget {
                   onPressed: onPressed,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.highlightColor,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 8,
+                    ),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(99),
+                    ),
+                    textStyle: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
-                  child: Text(
-                    buttonText,
-                    style: TextStyle(color: Colors.white),
-                  ),
+                  child: Text(buttonText),
                 ),
               ],
             ),
