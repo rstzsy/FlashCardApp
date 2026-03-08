@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
-
 import '../../../core/themes/app_colors.dart';
 
 class WeeklyProgressChart extends StatelessWidget {
@@ -22,13 +21,16 @@ class WeeklyProgressChart extends StatelessWidget {
     return List.generate(_values.length, (i) {
       return BarChartGroupData(
         x: i,
+        // show label in top column
+        showingTooltipIndicators: [0],
         barRods: [
-          // style bar chart
           BarChartRodData(
             toY: _values[i],
-            width: 45, 
+            width: 45,
             color: _barColors[i],
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(12),
+            ),
           ),
         ],
       );
@@ -79,44 +81,42 @@ class WeeklyProgressChart extends StatelessWidget {
           ],
         ),
 
-        const SizedBox(height: 20),
-
-        // bar chart
         SizedBox(
           height: 300,
           child: BarChart(
             BarChartData(
               maxY: 90,
+              // default tooltip
               barTouchData: BarTouchData(
                 enabled: true,
                 touchTooltipData: BarTouchTooltipData(
                   tooltipRoundedRadius: 8,
+                  tooltipMargin: 6, // k/c tu dinh cot toi label
                   tooltipPadding: const EdgeInsets.symmetric(
-                    horizontal: 8,
+                    horizontal: 6,
                     vertical: 4,
                   ),
+                  getTooltipColor: (_) => Colors.transparent,
                   getTooltipItem: (group, groupIndex, rod, rodIndex) {
                     return BarTooltipItem(
-                      '${rod.toY.toInt()} words',
+                      '${rod.toY.toInt()}\nwords',
                       const TextStyle(
-                        color: Color(0xFF2D2D2D),
-                        fontSize: 11,
+                        color: Color(0xFF444444),
+                        fontSize: 10,
                         fontWeight: FontWeight.w700,
+                        height: 1.3,
                       ),
                     );
                   },
                 ),
               ),
               gridData: FlGridData(show: false),
-
-              // bottom border
               borderData: FlBorderData(
                 show: true,
                 border: const Border(
                   bottom: BorderSide(color: Color(0xFFDDDDDD), width: 2),
                 ),
               ),
-
               titlesData: FlTitlesData(
                 leftTitles: AxisTitles(
                   sideTitles: SideTitles(showTitles: false),
@@ -124,26 +124,9 @@ class WeeklyProgressChart extends StatelessWidget {
                 rightTitles: AxisTitles(
                   sideTitles: SideTitles(showTitles: false),
                 ),
+                // remove label in topTitle
                 topTitles: AxisTitles(
-                  sideTitles: SideTitles(
-                    showTitles: true,
-                    reservedSize: 28,
-                    getTitlesWidget: (value, meta) {
-                      final i = value.toInt();
-                      if (i < 0 || i >= _values.length) return const SizedBox();
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 6),
-                        child: Text(
-                          '${_values[i].toInt()} words',
-                          style: const TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF555555),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
+                  sideTitles: SideTitles(showTitles: false),
                 ),
                 bottomTitles: AxisTitles(
                   sideTitles: SideTitles(
