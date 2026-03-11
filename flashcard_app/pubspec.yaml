@@ -58,3 +58,5 @@ flutter:
   assets:
     - assets/character/
     - assets/component/
+    - assets/badge/
+    - assets/achievement/
