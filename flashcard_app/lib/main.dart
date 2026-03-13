@@ -19,12 +19,12 @@ class MyApp extends StatelessWidget {
       title: 'Study English',
 
       theme: ThemeData(
-        textTheme: GoogleFonts.cabinTextTheme(
+        textTheme: GoogleFonts.baloo2TextTheme(
           Theme.of(context).textTheme,
         ),
       ),
 
-      home: MainNavigation(),
+      initialRoute: AppRoutes.introHomeScreen, 
       onGenerateRoute: AppRouter.generateRoute,
     );
   }

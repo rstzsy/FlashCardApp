@@ -2,6 +2,7 @@ import 'package:flashcard_app/features/auth/screens/initial_setup_screen.dart';
 import 'package:flashcard_app/features/home/screens/home_screen.dart';
 import 'package:flutter/material.dart';
 import '../features/auth/screens/login_screen.dart';
+import 'package:flashcard_app/features/auth/screens/intro_home_screen.dart';
 import 'app_routes.dart';
 
 class AppRouter {
@@ -15,6 +16,9 @@ class AppRouter {
 
       case AppRoutes.homeScreen:
         return MaterialPageRoute(builder: (_) => const HomeScreen());
+
+      case AppRoutes.introHomeScreen:
+        return MaterialPageRoute(builder: (_) => const IntroHomeScreen());
 
       default:
         return MaterialPageRoute(
