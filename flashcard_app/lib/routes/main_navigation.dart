@@ -1,5 +1,6 @@
 import 'package:flashcard_app/core/themes/app_colors.dart';
 import 'package:flutter/material.dart';
+import '../features/auth/screens/account_screen.dart';
 import '../features/home/screens/home_screen.dart';
 import '../features/statistic/screens/statistic_screen.dart';
 
@@ -18,7 +19,7 @@ class _MainNavigationState extends State<MainNavigation> {
     const Placeholder(),
     const StatisticsScreen(),
     const Placeholder(),
-    const Placeholder(),
+    const ProfilePage(),
   ];
 
   @override
