@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/themes/app_colors.dart';
+import '../screens/setting_screen.dart';
 
 class ProfileHeader extends StatelessWidget {
   const ProfileHeader({super.key});
@@ -49,26 +50,39 @@ class ProfileHeader extends StatelessWidget {
   }
 }
 
-// settings button
 class _SettingsButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 50,
-      height: 50,
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.6),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white.withOpacity(0.9)),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF64B4D2).withOpacity(0.15),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const SettingsScreen(),
           ),
-        ],
+        );
+      },
+      child: Container(
+        width: 50,
+        height: 50,
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.6),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Colors.white.withOpacity(0.9)),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF64B4D2).withOpacity(0.15),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: const Icon(
+          Icons.settings_rounded,
+          color: AppColors.highlightColor,
+          size: 25,
+        ),
       ),
-      child: const Icon(Icons.settings_rounded, color: AppColors.highlightColor, size: 25),
     );
   }
 }
