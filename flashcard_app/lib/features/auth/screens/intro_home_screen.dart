@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/themes/app_colors.dart';
@@ -20,17 +21,11 @@ class _IntroHomeScreenState extends State<IntroHomeScreen>
   late AnimationController floatController;
   late Animation<double> floatAnimation;
 
-  // Start Now button animation
   late AnimationController _startBtnController;
   late Animation<double> _startBtnScale;
   late Animation<double> _startBtnOpacity;
 
   int currentFrame = 0;
-
-  final List<String> frames = [
-    "assets/character/happy.png",
-    "assets/character/amaz.png",
-  ];
 
   final List<_OnboardingData> pages = [
     _OnboardingData(
@@ -38,8 +33,12 @@ class _IntroHomeScreenState extends State<IntroHomeScreen>
       titleBold: "with Flashcards",
       subtitle: "Anytime. Anywhere.",
       description:
-          "Build your vocabulary with smart flashcards — word, meaning, pronunciation & illustration all in one card.",
-      accentColor: const Color(0xFF38BDF8), // sky blue
+          "Build your vocabulary with smart flashcards word, meaning, pronunciation & illustration all in one card.",
+      accentColor: const Color(0xBDE8F5),
+      frames: [
+        "assets/character/happy.png",
+        "assets/character/amaz.png",
+      ],
     ),
     _OnboardingData(
       title: "Powered by",
@@ -47,7 +46,11 @@ class _IntroHomeScreenState extends State<IntroHomeScreen>
       subtitle: "Your Personal Study Coach",
       description:
           "AI creates flashcards for you, suggests what to review, and plans a study schedule tailored to your goals.",
-      accentColor: const Color(0xFFA78BFA), // violet
+      accentColor: const Color(0x44ACFF),
+      frames: [
+        "assets/character/happy.png",
+        "assets/character/bored.png",
+      ],
     ),
     _OnboardingData(
       title: "Stay on",
@@ -55,7 +58,11 @@ class _IntroHomeScreenState extends State<IntroHomeScreen>
       subtitle: "Streaks · Badges · XP",
       description:
           "Spaced repetition keeps words fresh in your memory. Earn badges, maintain your streak, and watch your progress grow.",
-      accentColor: const Color(0xFF34D399), // emerald
+      accentColor: const Color(0x1C4D8D),
+      frames: [
+        "assets/character/happy.png",
+        "assets/character/surprised.png",
+      ],
     ),
   ];
 
@@ -75,8 +82,10 @@ class _IntroHomeScreenState extends State<IntroHomeScreen>
     )
       ..addListener(() {
         setState(() {
+          final currentFrames = pages[_currentPage].frames;
           currentFrame =
-              (frameController.value * frames.length).floor() % frames.length;
+              (frameController.value * currentFrames.length).floor() %
+              currentFrames.length;
         });
       })
       ..repeat();
@@ -129,7 +138,6 @@ class _IntroHomeScreenState extends State<IntroHomeScreen>
     }
   }
 
-  /// Value 0.0→1.0 how "active" a page is during scroll
   double _pageVisibility(int pageIndex) {
     final diff = (_pageOffset - pageIndex).abs();
     return (1.0 - diff.clamp(0.0, 1.0));
@@ -145,7 +153,6 @@ class _IntroHomeScreenState extends State<IntroHomeScreen>
           SafeArea(
             child: Column(
               children: [
-                // PageView
                 Expanded(
                   child: PageView.builder(
                     controller: _pageController,
@@ -154,7 +161,6 @@ class _IntroHomeScreenState extends State<IntroHomeScreen>
                     physics: const BouncingScrollPhysics(),
                     itemBuilder: (context, index) {
                       final visibility = _pageVisibility(index);
-                      // Parallax: title slides from one side
                       final slideOffset = (_pageOffset - index) * 60.0;
 
                       return Opacity(
@@ -167,8 +173,6 @@ class _IntroHomeScreenState extends State<IntroHomeScreen>
                     },
                   ),
                 ),
-
-                // Fixed bottom
                 _buildBottomSection(),
               ],
             ),
@@ -189,7 +193,6 @@ class _IntroHomeScreenState extends State<IntroHomeScreen>
         children: [
           const SizedBox(height: 52),
 
-          // Title slides up as page becomes active
           Transform.translate(
             offset: Offset(0, (1 - visibility) * 30),
             child: Column(
@@ -205,16 +208,21 @@ class _IntroHomeScreenState extends State<IntroHomeScreen>
                   ),
                 ),
                 ShaderMask(
+                  blendMode: BlendMode.srcIn,
                   shaderCallback: (bounds) => LinearGradient(
-                    colors: [p.accentColor, Colors.black],
-                    begin: Alignment.centerLeft,
-                    end: Alignment.centerRight,
+                    colors: [
+                      p.accentColor.withOpacity(0.6),
+                      AppColors.highlightColor.withOpacity(0.9),
+                    ],
+                    stops: const [0.0, 0.8],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
                   ).createShader(bounds),
                   child: Text(
                     p.titleBold,
                     style: GoogleFonts.baloo2(
                       fontSize: 40,
-                      color: Colors.black,
+                      color: Colors.white,
                       fontWeight: FontWeight.w800,
                       height: 1.05,
                     ),
@@ -234,7 +242,6 @@ class _IntroHomeScreenState extends State<IntroHomeScreen>
             ),
           ),
 
-          // Character: float + scale pops in as page arrives
           Expanded(
             child: Center(
               child: AnimatedBuilder(
@@ -246,7 +253,7 @@ class _IntroHomeScreenState extends State<IntroHomeScreen>
                 child: Transform.scale(
                   scale: 0.85 + visibility * 0.15,
                   child: Image.asset(
-                    frames[currentFrame],
+                    p.frames[currentFrame % p.frames.length],
                     height: size.height * 0.40,
                     fit: BoxFit.contain,
                   ),
@@ -255,7 +262,6 @@ class _IntroHomeScreenState extends State<IntroHomeScreen>
             ),
           ),
 
-          // Description fades in
           Opacity(
             opacity: visibility.clamp(0.0, 1.0),
             child: Text(
@@ -283,76 +289,69 @@ class _IntroHomeScreenState extends State<IntroHomeScreen>
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Dots + arrow row
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              // Animated dot indicators
-              Row(
-                children: List.generate(pages.length, (i) {
-                  final isActive = i == _currentPage;
-                  return AnimatedContainer(
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeInOutCubic,
-                    margin: const EdgeInsets.only(right: 8),
-                    width: isActive ? 28 : 10,
-                    height: 10,
-                    decoration: BoxDecoration(
-                      color: isActive
-                          ? currentAccent
-                          : Colors.white.withOpacity(0.25),
-                      borderRadius: BorderRadius.circular(5),
-                      boxShadow: isActive
-                          ? [
-                              BoxShadow(
-                                color: currentAccent.withOpacity(0.5),
-                                blurRadius: 8,
-                                spreadRadius: 1,
-                              )
-                            ]
-                          : null,
-                    ),
-                  );
-                }),
-              ),
+          // ── Dots: bọc toàn bộ row trong frosted blur nhẹ ──
+          ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: List.generate(pages.length, (i) {
+                    final isActive = i == _currentPage;
+                    final isPast   = i < _currentPage;
 
-              // Arrow button fades out on last page
-              AnimatedOpacity(
-                opacity: isLastPage ? 0.0 : 1.0,
-                duration: const Duration(milliseconds: 300),
-                child: IgnorePointer(
-                  ignoring: isLastPage,
-                  child: GestureDetector(
-                    onTap: _nextPage,
-                    child: Container(
-                      width: 56,
-                      height: 56,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [AppColors.primary, currentAccent],
-                        ),
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.primary.withOpacity(0.4),
-                            blurRadius: 16,
-                            offset: const Offset(0, 6),
+                    Color dotColor;
+                    if (isActive) {
+                      dotColor = currentAccent;
+                    } else if (isPast) {
+                      dotColor = currentAccent.withOpacity(0.55);
+                    } else {
+                      dotColor = const Color.fromARGB(255, 134, 202, 241).withOpacity(0.22);
+                    }
+
+                    return GestureDetector(
+                      onTap: () => _pageController.animateToPage(
+                        i,
+                        duration: const Duration(milliseconds: 500),
+                        curve: Curves.easeInOutCubic,
+                      ),
+                      behavior: HitTestBehavior.opaque,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeInOutCubic,
+                          width: isActive ? 28 : 10,
+                          height: 10,
+                          decoration: BoxDecoration(
+                            color: dotColor,
+                            borderRadius: BorderRadius.circular(5),
+                            boxShadow: isActive
+                                ? [
+                                    BoxShadow(
+                                      color: currentAccent.withOpacity(0.5),
+                                      blurRadius: 8,
+                                      spreadRadius: 1,
+                                    )
+                                  ]
+                                : null,
                           ),
-                        ],
+                        ),
                       ),
-                      child: const Icon(
-                        Icons.arrow_forward_rounded,
-                        color: Colors.white,
-                        size: 26,
-                      ),
-                    ),
-                  ),
+                    );
+                  }),
                 ),
               ),
-            ],
+            ),
           ),
 
-          // "Start Now" button — slides in with elastic bounce on last page
+          // ── Button: bọc trong frosted blur nhẹ ──
           AnimatedSize(
             duration: const Duration(milliseconds: 400),
             curve: Curves.easeInOutCubic,
@@ -363,14 +362,20 @@ class _IntroHomeScreenState extends State<IntroHomeScreen>
                       scale: _startBtnScale,
                       child: FadeTransition(
                         opacity: _startBtnOpacity,
-                        child: _StartNowButton(
-                          accentColor: currentAccent,
-                          onTap: () {
-                            Navigator.pushReplacementNamed(
-                              context,
-                              AppRoutes.login,
-                            );
-                          },
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(100),
+                          child: BackdropFilter(
+                            filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                            child: _StartNowButton(
+                              accentColor: currentAccent,
+                              onTap: () {
+                                Navigator.pushReplacementNamed(
+                                  context,
+                                  AppRoutes.login,
+                                );
+                              },
+                            ),
+                          ),
                         ),
                       ),
                     ),
@@ -543,6 +548,7 @@ class _OnboardingData {
   final String subtitle;
   final String description;
   final Color accentColor;
+  final List<String> frames;
 
   const _OnboardingData({
     required this.title,
@@ -550,5 +556,6 @@ class _OnboardingData {
     required this.subtitle,
     required this.description,
     required this.accentColor,
+    required this.frames,
   });
 }
