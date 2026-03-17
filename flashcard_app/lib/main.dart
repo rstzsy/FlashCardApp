@@ -26,7 +26,7 @@ class MyApp extends StatelessWidget {
 
       //initialRoute: AppRoutes.homeScreen, 
       //initialRoute: AppRoutes.initialSetup,
-      // initialRoute: AppRoutes.homeScreen,
+      //initialRoute: AppRoutes.homeScreen,
       home: MainNavigation(),
       onGenerateRoute: AppRouter.generateRoute,
     );

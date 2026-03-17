@@ -1,16 +1,15 @@
 import 'package:flutter/material.dart';
-
 import '../../../core/themes/app_colors.dart';
 
 class LanguageItem {
   final String code;
-  final String flag;
+  final String countryCode; // ISO 3166-1 alpha-2 cho flagcdn
   final String name;
   final String native;
 
   const LanguageItem({
     required this.code,
-    required this.flag,
+    required this.countryCode,
     required this.name,
     required this.native,
   });
@@ -27,12 +26,12 @@ class LanguageBottomSheet extends StatefulWidget {
   });
 
   static final List<LanguageItem> languages = [
-    LanguageItem(code: 'en', flag: '🇬🇧', name: 'English',    native: 'English'),
-    LanguageItem(code: 'vi', flag: '🇻🇳', name: 'Vietnamese', native: 'Tiếng Việt'),
-    LanguageItem(code: 'ja', flag: '🇯🇵', name: 'Japanese',   native: '日本語'),
-    LanguageItem(code: 'ko', flag: '🇰🇷', name: 'Korean',     native: '한국어'),
-    LanguageItem(code: 'zh', flag: '🇨🇳', name: 'Chinese',    native: '中文'),
-    LanguageItem(code: 'fr', flag: '🇫🇷', name: 'French',     native: 'Français'),
+    LanguageItem(code: 'en', countryCode: 'gb', name: 'English',    native: 'English'),
+    LanguageItem(code: 'vi', countryCode: 'vn', name: 'Vietnamese', native: 'Tiếng Việt'),
+    LanguageItem(code: 'ja', countryCode: 'jp', name: 'Japanese',   native: '日本語'),
+    LanguageItem(code: 'ko', countryCode: 'kr', name: 'Korean',     native: '한국어'),
+    LanguageItem(code: 'zh', countryCode: 'cn', name: 'Chinese',    native: '中文'),
+    LanguageItem(code: 'fr', countryCode: 'fr', name: 'French',     native: 'Français'),
   ];
 
   static void show(
@@ -66,7 +65,6 @@ class _LanguageBottomSheetState extends State<LanguageBottomSheet> {
 
   void _pick(LanguageItem lang) {
     setState(() => _current = lang.code);
-    // just close when animation done
     Future.delayed(const Duration(milliseconds: 300), () {
       if (!mounted) return;
       widget.onSelected(lang);
@@ -77,7 +75,7 @@ class _LanguageBottomSheetState extends State<LanguageBottomSheet> {
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final cardWidth = (screenWidth - 16 * 2 - 10) / 2; // 2 columns
+    final cardWidth = (screenWidth - 16 * 2 - 10) / 2;
 
     return Container(
       decoration: const BoxDecoration(
@@ -99,7 +97,6 @@ class _LanguageBottomSheetState extends State<LanguageBottomSheet> {
             ),
           ),
 
-          // Header
           const SizedBox(height: 14),
           const Text(
             'Choose Language',
@@ -115,14 +112,13 @@ class _LanguageBottomSheetState extends State<LanguageBottomSheet> {
             style: TextStyle(fontSize: 16, color: AppColors.highlightColor),
           ),
 
-          // Divider
           Container(
             height: 1,
             margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
             color: AppColors.primary,
           ),
 
-          // wrap to avoid conflict
+          // Grid
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Wrap(
@@ -131,7 +127,7 @@ class _LanguageBottomSheetState extends State<LanguageBottomSheet> {
               children: LanguageBottomSheet.languages.map((lang) {
                 return SizedBox(
                   width: cardWidth,
-                  height: cardWidth / 1.3,
+                  height: 105,
                   child: _LangCard(
                     lang: lang,
                     isSelected: lang.code == _current,
@@ -173,6 +169,8 @@ class _LanguageBottomSheetState extends State<LanguageBottomSheet> {
   }
 }
 
+// ─── Lang Card ────────────────────────────────────────────────────────────────
+
 class _LangCard extends StatelessWidget {
   final LanguageItem lang;
   final bool isSelected;
@@ -192,16 +190,17 @@ class _LangCard extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         curve: Curves.easeOut,
         decoration: BoxDecoration(
-          //color: isSelected ? const Color.fromARGB(255, 225, 240, 246) : const Color(0xFFFDFCFF),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? AppColors.primary : const Color.fromARGB(255, 240, 252, 253),
+            color: isSelected
+                ? AppColors.primary
+                : const Color(0xFFF0FCFD),
             width: 2,
           ),
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: const Color.fromARGB(255, 192, 226, 248).withOpacity(0.18),
+                    color: const Color(0xFFC0E2F8).withOpacity(0.25),
                     blurRadius: 16,
                     offset: const Offset(0, 4),
                   ),
@@ -210,7 +209,7 @@ class _LangCard extends StatelessWidget {
         ),
         child: Stack(
           children: [
-            // Checkmark
+            // ── Checkmark ──
             Positioned(
               top: 8,
               right: 8,
@@ -230,25 +229,56 @@ class _LangCard extends StatelessWidget {
               ),
             ),
 
-            // Content
+            // ── Content ──
             Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(lang.flag, style: const TextStyle(fontSize: 32)),
+                  // Cờ dùng Image.network từ flagcdn — hiển thị tốt trên mọi thiết bị
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: Image.network(
+                      'https://flagcdn.com/w80/${lang.countryCode}.png',
+                      width: 42,
+                      height: 28,
+                      fit: BoxFit.cover,
+                      // Fallback khi offline: hiển thị icon globe
+                      errorBuilder: (_, __, ___) => const Icon(
+                        Icons.language,
+                        size: 28,
+                        color: AppColors.highlightColor,
+                      ),
+                      loadingBuilder: (_, child, progress) {
+                        if (progress == null) return child;
+                        return const SizedBox(
+                          width: 42,
+                          height: 28,
+                          child: Center(
+                            child: SizedBox(
+                              width: 14,
+                              height: 14,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
                   const SizedBox(height: 6),
                   Text(
                     lang.name,
+                    textAlign: TextAlign.center,
                     style: const TextStyle(
-                      fontSize: 16,
+                      fontSize: 13,
                       fontWeight: FontWeight.bold,
                       color: AppColors.highlightColor,
                     ),
                   ),
                   Text(
                     lang.native,
+                    textAlign: TextAlign.center,
                     style: const TextStyle(
-                      fontSize: 13,
+                      fontSize: 11,
                       color: AppColors.highlightColor,
                     ),
                   ),

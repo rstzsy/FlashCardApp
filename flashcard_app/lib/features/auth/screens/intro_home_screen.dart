@@ -34,7 +34,7 @@ class _IntroHomeScreenState extends State<IntroHomeScreen>
       subtitle: "Anytime. Anywhere.",
       description:
           "Build your vocabulary with smart flashcards word, meaning, pronunciation & illustration all in one card.",
-      accentColor: const Color(0xBDE8F5),
+      accentColor: const Color(0xFFBDE8F5),
       frames: [
         "assets/character/happy.png",
         "assets/character/amaz.png",
@@ -46,7 +46,7 @@ class _IntroHomeScreenState extends State<IntroHomeScreen>
       subtitle: "Your Personal Study Coach",
       description:
           "AI creates flashcards for you, suggests what to review, and plans a study schedule tailored to your goals.",
-      accentColor: const Color(0x44ACFF),
+      accentColor: const Color(0xFF44ACFF),
       frames: [
         "assets/character/happy.png",
         "assets/character/bored.png",
@@ -58,7 +58,7 @@ class _IntroHomeScreenState extends State<IntroHomeScreen>
       subtitle: "Streaks · Badges · XP",
       description:
           "Spaced repetition keeps words fresh in your memory. Earn badges, maintain your streak, and watch your progress grow.",
-      accentColor: const Color(0x1C4D8D),
+      accentColor: const Color(0xFF1C4D8D),
       frames: [
         "assets/character/happy.png",
         "assets/character/surprised.png",
@@ -207,25 +207,14 @@ class _IntroHomeScreenState extends State<IntroHomeScreen>
                     height: 1.1,
                   ),
                 ),
-                ShaderMask(
-                  blendMode: BlendMode.srcIn,
-                  shaderCallback: (bounds) => LinearGradient(
-                    colors: [
-                      p.accentColor.withOpacity(0.6),
-                      AppColors.highlightColor.withOpacity(0.9),
-                    ],
-                    stops: const [0.0, 0.8],
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                  ).createShader(bounds),
-                  child: Text(
-                    p.titleBold,
-                    style: GoogleFonts.baloo2(
-                      fontSize: 40,
-                      color: Colors.white,
-                      fontWeight: FontWeight.w800,
-                      height: 1.05,
-                    ),
+                Text(
+                  p.titleBold,
+                  style: GoogleFonts.baloo2(
+                    fontSize: 42,
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.highlightColor, 
+                    height: 1.05,
+                    letterSpacing: 0.3,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -500,22 +489,12 @@ class _StartNowButtonState extends State<_StartNowButton>
           height: 58,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(100),
-            gradient: LinearGradient(
-              colors: [AppColors.primary, widget.accentColor],
-              begin: Alignment.centerLeft,
-              end: Alignment.centerRight,
-            ),
+            color: widget.accentColor, 
             boxShadow: [
               BoxShadow(
-                color: widget.accentColor.withOpacity(0.45),
-                blurRadius: 24,
-                offset: const Offset(0, 10),
-                spreadRadius: -2,
-              ),
-              BoxShadow(
-                color: AppColors.primary.withOpacity(0.3),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
+                color: widget.accentColor.withOpacity(0.35),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
               ),
             ],
           ),
@@ -527,11 +506,10 @@ class _StartNowButtonState extends State<_StartNowButton>
                 style: GoogleFonts.baloo2(
                   fontSize: 20,
                   fontWeight: FontWeight.w700,
-                  color: Colors.black,
+                  color: Colors.white, 
                   letterSpacing: 0.5,
                 ),
               ),
-              const SizedBox(width: 10),
             ],
           ),
         ),

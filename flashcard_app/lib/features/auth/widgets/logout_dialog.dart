@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/themes/app_colors.dart';
+import '../../../routes/app_routes.dart';
 
 class LogoutDialog extends StatelessWidget {
   final VoidCallback onConfirm;
@@ -106,8 +107,16 @@ class LogoutDialog extends StatelessWidget {
                 Expanded(
                   child: TextButton(
                     onPressed: () {
+                      // Đóng dialog trước
                       Navigator.pop(context);
+                      // Gọi callback (xử lý logout: clear token, v.v.)
                       onConfirm();
+                      // Chuyển về IntroHomeScreen, xóa toàn bộ stack
+                      Navigator.pushNamedAndRemoveUntil(
+                        context,
+                        AppRoutes.introHomeScreen,
+                        (route) => false,
+                      );
                     },
                     style: TextButton.styleFrom(
                       backgroundColor: const Color(0xFFFCEBEB),

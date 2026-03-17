@@ -182,26 +182,26 @@ class HomeScreen extends StatelessWidget {
               const SizedBox(height: 25),
 
               // ── AI Suggestion ──
-              Container(
-                margin: const EdgeInsets.symmetric(horizontal: 20),
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: AppColors.highlightColor,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(
-                  children: const [
-                    Icon(Icons.smart_toy, size: 40, color: Colors.white),
-                    SizedBox(width: 15),
-                    Expanded(
-                      child: Text(
-                        "AI Suggestion:\nReview animal vocabulary today!",
-                        style: TextStyle(fontSize: 16, color: Colors.white),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              // Container(
+              //   margin: const EdgeInsets.symmetric(horizontal: 20),
+              //   padding: const EdgeInsets.all(20),
+              //   decoration: BoxDecoration(
+              //     color: AppColors.highlightColor,
+              //     borderRadius: BorderRadius.circular(20),
+              //   ),
+              //   child: Row(
+              //     children: const [
+              //       Icon(Icons.smart_toy, size: 40, color: Colors.white),
+              //       SizedBox(width: 15),
+              //       Expanded(
+              //         child: Text(
+              //           "AI Suggestion:\nReview animal vocabulary today!",
+              //           style: TextStyle(fontSize: 16, color: Colors.white),
+              //         ),
+              //       ),
+              //     ],
+              //   ),
+              // ),
 
               const SizedBox(height: 25),
 
