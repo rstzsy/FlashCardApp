@@ -1,6 +1,7 @@
 import 'package:flashcard_app/core/themes/app_colors.dart';
 import 'package:flutter/material.dart';
 import '../features/auth/screens/account_screen.dart';
+import '../features/group/screens/group_list_screen.dart';
 import '../features/home/screens/home_screen.dart';
 import '../features/statistic/screens/statistic_screen.dart';
 
@@ -20,6 +21,7 @@ class _MainNavigationState extends State<MainNavigation> {
     const StatisticsScreen(),
     const Placeholder(),
     const ProfilePage(),
+    GroupListPage()
   ];
 
   @override
@@ -56,6 +58,7 @@ class _MainNavigationState extends State<MainNavigation> {
               navItem(Icons.bar_chart_rounded, 2),
               navItem(Icons.sports_esports, 3),
               navItem(Icons.person_outline, 4),
+              navItem(Icons.group, 5),
             ],
           ),
         ),
