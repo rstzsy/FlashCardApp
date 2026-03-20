@@ -3,6 +3,8 @@ import 'package:flashcard_app/features/home/screens/home_screen.dart';
 import 'package:flutter/material.dart';
 import '../features/auth/screens/login_screen.dart';
 import 'package:flashcard_app/features/auth/screens/intro_home_screen.dart';
+import '../features/group/screens/group_dashboard_screen.dart';
+import '../features/group/screens/group_list_screen.dart';
 import 'app_routes.dart';
 
 class AppRouter {
@@ -19,6 +21,12 @@ class AppRouter {
 
       case AppRoutes.introHomeScreen:
         return MaterialPageRoute(builder: (_) => const IntroHomeScreen());
+
+      case AppRoutes.groupDashboard:
+        return MaterialPageRoute(builder: (_) => const GroupDashboard());
+
+      case AppRoutes.groupList:
+        return MaterialPageRoute(builder: (_) => GroupListPage());
 
       default:
         return MaterialPageRoute(
