@@ -197,21 +197,21 @@ class HomeScreen extends StatelessWidget {
                           title: "Prepare!",
                           subtitle: "Exam preparation",
                           setsCount: 2,
-                          color: Color(0xFF42A5F5),
+                          color: Color(0xFFD5708B), // 🩷 hồng đậm — thay cho xanh
                         ),
                         SizedBox(width: 14),
                         CollectionCard(
                           title: "English",
                           subtitle: "General vocabulary",
                           setsCount: 6,
-                          color: Color(0xFF1E88E5),
+                          color: Color(0xFFB48D71), // 🤎 nâu tan — thay cho xanh đậm
                         ),
                         SizedBox(width: 14),
                         CollectionCard(
                           title: "TOEIC",
                           subtitle: "Business English",
                           setsCount: 4,
-                          color: Color(0xFF1565C0),
+                          color: Color(0xFFE49E91), // 🧡 hồng cam — thay cho xanh navy
                         ),
                         SizedBox(width: 20),
                       ],
