@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flashcard_app/routes/app_routes.dart';
 
 class IntroGameScreen extends StatefulWidget {
-  const IntroGameScreen({super.key});
+  final VoidCallback onBack;
+
+  const IntroGameScreen({super.key, required this.onBack});
 
   @override
   State<IntroGameScreen> createState() => _IntroGameScreenState();
@@ -118,7 +121,7 @@ class _IntroGameScreenState extends State<IntroGameScreen>
 
           // ── 4. Logo (căn giữa phần trên, floating) ────────────────────
           Positioned(
-            top: size.height * 0.12,
+            top: size.height * 0.1,
             left: 0,
             right: 0,
             child: AnimatedBuilder(
@@ -160,12 +163,26 @@ class _IntroGameScreenState extends State<IntroGameScreen>
             ),
           ),
 
-          // ── 5. Settings button (top-right) ────────────────────────────
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 14,
+            left: 18,
+            child:_BackButton(
+              onTap: widget.onBack,
+            ),
+            
+          ),
+
+
           Positioned(
             top: MediaQuery.of(context).padding.top + 14,
             right: 18,
-            child: _SettingsButton(onTap: () {}),
+            child: _SettingsButton(
+              onTap: () {
+                print("Settings clicked");
+              },
+            ),
           ),
+
 
           // ── 6. Play button (lower-center, pulsing + glow) ─────────────
           Positioned(
@@ -181,7 +198,7 @@ class _IntroGameScreenState extends State<IntroGameScreen>
                 ),
                 child: GestureDetector(
                   onTap: () {
-                    // Navigator.pushNamed(context, AppRoutes.game);
+                    Navigator.pushNamed(context, AppRoutes.homeGame);
                   },
                   child: AnimatedBuilder(
                     animation: _glowAnimation,
@@ -261,22 +278,29 @@ class _SettingsButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        width: 46,
-        height: 46,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: const Color(0xFF1BAE6B),
-          border: Border.all(color: Colors.white, width: 2.5),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.28),
-              blurRadius: 8,
-              offset: const Offset(0, 3),
-            ),
-          ],
-        ),
-        child: const Icon(Icons.settings_rounded, color: Colors.white, size: 23),
+      child: Image.asset(
+        'assets/game/settings_button.png', // 👈 ảnh của bạn
+        width: 48,
+        height: 48,
+        fit: BoxFit.contain,
+      ),
+    );
+  }
+}
+
+
+class _BackButton extends StatelessWidget {
+  final VoidCallback onTap;
+  const _BackButton({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap, // ✅ đúng
+      child: Image.asset(
+        'assets/game/back_button.png',
+        width: 48,
+        height: 48,
       ),
     );
   }

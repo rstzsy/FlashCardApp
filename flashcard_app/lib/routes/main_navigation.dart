@@ -16,28 +16,27 @@ class MainNavigation extends StatefulWidget {
 
 class _MainNavigationState extends State<MainNavigation> {
   int currentIndex = 0;
-
-  // Index của màn hình game — ẩn bottom nav khi ở đây
   static const int _gameTabIndex = 3;
-
-  final List<Widget> pages = [
-    const HomeScreen(),
-    const FlashcardManagerScreen(),
-    const StatisticsScreen(),
-    const IntroGameScreen(),
-    const ProfilePage(),
-    GroupListPage(),
-  ];
 
   @override
   Widget build(BuildContext context) {
+    // ✅ Khai báo trong build() để dùng được setState
+    final List<Widget> pages = [
+      const HomeScreen(),
+      const FlashcardManagerScreen(),
+      const StatisticsScreen(),
+      IntroGameScreen(
+        onBack: () => setState(() => currentIndex = 0),
+      ),
+      const ProfilePage(),
+      GroupListPage(),
+    ];
+
     final bool isGameScreen = currentIndex == _gameTabIndex;
 
     return Scaffold(
       extendBody: true,
       body: pages[currentIndex],
-
-      // ── Ẩn bottom nav khi đang ở màn hình game ───────────────────────
       bottomNavigationBar: isGameScreen
           ? null
           : Padding(
@@ -76,11 +75,7 @@ class _MainNavigationState extends State<MainNavigation> {
     bool isActive = currentIndex == index;
 
     return GestureDetector(
-      onTap: () {
-        setState(() {
-          currentIndex = index;
-        });
-      },
+      onTap: () => setState(() => currentIndex = index),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.all(8),

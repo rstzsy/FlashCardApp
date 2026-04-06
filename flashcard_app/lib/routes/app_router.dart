@@ -1,6 +1,8 @@
 import 'package:flashcard_app/features/auth/screens/initial_setup_screen.dart';
 import 'package:flashcard_app/features/home/screens/home_screen.dart';
 import 'package:flashcard_app/features/game/screens/intro_game_screen.dart';
+import 'package:flashcard_app/features/game/screens/home_game_screen.dart';
+import 'package:flashcard_app/features/game/screens/shop_game_screen.dart';
 import 'package:flutter/material.dart';
 import '../features/auth/screens/login_screen.dart';
 import 'package:flashcard_app/features/auth/screens/intro_home_screen.dart';
@@ -22,9 +24,15 @@ class AppRouter {
 
       case AppRoutes.introHomeScreen:
         return MaterialPageRoute(builder: (_) => const IntroHomeScreen());
+
+      case AppRoutes.homeGame:
+        return MaterialPageRoute(builder: (_) => const HomeGameScreen());
+
+      case AppRoutes.shopGame:
+        return MaterialPageRoute(builder: (_) => const ShopGameScreen());
       
       case AppRoutes.introGameScreen:
-        return MaterialPageRoute(builder: (_) => const IntroGameScreen());
+        return MaterialPageRoute(builder: (context) => IntroGameScreen(onBack: () => Navigator.pop(context)));
 
       case AppRoutes.groupDashboard:
         return MaterialPageRoute(builder: (_) => const GroupDashboard());

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-
 import '../../../core/themes/app_colors.dart';
 import '../../../models/groupModel.dart';
 import '../widgets/group_card.dart';
 import 'add_group_screen.dart';
+import 'group_dashboard_screen.dart';
 
 class GroupListPage extends StatelessWidget {
   GroupListPage({super.key});
@@ -11,18 +11,24 @@ class GroupListPage extends StatelessWidget {
   final List<GroupModel> groups = [
     GroupModel(
       name: "English Learners",
-      image: "assets/component/book.png",
+      image: "assets/component/book_watermark.png",
       memberCount: 12,
+      description: "Learn English together every day.",
+      bgColor: const Color(0xFFDFF2EB),
     ),
     GroupModel(
       name: "IELTS Fighter",
-      image: "assets/component/book.png",
+      image: "assets/component/book_watermark.png",
       memberCount: 8,
+      description: "Prepare for IELTS and target 7.0+.",
+      bgColor: const Color(0xFFFFF3DC),
     ),
     GroupModel(
-      name: "Ket, Pet",
-      image: "assets/component/book.png",
+      name: "KET & PET",
+      image: "assets/component/book_watermark.png",
       memberCount: 15,
+      description: "Practice for Cambridge KET and PET exams.",
+      bgColor: const Color(0xFFEDE7FF),
     ),
   ];
 
@@ -30,8 +36,6 @@ class GroupListPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.mainColor,
-
-      // header
       appBar: AppBar(
         backgroundColor: AppColors.mainColor,
         elevation: 0,
@@ -49,21 +53,32 @@ class GroupListPage extends StatelessWidget {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const AddGroupPage()),
+                MaterialPageRoute(builder: (_) => const AddGroupPage()),
               );
             },
           ),
         ],
       ),
-
-      // body
       body: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: groups.length,
-        itemBuilder: (context, index) {
-          return GroupCard(group: groups[index]);
-        },
-      ),
+      padding: const EdgeInsets.all(20),
+      itemCount: groups.length,
+      itemBuilder: (context, index) {
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: GroupCard(
+            group: groups[index],
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const GroupDashboard(),
+                ),
+              );
+            },
+          ),
+        );
+      },
+    ),
     );
   }
 }
