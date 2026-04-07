@@ -2,6 +2,7 @@ import 'package:flashcard_app/core/themes/app_colors.dart';
 import 'package:flutter/material.dart';
 import '../../../core/widgets/collection_card.dart';
 import 'flashcard_create_screen.dart';
+import 'flashcard_study_screen.dart';
 
 class FlashcardManagerScreen extends StatelessWidget {
   const FlashcardManagerScreen({super.key});
@@ -59,11 +60,9 @@ class FlashcardManagerScreen extends StatelessWidget {
           backgroundColor: AppColors.highlightColor,
           onPressed: () {
             Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => const CreateFlashcardScreen(),
-            ),
-          );
+              context,
+              MaterialPageRoute(builder: (_) => const CreateFlashcardScreen()),
+            );
           },
           child: const Icon(Icons.add, color: Colors.white),
         ),
@@ -106,6 +105,14 @@ class FlashcardManagerScreen extends StatelessWidget {
                     setsCount: 0,
                     color: item['color'],
                     icon: item['icon'],
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const FlashcardStudyScreen(),
+                        ),
+                      );
+                    },
                     onFavoriteChanged: (fav) {
                       debugPrint("${item['title']} favorite: $fav");
                     },

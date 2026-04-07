@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flashcard_app/core/themes/app_colors.dart';
 import 'package:flutter/material.dart';
 
@@ -29,7 +28,7 @@ class FlashcardItem extends StatelessWidget {
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.08), 
-            blurRadius: 12, // độ lan
+            blurRadius: 12, 
             offset: const Offset(0, 4),
           ),
         ],
