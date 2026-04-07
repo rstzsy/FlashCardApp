@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/themes/app_colors.dart';
 import '../widgets/feature_item.dart';
 import '../widgets/recent_study_card.dart';
-import '../widgets/collection_card.dart';
+import '../../../core/widgets/collection_card.dart';
 import '../widgets/performance_section.dart';
 import '../widgets/promo_banner.dart';
 

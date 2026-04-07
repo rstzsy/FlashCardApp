@@ -1,6 +1,7 @@
 import 'package:flashcard_app/core/themes/app_colors.dart';
 import 'package:flutter/material.dart';
 import '../features/auth/screens/account_screen.dart';
+import '../features/flashcard/screens/flashcard_manager_screen.dart';
 import '../features/group/screens/group_list_screen.dart';
 import '../features/home/screens/home_screen.dart';
 import '../features/statistic/screens/statistic_screen.dart';
@@ -22,10 +23,10 @@ class _MainNavigationState extends State<MainNavigation> {
     // ✅ Khai báo trong build() để dùng được setState
     final List<Widget> pages = [
       const HomeScreen(),
-      const Placeholder(),
+      const FlashcardManagerScreen(),
       const StatisticsScreen(),
       IntroGameScreen(
-        onBack: () => setState(() => currentIndex = 0), // 👈 back về Home
+        onBack: () => setState(() => currentIndex = 0),
       ),
       const ProfilePage(),
       GroupListPage(),
