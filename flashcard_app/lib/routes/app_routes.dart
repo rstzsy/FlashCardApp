@@ -8,4 +8,5 @@ class AppRoutes {
   static const introGameScreen= '/intro_game';
   static const homeGame = '/home_game';
   static const shopGame = '/shop_game';
+  static const fertilizerChallenge = '/fertilizer_challenge';
 }
