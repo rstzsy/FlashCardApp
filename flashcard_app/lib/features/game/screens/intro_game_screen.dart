@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flashcard_app/routes/app_routes.dart';
+import 'package:flashcard_app/features/game/widgets/intro_story_popup1.dart';
+import 'package:flashcard_app/features/game/widgets/intro_story_popup2.dart';
+import 'package:flashcard_app/features/game/widgets/intro_story_popup3.dart';
 
 class IntroGameScreen extends StatefulWidget {
   final VoidCallback onBack;
@@ -16,6 +19,8 @@ class _IntroGameScreenState extends State<IntroGameScreen>
   late AnimationController _pulseController;
   late AnimationController _floatController;
   late AnimationController _glowController;
+  int _popupStep = 1;
+
 
   Animation<double> _pulseAnimation = const AlwaysStoppedAnimation(1.0);
   Animation<double> _floatAnimation = const AlwaysStoppedAnimation(0.0);
@@ -71,7 +76,6 @@ class _IntroGameScreenState extends State<IntroGameScreen>
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // ── 1. Background ─────────────────────────────────────────────
           Image.asset(
             'assets/game/bggame.png',
             fit: BoxFit.cover,
@@ -79,7 +83,6 @@ class _IntroGameScreenState extends State<IntroGameScreen>
             height: size.height,
           ),
 
-          // ── 2. Top vignette (làm nền logo dễ đọc hơn) ────────────────
           Positioned(
             top: 0,
             left: 0,
@@ -99,7 +102,6 @@ class _IntroGameScreenState extends State<IntroGameScreen>
             ),
           ),
 
-          // ── 3. Bottom vignette (nổi bật vùng nút play) ───────────────
           Positioned(
             bottom: 0,
             left: 0,
@@ -119,7 +121,6 @@ class _IntroGameScreenState extends State<IntroGameScreen>
             ),
           ),
 
-          // ── 4. Logo (căn giữa phần trên, floating) ────────────────────
           Positioned(
             top: size.height * 0.1,
             left: 0,
@@ -133,7 +134,6 @@ class _IntroGameScreenState extends State<IntroGameScreen>
               child: Stack(
                 alignment: Alignment.center,
                 children: [
-                  // Hào quang phía sau logo
                   AnimatedBuilder(
                     animation: _glowAnimation,
                     builder: (context, _) => Container(
@@ -152,7 +152,6 @@ class _IntroGameScreenState extends State<IntroGameScreen>
                       ),
                     ),
                   ),
-                  // Ảnh logo
                   Image.asset(
                     'assets/game/MofuGardenGame.png',
                     width: size.width * 0.82,  
@@ -184,7 +183,6 @@ class _IntroGameScreenState extends State<IntroGameScreen>
           ),
 
 
-          // ── 6. Play button (lower-center, pulsing + glow) ─────────────
           Positioned(
             bottom: size.height * 0.10,
             left: 0,
@@ -233,7 +231,6 @@ class _IntroGameScreenState extends State<IntroGameScreen>
             ),
           ),
 
-          // ── 7. "TAP TO PLAY" label dưới nút ──────────────────────────
           Positioned(
             bottom: size.height * 0.055,
             left: 0,
@@ -263,13 +260,32 @@ class _IntroGameScreenState extends State<IntroGameScreen>
               ),
             ),
           ),
+          if (_popupStep == 1)
+            Positioned.fill(
+              child: IntroStoryPopup1(
+                onClose: () => setState(() => _popupStep = 2),
+              ),
+            ),
+
+          if (_popupStep == 2)
+            Positioned.fill(
+              child: IntroStoryPopup2(
+                onClose: () => setState(() => _popupStep = 3),
+              ),
+            ),
+
+          if (_popupStep == 3)
+            Positioned.fill(
+              child: IntroStoryPopup3(
+                onClose: () => setState(() => _popupStep = 0),
+              ),
+            ),
         ],
       ),
     );
   }
 }
 
-// ── Settings Button ───────────────────────────────────────────────────────────
 class _SettingsButton extends StatelessWidget {
   final VoidCallback onTap;
   const _SettingsButton({required this.onTap});
@@ -279,7 +295,7 @@ class _SettingsButton extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Image.asset(
-        'assets/game/settings_button.png', // 👈 ảnh của bạn
+        'assets/game/settings_button.png', 
         width: 48,
         height: 48,
         fit: BoxFit.contain,
@@ -296,7 +312,7 @@ class _BackButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap, // ✅ đúng
+      onTap: onTap, 
       child: Image.asset(
         'assets/game/back_button.png',
         width: 48,
