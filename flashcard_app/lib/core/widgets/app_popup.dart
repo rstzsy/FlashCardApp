@@ -9,6 +9,7 @@ class AppPopup {
     IconData icon = Icons.check_circle,
     Color iconColor = Colors.green,
     String buttonText = "OK",
+    VoidCallback? onPressed,
   }) {
     showDialog(
       context: context,
@@ -63,6 +64,7 @@ class AppPopup {
                   child: ElevatedButton(
                     onPressed: () {
                       Navigator.pop(context);
+                      onPressed?.call();
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,

@@ -1,12 +1,12 @@
 import 'dart:io';
-import 'package:flashcard_app/core/themes/app_colors.dart';
 import 'package:flutter/material.dart';
+import 'package:flashcard_app/core/themes/app_colors.dart';
 
-import '../screens/flashcard_create_screen.dart';
+import '../../../models/flashcard_form_model.dart'; 
 
 class FlashcardItem extends StatelessWidget {
   final int index;
-  final FlashcardModel card;
+  final FlashcardFormModel card; 
   final VoidCallback onPickImage;
   final VoidCallback onDelete;
 
@@ -28,8 +28,8 @@ class FlashcardItem extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08), 
-            blurRadius: 12, // độ lan
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 12,
             offset: const Offset(0, 4),
           ),
         ],
@@ -37,7 +37,7 @@ class FlashcardItem extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
+          // header
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -46,11 +46,11 @@ class FlashcardItem extends StatelessWidget {
                 style: const TextStyle(
                   color: Colors.black,
                   fontWeight: FontWeight.bold,
-                  fontSize: 18
+                  fontSize: 18,
                 ),
               ),
 
-              // option menu
+              // menu
               PopupMenuButton<String>(
                 icon: const Icon(Icons.more_vert, color: Colors.black),
                 onSelected: (value) {
@@ -58,25 +58,29 @@ class FlashcardItem extends StatelessWidget {
                     onDelete();
                   }
                 },
-                itemBuilder:
-                    (context) => [
-                      const PopupMenuItem(
-                        value: 'delete',
-                        child: Text("Remove"),
-                      ),
-                    ],
+                itemBuilder: (context) => const [
+                  PopupMenuItem(
+                    value: 'delete',
+                    child: Text("Remove"),
+                  ),
+                ],
               ),
             ],
           ),
 
           const SizedBox(height: 12),
 
+          // word
           _input(card.word, "Vocabulary"),
+
           const SizedBox(height: 10),
 
+          // meaning
           Row(
             children: [
-              Expanded(child: _input(card.meaning, "Meaning")),
+              Expanded(
+                child: _input(card.meaning, "Meaning"),
+              ),
               const SizedBox(width: 10),
 
               GestureDetector(
@@ -88,45 +92,56 @@ class FlashcardItem extends StatelessWidget {
                     border: Border.all(color: Colors.black),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child:
-                      card.image == null
-                          ? const Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.image, color: Colors.black),
-                              SizedBox(height: 6),
-                              Text(
-                                "Image",
-                                style: TextStyle(color: Colors.black),
-                              ),
-                            ],
-                          )
-                          : ClipRRect(
-                            borderRadius: BorderRadius.circular(10),
-                            child: Image.file(card.image!, fit: BoxFit.cover),
+                  child: card.image == null
+                      ? const Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.image, color: Colors.black),
+                            SizedBox(height: 6),
+                            Text(
+                              "Image",
+                              style: TextStyle(color: Colors.black),
+                            ),
+                          ],
+                        )
+                      : ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: Image.file(
+                            card.image!,
+                            fit: BoxFit.cover,
                           ),
+                        ),
                 ),
               ),
             ],
           ),
 
           const SizedBox(height: 10),
+
+          // phonetic
           _input(card.phonetic, "Phonetic"),
+
           const SizedBox(height: 10),
+
+          // example
           _input(card.example, "Example"),
         ],
       ),
     );
   }
 
-  Widget _input(TextEditingController ctrl, String hint, {int maxLines = 1}) {
+  Widget _input(TextEditingController ctrl, String hint,
+      {int maxLines = 1}) {
     return TextField(
       controller: ctrl,
       maxLines: maxLines,
-      style: const TextStyle(color: Color.fromARGB(255, 12, 43, 83)),
+      style: const TextStyle(
+        color: Color.fromARGB(255, 12, 43, 83),
+      ),
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: const TextStyle(color: Color.fromARGB(251, 179, 177, 177)),
+        hintStyle:
+            const TextStyle(color: Color.fromARGB(251, 179, 177, 177)),
         filled: true,
         fillColor: Colors.white54,
         border: OutlineInputBorder(
