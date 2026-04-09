@@ -22,6 +22,13 @@ class _CreateFlashcardScreenState extends State<CreateFlashcardScreen> {
   IconData _selectedIcon = Icons.menu_book;
   Color _selectedColor = const Color(0xFFE9B4B3);
 
+  Color _darken(Color c, double amount) => Color.fromARGB(
+    c.alpha,
+    (c.red   * (1 - amount)).round().clamp(0, 255),
+    (c.green * (1 - amount)).round().clamp(0, 255),
+    (c.blue  * (1 - amount)).round().clamp(0, 255),
+  );
+
   final List<IconData> _icons = [
     Icons.menu_book,
     Icons.school,
@@ -213,15 +220,58 @@ class _CreateFlashcardScreenState extends State<CreateFlashcardScreen> {
 
                 Expanded(
                   flex: 1,
-                  child: Container(
+                  child: SizedBox(
                     height: 120,
-                    decoration: BoxDecoration(
-                      color: _selectedColor,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Center(
-                      child:
-                          Icon(_selectedIcon, size: 40, color: Colors.white),
+                    child: Stack(
+                      children: [
+                        // Tab góc trên trái
+                        Positioned(
+                          top: 10,
+                          left: 0,
+                          child: Container(
+                            width: 52,
+                            height: 22,
+                            decoration: BoxDecoration(
+                              color: _darken(_selectedColor, 0.15),
+                              borderRadius: const BorderRadius.only(
+                                topLeft: Radius.circular(10),
+                                topRight: Radius.circular(10),
+                              ),
+                            ),
+                          ),
+                        ),
+                        // Thân folder
+                        Positioned(
+                          top: 32,
+                          left: 0,
+                          right: 0,
+                          bottom: 0,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: _selectedColor,
+                              borderRadius: const BorderRadius.only(
+                                topRight: Radius.circular(14),
+                                bottomLeft: Radius.circular(14),
+                                bottomRight: Radius.circular(14),
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: _darken(_selectedColor, 0.15).withOpacity(0.3),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 5),
+                                ),
+                              ],
+                            ),
+                            child: Center(
+                              child: Icon(
+                                _selectedIcon,
+                                size: 40,
+                                color: _darken(_selectedColor, 0.22).withOpacity(0.5),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
