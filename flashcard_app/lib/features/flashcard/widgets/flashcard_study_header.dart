@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flashcard_app/core/themes/app_colors.dart';
 
+import '../screens/flashcard_update_screen.dart';
+
 class FlashcardStudyHeader extends StatelessWidget {
   const FlashcardStudyHeader({super.key});
 
@@ -31,7 +33,19 @@ class FlashcardStudyHeader extends StatelessWidget {
           _circleButton(
             icon: Icons.edit,
             onPressed: () {
-              // func
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const UpdateFlashcardScreen(),
+                ),
+              );
+            },
+          ),
+
+          _circleButton(
+            icon: Icons.delete,
+            onPressed: () {
+              //func
             },
           ),
         ],
@@ -48,12 +62,10 @@ class FlashcardStudyHeader extends StatelessWidget {
         color: Colors.white,
         shape: BoxShape.circle,
         boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 6,
-          ),
+          BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 6),
         ],
       ),
+      margin: EdgeInsets.all(6),
       child: IconButton(
         icon: Icon(icon, color: AppColors.highlightColor),
         onPressed: onPressed,

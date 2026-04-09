@@ -3,19 +3,19 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../core/themes/app_colors.dart';
-import '../../../models/flashcard_form_model.dart'; 
-import '../widgets/flashcard_item.dart';
+import '../../../models/flashcard_form_model.dart';
+import '../widgets/flashcard_list.dart';
 
-class CreateFlashcardScreen extends StatefulWidget {
-  const CreateFlashcardScreen({super.key});
+class UpdateFlashcardScreen extends StatefulWidget {
+  const UpdateFlashcardScreen({super.key});
 
   @override
-  State<CreateFlashcardScreen> createState() =>
-      _CreateFlashcardScreenState();
+  State<UpdateFlashcardScreen> createState() => _UpdateFlashcardScreenState();
 }
 
-class _CreateFlashcardScreenState extends State<CreateFlashcardScreen> {
-  List<FlashcardFormModel> cards = []; 
+class _UpdateFlashcardScreenState extends State<UpdateFlashcardScreen> {
+  List<FlashcardFormModel> cards = [];
+
   final _titleCtrl = TextEditingController();
   final _subtitleCtrl = TextEditingController();
 
@@ -47,11 +47,35 @@ class _CreateFlashcardScreenState extends State<CreateFlashcardScreen> {
   @override
   void initState() {
     super.initState();
-    _addCard();
+    _loadMockData();
+  }
+
+  void _loadMockData() {
+    _titleCtrl.text = "English Vocabulary";
+    _subtitleCtrl.text = "Basic words";
+    _selectedIcon = Icons.language;
+    _selectedColor = _colors[2];
+
+    cards = [
+      FlashcardFormModel(
+        word: TextEditingController(text: "Apple"),
+        meaning: TextEditingController(text: "Quả táo"),
+        phonetic: TextEditingController(text: "/ˈæp.əl/"),
+        example: TextEditingController(text: "I eat an apple"),
+      ),
+      FlashcardFormModel(
+        word: TextEditingController(text: "Book"),
+        meaning: TextEditingController(text: "Quyển sách"),
+        phonetic: TextEditingController(text: "/bʊk/"),
+        example: TextEditingController(text: "This is my book"),
+      ),
+    ];
   }
 
   void _addCard() {
-    setState(() => cards.add(FlashcardFormModel.empty())); 
+    setState(() {
+      cards.add(FlashcardFormModel.empty());
+    });
   }
 
   void _deleteCard(int index) {
@@ -72,53 +96,57 @@ class _CreateFlashcardScreenState extends State<CreateFlashcardScreen> {
   void _pickIcon() {
     showModalBottomSheet(
       context: context,
-      builder: (_) => GridView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: _icons.length,
-        gridDelegate:
-            const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 4),
-        itemBuilder: (_, i) {
-          return IconButton(
-            icon: Icon(_icons[i]),
-            onPressed: () {
-              setState(() => _selectedIcon = _icons[i]);
-              Navigator.pop(context);
+      builder:
+          (_) => GridView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: _icons.length,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 4,
+            ),
+            itemBuilder: (_, i) {
+              return IconButton(
+                icon: Icon(_icons[i]),
+                onPressed: () {
+                  setState(() => _selectedIcon = _icons[i]);
+                  Navigator.pop(context);
+                },
+              );
             },
-          );
-        },
-      ),
+          ),
     );
   }
 
   void _pickColor() {
     showModalBottomSheet(
       context: context,
-      builder: (_) => GridView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: _colors.length,
-        gridDelegate:
-            const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 4),
-        itemBuilder: (_, i) {
-          return GestureDetector(
-            onTap: () {
-              setState(() => _selectedColor = _colors[i]);
-              Navigator.pop(context);
-            },
-            child: Container(
-              margin: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: _colors[i],
-                shape: BoxShape.circle,
-              ),
+      builder:
+          (_) => GridView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: _colors.length,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 4,
             ),
-          );
-        },
-      ),
+            itemBuilder: (_, i) {
+              return GestureDetector(
+                onTap: () {
+                  setState(() => _selectedColor = _colors[i]);
+                  Navigator.pop(context);
+                },
+                child: Container(
+                  margin: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: _colors[i],
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              );
+            },
+          ),
     );
   }
 
-  void _submit() {
-    debugPrint("=== CREATE FLASHCARD ===");
+  void _submitUpdate() {
+    debugPrint("=== UPDATE FLASHCARD ===");
     debugPrint("Title: ${_titleCtrl.text}");
     debugPrint("Subtitle: ${_subtitleCtrl.text}");
     debugPrint("Icon: $_selectedIcon");
@@ -126,11 +154,12 @@ class _CreateFlashcardScreenState extends State<CreateFlashcardScreen> {
 
     for (int i = 0; i < cards.length; i++) {
       final c = cards[i];
-      debugPrint("Card ${i + 1}");
+      debugPrint("---- Card ${i + 1} ----");
       debugPrint("Word: ${c.word.text}");
       debugPrint("Meaning: ${c.meaning.text}");
-      debugPrint("Phonetic: ${c.phonetic.text}"); 
-      debugPrint("Example: ${c.example.text}");   
+      debugPrint("Phonetic: ${c.phonetic.text}");
+      debugPrint("Example: ${c.example.text}");
+      debugPrint("Image: ${c.image?.path}");
     }
   }
 
@@ -161,7 +190,7 @@ class _CreateFlashcardScreenState extends State<CreateFlashcardScreen> {
       backgroundColor: AppColors.mainColor,
       appBar: AppBar(
         title: const Text(
-          "Create Flashcard",
+          "Update Flashcard",
           style: TextStyle(
             color: AppColors.highlightColor,
             fontWeight: FontWeight.bold,
@@ -171,7 +200,7 @@ class _CreateFlashcardScreenState extends State<CreateFlashcardScreen> {
       ),
       body: Column(
         children: [
-          /// header
+          // header
           Padding(
             padding: const EdgeInsets.all(16),
             child: Row(
@@ -220,8 +249,7 @@ class _CreateFlashcardScreenState extends State<CreateFlashcardScreen> {
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Center(
-                      child:
-                          Icon(_selectedIcon, size: 40, color: Colors.white),
+                      child: Icon(_selectedIcon, size: 40, color: Colors.white),
                     ),
                   ),
                 ),
@@ -231,20 +259,13 @@ class _CreateFlashcardScreenState extends State<CreateFlashcardScreen> {
 
           // list
           Expanded(
-            child: ListView.builder(
-              itemCount: cards.length,
-              itemBuilder: (context, index) {
-                return FlashcardItem(
-                  index: index + 1,
-                  card: cards[index],
-                  onPickImage: () => _pickImage(index),
-                  onDelete: () => _deleteCard(index),
-                );
-              },
+            child: FlashcardList(
+              cards: cards,
+              onPickImage: _pickImage,
+              onDelete: _deleteCard,
             ),
           ),
 
-          // action
           Row(
             children: [
               Expanded(
@@ -265,7 +286,7 @@ class _CreateFlashcardScreenState extends State<CreateFlashcardScreen> {
                     text: "Save Flashcard",
                     backgroundColor: Colors.white,
                     textColor: AppColors.highlightColor,
-                    onTap: _submit,
+                    onTap: _submitUpdate,
                   ),
                 ),
               ),
