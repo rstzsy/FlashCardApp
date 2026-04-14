@@ -21,7 +21,7 @@ class _FlashcardStudyScreenState extends State<FlashcardStudyScreen> {
       day: 3,
       level: "IELTS Vocabulary",
       image: "assets/component/calendar.png",
-      word: "Dog", //
+      word: "Dog",
       meaning: "A domesticated animal often kept as a pet",
       phonetic: "/dɒg/",
       example: "The dog is running in the park.",
@@ -90,9 +90,11 @@ class _FlashcardStudyScreenState extends State<FlashcardStudyScreen> {
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   children: [
-                    FlashcardStudyCard(
-                      key: ValueKey(currentIndex),
-                      flashcard: flashcard,
+                    Expanded(
+                      child: FlashcardStudyCard(
+                        key: ValueKey(currentIndex),
+                        flashcard: flashcard,
+                      ),
                     ),
 
                     const SizedBox(height: 16),
@@ -107,8 +109,9 @@ class _FlashcardStudyScreenState extends State<FlashcardStudyScreen> {
                     FlashcardStudyControls(onNext: nextCard, onBack: prevCard),
 
                     const SizedBox(height: 32),
+
                     SizedBox(
-                      width: double.infinity, 
+                      width: double.infinity,
                       height: 55,
                       child: ElevatedButton(
                         onPressed: () {
