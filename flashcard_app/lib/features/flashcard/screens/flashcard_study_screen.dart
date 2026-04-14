@@ -106,10 +106,10 @@ class _FlashcardStudyScreenState extends State<FlashcardStudyScreen> {
 
                     FlashcardStudyControls(onNext: nextCard, onBack: prevCard),
 
-                    const SizedBox(height: 40),
+                    const SizedBox(height: 32),
                     SizedBox(
                       width: double.infinity, 
-                      height: 50,
+                      height: 55,
                       child: ElevatedButton(
                         onPressed: () {
                           Navigator.push(

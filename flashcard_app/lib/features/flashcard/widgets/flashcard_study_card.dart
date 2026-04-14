@@ -64,7 +64,7 @@ class _FlashcardStudyCardState extends State<FlashcardStudyCard>
       onTap: flipCard,
       child: SizedBox(
         width: double.infinity,
-        height: 480,
+        height: 430,
         child: AnimatedBuilder(
           animation: _animation,
           builder: (context, _) {
@@ -100,7 +100,7 @@ class _FlashcardStudyCardState extends State<FlashcardStudyCard>
     return Container(
       width: double.infinity,
       height: double.infinity,
-      margin: const EdgeInsets.only(top: 40),
+      //margin: const EdgeInsets.only(top: 40),
       decoration: BoxDecoration(
         color: kCardBack,
         borderRadius: BorderRadius.circular(28),
