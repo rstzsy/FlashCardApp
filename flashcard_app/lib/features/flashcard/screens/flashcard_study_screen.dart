@@ -2,6 +2,7 @@ import 'package:flashcard_app/core/themes/app_colors.dart';
 import 'package:flutter/material.dart';
 import '../../../core/widgets/app_popup.dart';
 import '../../../models/flashcardModel.dart';
+import '../../exercise/screens/compound_word_screen.dart';
 import '../widgets/flashcard_study_card.dart';
 import '../widgets/flashcard_study_control.dart';
 import '../widgets/flashcard_study_footer.dart';
@@ -20,7 +21,7 @@ class _FlashcardStudyScreenState extends State<FlashcardStudyScreen> {
       day: 3,
       level: "IELTS Vocabulary",
       image: "assets/component/calendar.png",
-      word: "Dog", // 
+      word: "Dog", //
       meaning: "A domesticated animal often kept as a pet",
       phonetic: "/dɒg/",
       example: "The dog is running in the park.",
@@ -104,6 +105,36 @@ class _FlashcardStudyScreenState extends State<FlashcardStudyScreen> {
                     const SizedBox(height: 16),
 
                     FlashcardStudyControls(onNext: nextCard, onBack: prevCard),
+
+                    const SizedBox(height: 40),
+                    SizedBox(
+                      width: double.infinity, 
+                      height: 50,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const SentenceGameScreen(),
+                            ),
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFF7D6D5),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                        ),
+                        child: const Text(
+                          "Let Practices",
+                          style: TextStyle(
+                            color: Color(0xFF7A3333),
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
