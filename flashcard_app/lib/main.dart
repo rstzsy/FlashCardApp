@@ -3,9 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../routes/app_router.dart';
-import '../routes/app_routes.dart';
+import 'core/firebase/firebase_config.dart';
 
-void main() {
+void main() async {
+  await FirebaseConfig.init();
   runApp(const MyApp());
 }
 
