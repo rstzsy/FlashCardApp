@@ -1,8 +1,9 @@
 import 'package:flashcard_app/routes/main_navigation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-
+import 'package:flashcard_app/features/auth/screens/auth_wrapper.dart';
 import '../routes/app_router.dart';
+import '../routes/app_routes.dart';
 import 'core/firebase/firebase_config.dart';
 
 void main() async {
@@ -28,7 +29,9 @@ class MyApp extends StatelessWidget {
       //initialRoute: AppRoutes.homeScreen, 
       //initialRoute: AppRoutes.initialSetup,
       //initialRoute: AppRoutes.fertilizerChallenge,
-      home: MainNavigation(),
+      // home: MainNavigation(),
+      // initialRoute: AppRoutes.introHomeScreen,
+      home: const AuthWrapper(), 
       onGenerateRoute: AppRouter.generateRoute,
     );
   }

@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/themes/app_colors.dart';
 import '../../../routes/app_routes.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class IntroHomeScreen extends StatefulWidget {
   const IntroHomeScreen({super.key});
@@ -357,11 +359,23 @@ class _IntroHomeScreenState extends State<IntroHomeScreen>
                             filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
                             child: _StartNowButton(
                               accentColor: currentAccent,
-                              onTap: () {
-                                Navigator.pushReplacementNamed(
-                                  context,
-                                  AppRoutes.login,
-                                );
+                              onTap: () async {
+                                final user = FirebaseAuth.instance.currentUser;
+                                if (user != null) {
+                                  await FirebaseFirestore.instance
+                                      .collection('users')
+                                      .doc(user.uid)
+                                      .set({
+                                    'hasSeenIntroHome': true,
+                                  }, SetOptions(merge: true));
+                                }
+
+                                if (context.mounted) {
+                                  Navigator.pushReplacementNamed(
+                                    context,
+                                    AppRoutes.login,
+                                  );
+                                }
                               },
                             ),
                           ),

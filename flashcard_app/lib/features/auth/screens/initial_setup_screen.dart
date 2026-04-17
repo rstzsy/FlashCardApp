@@ -1,7 +1,9 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../../../routes/app_routes.dart';
 import 'package:flashcard_app/core/themes/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-
 import '../../../core/widgets/app_popup.dart';
 
 class SetupScreen extends StatefulWidget {
@@ -217,16 +219,35 @@ class _SetupScreenState extends State<SetupScreen> {
     );
   }
 
-  void submitData() {
-    print("Age: $age");
-    print("Level: $level");
-    print("Interests: ${interestController.text}");
+  Future<void> submitData() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
 
-    AppPopup.show(
-      context: context,
-      title: "Success",
-      message: "Your information has been saved successfully.",
-    );
+    final uid = user.uid;
+    final firestore = FirebaseFirestore.instance;
+
+    await firestore.collection('users').doc(uid).set({
+      'uid': uid,
+      'email': user.email ?? '',
+      'username': user.displayName ?? '',
+      'avatar': user.photoURL ?? '',
+      'hasCompletedSetup': true,
+      'hasSeenIntroHome': true, 
+    }, SetOptions(merge: true));
+
+    await firestore.collection('userProfiles').doc(uid).set({
+      'userId': uid,
+      'age': age,
+      'interests': interestController.text.trim(),
+      'englishLevel': level,
+    });
+
+    if (context.mounted) {
+      Navigator.pushReplacementNamed(
+        context,
+        AppRoutes.mainNavigation,
+      );
+    }
   }
 
   @override
@@ -284,7 +305,7 @@ class _SetupScreenState extends State<SetupScreen> {
                   const SizedBox(height: 35),
 
                   GestureDetector(
-                    onTap: submitData,
+                    onTap: () => submitData(),
                     child: Container(
                       height: 50,
                       width: double.infinity,

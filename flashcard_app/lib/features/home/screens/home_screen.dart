@@ -5,6 +5,8 @@ import '../widgets/recent_study_card.dart';
 import '../../../core/widgets/collection_card.dart';
 import '../widgets/performance_section.dart';
 import '../widgets/promo_banner.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -27,52 +29,84 @@ class HomeScreen extends StatelessWidget {
                     bottomRight: Radius.circular(30),
                   ),
                 ),
-                child: Column(
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                child: StreamBuilder<DocumentSnapshot>(
+                  stream: FirebaseFirestore.instance
+                      .collection('users')
+                      .doc(FirebaseAuth.instance.currentUser!.uid)
+                      .snapshots(),
+                  builder: (context, snapshot) {
+                    if (!snapshot.hasData) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+
+                    final data = snapshot.data!.data() as Map<String, dynamic>;
+
+                    final name = data['name'] ?? 'User';
+                    final photoUrl = data['photoURL'];
+
+                    return Column(
                       children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: const [
-                            Text("Good Morning", style: TextStyle(color: AppColors.highlightColor)),
-                            SizedBox(height: 5),
-                            Text(
-                              "Learner",
-                              style: TextStyle(
-                                fontSize: 28,
-                                color: AppColors.highlightColor,
-                                fontWeight: FontWeight.bold,
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            /// 🔥 NAME
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  "Good Morning",
+                                  style: TextStyle(color: AppColors.highlightColor),
+                                ),
+                                const SizedBox(height: 5),
+                                Text(
+                                  name,
+                                  style: const TextStyle(
+                                    fontSize: 28,
+                                    color: AppColors.highlightColor,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+
+                            /// 🔥 AVATAR
+                            CircleAvatar(
+                              radius: 22,
+                              backgroundColor: Colors.white,
+                              child: CircleAvatar(
+                                radius: 20,
+                                backgroundImage:
+                                    (photoUrl != null && photoUrl != '')
+                                        ? NetworkImage(photoUrl)
+                                        : const AssetImage(
+                                                'assets/character/amaz.png')
+                                            as ImageProvider,
                               ),
                             ),
                           ],
                         ),
-                        CircleAvatar(
-                          radius: 22,
-                          backgroundColor: Colors.white,
-                          child: CircleAvatar(
-                            radius: 20,
-                            backgroundImage: AssetImage('assets/character/amaz.png'),
+
+                        const SizedBox(height: 20),
+
+                        /// SEARCH
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 15),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                          child: const TextField(
+                            decoration: InputDecoration(
+                              icon: Icon(Icons.search,
+                                  color: AppColors.highlightColor),
+                              hintText: "Search here...",
+                              border: InputBorder.none,
+                            ),
                           ),
                         ),
                       ],
-                    ),
-                    const SizedBox(height: 20),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 15),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                      child: const TextField(
-                        decoration: InputDecoration(
-                          icon: Icon(Icons.search, color: AppColors.highlightColor),
-                          hintText: "Search here...",
-                          border: InputBorder.none,
-                        ),
-                      ),
-                    ),
-                  ],
+                    );
+                  },
                 ),
               ),
 

@@ -1,5 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/themes/app_colors.dart';
@@ -7,34 +5,6 @@ import '../widgets/account_header.dart';
 import '../widgets/overview_section.dart';
 import '../widgets/month_badge.dart';
 import '../widgets/achievement_section.dart';
-
-class ProfilePage extends StatelessWidget {
-  const ProfilePage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final uid = FirebaseAuth.instance.currentUser!.uid;
-
-    return StreamBuilder<DocumentSnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('users')
-          .doc(uid)
-          .snapshots(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
-        }
-
-        final data =
-            snapshot.data!.data() as Map<String, dynamic>;
-
-        return _ProfileContent(data: data);
-      },
-    );
-  }
-}
 
 class _ProfileContent extends StatelessWidget {
   final Map<String, dynamic> data;
@@ -50,7 +20,6 @@ class _ProfileContent extends StatelessWidget {
           child: Column(
             children: [
               ProfileHeader(data: data),
-
               const SizedBox(height: 10),
 
               OverviewSection(data: data),

@@ -10,10 +10,15 @@ import '../features/group/screens/group_dashboard_screen.dart';
 import '../features/group/screens/group_list_screen.dart';
 import '../features/exercise/screens/fertilizer_challenge_screen.dart';
 import 'app_routes.dart';
+import 'package:flashcard_app/routes/main_navigation.dart';
 
 class AppRouter {
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
+      case AppRoutes.mainNavigation:
+        return MaterialPageRoute(
+          builder: (_) => const MainNavigation(),
+        );
       case AppRoutes.login:
         return MaterialPageRoute(builder: (_) => const LoginScreen());
 

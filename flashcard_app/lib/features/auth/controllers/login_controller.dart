@@ -1,109 +1,64 @@
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:google_sign_in/google_sign_in.dart';
+import '../../../routes/app_routes.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
+import '../service/google_auth.dart';
 
-class LoginController {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+class LoginController extends ChangeNotifier {
+  bool _isLoading = false;
+  String? _errorMessage;
 
-  Future<User?> signInWithGoogle() async {
+  bool get isLoading => _isLoading;
+  String? get errorMessage => _errorMessage;
+
+  Future<void> signInWithGoogle(BuildContext context) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
     try {
-      print("👉 [STEP 1] Start Google Sign-In");
+      final userCredential = await GoogleSignInService.signInWithGoogle();
 
-      final GoogleSignInAccount? googleUser =
-          await _googleSignIn.signIn();
-
-      print("👉 [STEP 2] googleUser: $googleUser");
-
-      if (googleUser == null) {
-        print("❌ User cancelled login");
-        return null;
+      if (userCredential == null || userCredential.user == null) {
+        _errorMessage = "Đăng nhập thất bại. Vui lòng thử lại.";
+        notifyListeners();
+        return;
       }
 
-      print("👉 Email: ${googleUser.email}");
-      print("👉 DisplayName: ${googleUser.displayName}");
-      print("👉 ID: ${googleUser.id}");
+      final user = userCredential.user!;
+      final uid = user.uid;
 
-      final googleAuth = await googleUser.authentication;
-
-      print("👉 [STEP 3] Get Google Auth");
-      print("👉 accessToken: ${googleAuth.accessToken}");
-      print("👉 idToken: ${googleAuth.idToken}");
-
-      final credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-
-      print("👉 [STEP 4] Sign in Firebase");
-
-      final userCredential =
-          await _auth.signInWithCredential(credential);
-
-      final user = userCredential.user;
-
-      if (user != null) {
-        print("✅ [STEP 5] Login SUCCESS");
-
-        print("====== USER INFO ======");
-        print("UID: ${user.uid}");
-        print("Name: ${user.displayName}");
-        print("Email: ${user.email}");
-        print("PhotoURL: ${user.photoURL}");
-        print("Phone: ${user.phoneNumber}");
-        print("IsAnonymous: ${user.isAnonymous}");
-        print("ProviderData: ${user.providerData}");
-        print("=======================");
-
-        await _saveUserToFirestore(user);
-      } else {
-        print("❌ user is NULL after login");
-      }
-
-      return user;
-    } catch (e, stackTrace) {
-      print("🔥 Login ERROR: $e");
-      print("📍 StackTrace: $stackTrace");
-      rethrow;
-    }
-  }
-
-  /// Lưu user vào Firestore
-  Future<void> _saveUserToFirestore(User user) async {
-    try {
-      print("👉 [STEP 6] Save user to Firestore");
-
-      final userRef = _firestore.collection('users').doc(user.uid);
+      final userRef =
+          FirebaseFirestore.instance.collection('users').doc(uid);
 
       final doc = await userRef.get();
+      final data = doc.data();
 
-      if (!doc.exists) {
-        print("👉 New user → create");
+      await userRef.set({
+        'name': user.displayName ?? 'User',
+        'email': user.email,
+        'photoUrl': user.photoURL,
+        'xp': data?['xp'] ?? 0,
+        'streak': data?['streak'] ?? 0,
+        'level': data?['level'] ?? 1,
+        'plants': data?['plants'] ?? 0,
+        'hasCompletedSetup': data?['hasCompletedSetup'] ?? false,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
 
-        await userRef.set({
-          "uid": user.uid,
-          "name": user.displayName,
-          "email": user.email,
-          "avatar": user.photoURL,
-          "createdAt": FieldValue.serverTimestamp(),
-          "role": "user",
-        });
+      final hasSetup = data?['hasCompletedSetup'] == true;
 
-        print("✅ User created in Firestore");
-      } else {
-        print("👉 Existing user → update");
-
-        await userRef.update({
-          "name": user.displayName,
-          "avatar": user.photoURL,
-          "lastLogin": FieldValue.serverTimestamp(),
-        });
-
-        print("✅ User updated in Firestore");
-      }
+      Navigator.pushReplacementNamed(
+        context,
+        hasSetup
+            ? AppRoutes.mainNavigation
+            : AppRoutes.initialSetup,
+      );
     } catch (e) {
-      print("🔥 Firestore ERROR: $e");
+      _errorMessage = "Có lỗi xảy ra. Vui lòng thử lại.";
+      notifyListeners();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
   }
 }

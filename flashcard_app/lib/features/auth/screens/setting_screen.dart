@@ -4,6 +4,8 @@ import '../../../core/themes/app_colors.dart';
 import '../widgets/language_bottom.dart';
 import '../widgets/logout_dialog.dart';
 import '../widgets/switch_component.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../../../routes/app_routes.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -258,8 +260,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void showLogoutDialog() {
     LogoutDialog.show(
       context,
-      onConfirm: () {
-        // handle logout
+      onConfirm: () async {
+        await FirebaseAuth.instance.signOut();
+
+        if (context.mounted) {
+          Navigator.pushNamedAndRemoveUntil(
+            context,
+            AppRoutes.introHomeScreen,
+            (route) => false,
+          );
+        }
       },
     );
   }
