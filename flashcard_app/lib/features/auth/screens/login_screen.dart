@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/themes/app_colors.dart';
+import '../controllers/login_controller.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -12,14 +13,13 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen>
     with TickerProviderStateMixin {
-
   late AnimationController frameController;
   late AnimationController floatController;
   late AnimationController bubbleController;
   late Animation<double> floatAnimation;
 
   int currentFrame = 0;
-
+  final LoginController _loginController = LoginController();
   final List<String> frames = [
     "assets/character/happy.png",
     "assets/character/amaz.png",
@@ -30,17 +30,19 @@ class _LoginScreenState extends State<LoginScreen>
     super.initState();
 
     // sprite animation
-    frameController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1200),
-    )
-      ..addListener(() {
-        setState(() {
-          currentFrame =
-              (frameController.value * frames.length).floor() % frames.length;
-        });
-      })
-      ..repeat();
+    frameController =
+        AnimationController(
+            vsync: this,
+            duration: const Duration(milliseconds: 1200),
+          )
+          ..addListener(() {
+            setState(() {
+              currentFrame =
+                  (frameController.value * frames.length).floor() %
+                  frames.length;
+            });
+          })
+          ..repeat();
 
     // floating up down
     floatController = AnimationController(
@@ -70,7 +72,7 @@ class _LoginScreenState extends State<LoginScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.mainColor, 
+      backgroundColor: AppColors.mainColor,
       body: Stack(
         children: [
           // bubble background
@@ -91,7 +93,7 @@ class _LoginScreenState extends State<LoginScreen>
                         style: GoogleFonts.cabin(
                           fontSize: 40,
                           color: AppColors.highlightColor,
-                          fontWeight: FontWeight.bold
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                     ],
@@ -139,10 +141,7 @@ class _LoginScreenState extends State<LoginScreen>
                               gradient: const LinearGradient(
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
-                                colors: [
-                                  AppColors.primary,
-                                  Colors.white,
-                                ],
+                                colors: [AppColors.primary, Colors.white],
                               ),
                               boxShadow: [
                                 BoxShadow(
@@ -186,7 +185,21 @@ class _LoginScreenState extends State<LoginScreen>
                         ),
                         padding: EdgeInsets.zero,
                       ),
-                      onPressed: () {},
+                      onPressed: () async {
+                        try {
+                          final user =
+                              await _loginController.signInWithGoogle();
+
+                          if (user != null) {
+                            print("Login success: ${user.displayName}");
+
+                            // TODO: chuyển màn hình
+                            // Navigator.pushReplacement(...)
+                          }
+                        } catch (e) {
+                          print("Login failed: $e");
+                        }
+                      },
                       child: Ink(
                         decoration: BoxDecoration(
                           // bg color button
@@ -200,7 +213,7 @@ class _LoginScreenState extends State<LoginScreen>
                           ),
                           borderRadius: BorderRadius.circular(32),
                         ),
-                        
+
                         child: Container(
                           alignment: Alignment.center,
                           child: Row(
