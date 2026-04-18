@@ -12,7 +12,7 @@ class OverviewSection extends StatelessWidget {
   Widget item(String image, String text) {
     return Row(
       children: [
-        Image.asset(image, width: 25, height: 25),
+        Image.asset(image, width: 40, height: 40),
         const SizedBox(width: 8),
         Text(
           text,

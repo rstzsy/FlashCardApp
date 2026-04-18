@@ -6,6 +6,8 @@ import '../widgets/logout_dialog.dart';
 import '../widgets/switch_component.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../routes/app_routes.dart';
+import 'edit_account_screen.dart';
+import '../../../core/widgets/app_popup.dart'; 
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -17,6 +19,7 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   bool notification = true;
   bool darkMode = false;
+  bool twoFactor = false;
   String language = "English";
   String _selectedCode = 'en';
 
@@ -57,6 +60,38 @@ class _SettingsScreenState extends State<SettingsScreen> {
               value: darkMode,
               onChanged: (v) => setState(() => darkMode = v),
             ),
+            _divider(),
+              SettingsSwitchTile(
+                icon: Icons.verified_user_rounded,
+                iconBg: const Color(0xFFE8F4FD),
+                iconColor: const Color(0xFF1565C0),
+                title: "Two-Factor Auth",
+                subtitle: "Extra security for your account",
+                value: twoFactor,
+                onChanged: (v) async {
+                  if (v) {
+                    final user = FirebaseAuth.instance.currentUser!;
+                    await user.sendEmailVerification();
+                    if (mounted) {
+                      AppPopup.show(
+                        context: context,
+                        title: "Check your email",
+                        message: "A verification link has been sent to ${user.email}",
+                        iconWidget: Image.asset(
+                          'assets/component/mail.png',
+                          width: 60,
+                          height: 60,
+                        ),
+                        buttonText: "Got it",
+                        onPressed: () => setState(() => twoFactor = true),
+                      );
+                    }
+                  } else {
+                    setState(() => twoFactor = false);
+                  }
+                },
+              ),
+              
           ]),
           const SizedBox(height: 16),
           _sectionLabel("Languages"),
@@ -90,6 +125,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 16),
           _sectionLabel("Account"),
           _card([
+            _navTile(
+              icon: Icons.manage_accounts_rounded,
+              iconBg: const Color(0xFFEEEDFE),
+              iconColor: const Color(0xFF534AB7),
+              title: "Edit Account",
+              subtitle: "Change your name and photo",  // 👈 thêm subtitle vào _navTile (xem bên dưới)
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const EditAccountScreen()),
+              ),
+            ),
+            _divider(),
             _navTile(
               icon: Icons.logout_rounded,
               iconBg: const Color(0xFFFCEBEB),
@@ -211,6 +258,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     required Color iconColor,
     required String title,
     Color? titleColor,
+    String? subtitle,         
     Widget? trailing,
     required VoidCallback onTap,
   }) => InkWell(
@@ -223,22 +271,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _iconWrap(icon, iconBg, iconColor),
           const SizedBox(width: 14),
           Expanded(
-            child: Text(
-              title,
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w500,
-                color: titleColor ?? Colors.black87,
-              ),
+            child: Column(                   
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                    color: titleColor ?? Colors.black87,
+                  ),
+                ),
+                if (subtitle != null)         
+                  Text(
+                    subtitle,
+                    style: const TextStyle(fontSize: 12, color: Color(0xFF888888)),
+                  ),
+              ],
             ),
           ),
           if (trailing != null) trailing,
           if (trailing != null) const SizedBox(width: 6),
-          Icon(
-            Icons.chevron_right_rounded,
-            size: 20,
-            color: const Color(0xFFC5BFFF),
-          ),
+          Icon(Icons.chevron_right_rounded, size: 20, color: const Color(0xFFC5BFFF)),
         ],
       ),
     ),
@@ -274,3 +328,4 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 }
+

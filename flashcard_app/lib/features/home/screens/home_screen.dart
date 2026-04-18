@@ -42,7 +42,7 @@ class HomeScreen extends StatelessWidget {
                     final data = snapshot.data!.data() as Map<String, dynamic>;
 
                     final name = data['name'] ?? 'User';
-                    final photoUrl = data['photoURL'];
+                    final photoUrl = data['photoUrl'];
 
                     return Column(
                       children: [

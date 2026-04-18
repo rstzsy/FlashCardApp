@@ -104,7 +104,7 @@ class _AvatarWithBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final photoUrl = data['photoURL'];
+    final photoUrl = data['photoUrl'];
     final level = data['level'] ?? 1;
 
     return Stack(

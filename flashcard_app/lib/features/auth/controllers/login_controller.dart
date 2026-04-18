@@ -25,34 +25,39 @@ class LoginController extends ChangeNotifier {
       }
 
       final user = userCredential.user!;
-      final uid = user.uid;
-
-      final userRef =
-          FirebaseFirestore.instance.collection('users').doc(uid);
-
+      final userRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
       final doc = await userRef.get();
       final data = doc.data();
 
+      final existingPhoto = data?['photoUrl'] as String?;
+      final photoUrl = (existingPhoto != null && existingPhoto.isNotEmpty)
+          ? existingPhoto
+          : (user.photoURL ?? '');
+
       await userRef.set({
         'name': user.displayName ?? 'User',
-        'email': user.email,
-        'photoUrl': user.photoURL,
+        'email': user.email ?? '',
+        'photoUrl': photoUrl,      
         'xp': data?['xp'] ?? 0,
         'streak': data?['streak'] ?? 0,
         'level': data?['level'] ?? 1,
         'plants': data?['plants'] ?? 0,
         'hasCompletedSetup': data?['hasCompletedSetup'] ?? false,
+        'hasSeenIntroHome': data?['hasSeenIntroHome'] ?? false,
+        'status': data?['status'] ?? 'active',
+        'isVerified': data?['isVerified'] ?? false,
+        'lastActivityAt': FieldValue.serverTimestamp(), // 👈 cập nhật mỗi lần login
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
 
       final hasSetup = data?['hasCompletedSetup'] == true;
 
-      Navigator.pushReplacementNamed(
-        context,
-        hasSetup
-            ? AppRoutes.mainNavigation
-            : AppRoutes.initialSetup,
-      );
+      if (context.mounted) {
+        Navigator.pushReplacementNamed(
+          context,
+          hasSetup ? AppRoutes.mainNavigation : AppRoutes.initialSetup,
+        );
+      }
     } catch (e) {
       _errorMessage = "Có lỗi xảy ra. Vui lòng thử lại.";
       notifyListeners();

@@ -44,14 +44,21 @@ class GoogleSignInService {
         final docSnapshot = await userDoc.get();
         if (!docSnapshot.exists) {
           await userDoc.set({
-            'uid': user.uid,
             'name': user.displayName ?? '',
             'email': user.email ?? '',
-            'photoURL': user.photoURL ?? '',
-            'provider': 'google',
-            'createdAt': FieldValue.serverTimestamp(),
+            'photoUrl': user.photoURL ?? '',
+            'xp': 0,
+            'streak': 0,
+            'level': 1,
+            'plants': 0,
             'hasCompletedSetup': false,
             'hasSeenIntroHome': false,
+            'status': 'active',
+            'isVerified': false,
+            'provider': 'google',
+            'createdAt': FieldValue.serverTimestamp(),
+            'lastActivityAt': FieldValue.serverTimestamp(),
+            'updatedAt': FieldValue.serverTimestamp(),
           }, SetOptions(merge: true));
         }
       }

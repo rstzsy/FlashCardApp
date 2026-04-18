@@ -56,13 +56,11 @@ class _FlashcardStudyScreenState extends State<FlashcardStudyScreen> {
         context: context,
         title: "Congratulation!",
         message: "You studied all flashcards",
-        icon: Icons.emoji_events,
-        iconColor: Colors.amber,
+        iconWidget: Image.asset('assets/component/trophy1.png', width: 150, height: 150),
         buttonText: "Again",
+        showConfetti: true, 
         onPressed: () {
-          setState(() {
-            currentIndex = 0;
-          });
+          setState(() { currentIndex = 0; });
         },
       );
     }

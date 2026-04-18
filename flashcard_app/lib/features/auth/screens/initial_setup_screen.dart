@@ -226,27 +226,25 @@ class _SetupScreenState extends State<SetupScreen> {
     final uid = user.uid;
     final firestore = FirebaseFirestore.instance;
 
+    // update Users
     await firestore.collection('users').doc(uid).set({
-      'uid': uid,
-      'email': user.email ?? '',
-      'username': user.displayName ?? '',
-      'avatar': user.photoURL ?? '',
       'hasCompletedSetup': true,
-      'hasSeenIntroHome': true, 
+      'hasSeenIntroHome': true,
+      'updatedAt': FieldValue.serverTimestamp(),
+      'lastActivityAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
 
+    // save UserProfiles
     await firestore.collection('userProfiles').doc(uid).set({
       'userId': uid,
-      'age': age,
+      'age': age,                                    
       'interests': interestController.text.trim(),
       'englishLevel': level,
+      'bio': '',                                    
     });
 
     if (context.mounted) {
-      Navigator.pushReplacementNamed(
-        context,
-        AppRoutes.mainNavigation,
-      );
+      Navigator.pushReplacementNamed(context, AppRoutes.mainNavigation);
     }
   }
 
