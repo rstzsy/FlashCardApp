@@ -3,30 +3,31 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../core/themes/app_colors.dart';
-import '../../../models/flashcard_form_model.dart'; 
+import '../../../models/flashcard_form_model.dart';
+import '../controllers/flashcard_create_controller.dart';
 import '../widgets/flashcard_item.dart';
 
 class CreateFlashcardScreen extends StatefulWidget {
   const CreateFlashcardScreen({super.key});
 
   @override
-  State<CreateFlashcardScreen> createState() =>
-      _CreateFlashcardScreenState();
+  State<CreateFlashcardScreen> createState() => _CreateFlashcardScreenState();
 }
 
 class _CreateFlashcardScreenState extends State<CreateFlashcardScreen> {
-  List<FlashcardFormModel> cards = []; 
+  List<FlashcardFormModel> cards = [];
   final _titleCtrl = TextEditingController();
   final _subtitleCtrl = TextEditingController();
+  final controller = FlashcardController();
 
   IconData _selectedIcon = Icons.menu_book;
   Color _selectedColor = const Color(0xFFE9B4B3);
 
   Color _darken(Color c, double amount) => Color.fromARGB(
     c.alpha,
-    (c.red   * (1 - amount)).round().clamp(0, 255),
+    (c.red * (1 - amount)).round().clamp(0, 255),
     (c.green * (1 - amount)).round().clamp(0, 255),
-    (c.blue  * (1 - amount)).round().clamp(0, 255),
+    (c.blue * (1 - amount)).round().clamp(0, 255),
   );
 
   final List<IconData> _icons = [
@@ -58,7 +59,7 @@ class _CreateFlashcardScreenState extends State<CreateFlashcardScreen> {
   }
 
   void _addCard() {
-    setState(() => cards.add(FlashcardFormModel.empty())); 
+    setState(() => cards.add(FlashcardFormModel.empty()));
   }
 
   void _deleteCard(int index) {
@@ -79,78 +80,74 @@ class _CreateFlashcardScreenState extends State<CreateFlashcardScreen> {
   void _pickIcon() {
     showModalBottomSheet(
       context: context,
-      builder: (_) => GridView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: _icons.length,
-        gridDelegate:
-            const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 4),
-        itemBuilder: (_, i) {
-          return IconButton(
-            icon: Icon(_icons[i]),
-            onPressed: () {
-              setState(() => _selectedIcon = _icons[i]);
-              Navigator.pop(context);
+      builder:
+          (_) => GridView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: _icons.length,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 4,
+            ),
+            itemBuilder: (_, i) {
+              return IconButton(
+                icon: Icon(_icons[i]),
+                onPressed: () {
+                  setState(() => _selectedIcon = _icons[i]);
+                  Navigator.pop(context);
+                },
+              );
             },
-          );
-        },
-      ),
+          ),
     );
   }
 
   void _pickColor() {
     showModalBottomSheet(
       context: context,
-      builder: (_) => GridView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: _colors.length,
-        gridDelegate:
-            const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 4),
-        itemBuilder: (_, i) {
-          return GestureDetector(
-            onTap: () {
-              setState(() => _selectedColor = _colors[i]);
-              Navigator.pop(context);
-            },
-            child: Container(
-              margin: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: _colors[i],
-                shape: BoxShape.circle,
-              ),
+      builder:
+          (_) => GridView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: _colors.length,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 4,
             ),
-          );
-        },
-      ),
+            itemBuilder: (_, i) {
+              return GestureDetector(
+                onTap: () {
+                  setState(() => _selectedColor = _colors[i]);
+                  Navigator.pop(context);
+                },
+                child: Container(
+                  margin: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: _colors[i],
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              );
+            },
+          ),
     );
   }
 
   void _submit() {
-    debugPrint("=== CREATE FLASHCARD ===");
-    debugPrint("Title: ${_titleCtrl.text}");
-    debugPrint("Subtitle: ${_subtitleCtrl.text}");
-    debugPrint("Icon: $_selectedIcon");
-    debugPrint("Color: $_selectedColor");
-
-    for (int i = 0; i < cards.length; i++) {
-      final c = cards[i];
-      debugPrint("Card ${i + 1}");
-      debugPrint("Word: ${c.word.text}");
-      debugPrint("Meaning: ${c.meaning.text}");
-      debugPrint("Phonetic: ${c.phonetic.text}"); 
-      debugPrint("Example: ${c.example.text}");   
-    }
+    controller.createFlashcard(
+      context: context,
+      title: _titleCtrl.text,
+      subtitle: _subtitleCtrl.text,
+      icon: _selectedIcon,
+      color: _selectedColor,
+      cards: cards,
+    );
   }
 
-  Widget _input(TextEditingController ctrl, String hint,
-      {int maxLines = 1}) {
+  Widget _input(TextEditingController ctrl, String hint, {int maxLines = 1}) {
     return TextField(
       controller: ctrl,
       maxLines: maxLines,
       style: const TextStyle(color: Color(0xFF0C2B53), fontSize: 18),
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle:
-            const TextStyle(color: Color(0xFFB3B1B1), fontSize: 14),
+        hintStyle: const TextStyle(color: Color(0xFFB3B1B1), fontSize: 14),
         border: InputBorder.none,
         enabledBorder: const UnderlineInputBorder(
           borderSide: BorderSide(color: AppColors.primary, width: 1),
@@ -256,7 +253,10 @@ class _CreateFlashcardScreenState extends State<CreateFlashcardScreen> {
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: _darken(_selectedColor, 0.15).withOpacity(0.3),
+                                  color: _darken(
+                                    _selectedColor,
+                                    0.15,
+                                  ).withOpacity(0.3),
                                   blurRadius: 10,
                                   offset: const Offset(0, 5),
                                 ),
@@ -266,7 +266,10 @@ class _CreateFlashcardScreenState extends State<CreateFlashcardScreen> {
                               child: Icon(
                                 _selectedIcon,
                                 size: 40,
-                                color: _darken(_selectedColor, 0.22).withOpacity(0.5),
+                                color: _darken(
+                                  _selectedColor,
+                                  0.22,
+                                ).withOpacity(0.5),
                               ),
                             ),
                           ),
