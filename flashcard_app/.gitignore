@@ -32,6 +32,7 @@ migrate_working_dir/
 .pub-cache/
 .pub/
 /build/
+echo "functions/.env" >> .gitignore
 
 # Symbolication related
 app.*.symbols

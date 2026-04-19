@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import '../themes/app_colors.dart';
+import 'dart:ui';
 
 class AppPopup {
   static void show({
@@ -129,21 +130,29 @@ class _AppPopupContentState extends State<_AppPopupContent>
                   const SizedBox(height: 25),
                   SizedBox(
                     width: double.infinity,
-                    child: ElevatedButton(
+                    child: TextButton(
                       onPressed: () {
                         Navigator.pop(context);
                         widget.onPressed?.call();
                       },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
+                      style: TextButton.styleFrom(
+                        backgroundColor: const Color.fromARGB(255, 193, 226, 255),
+                        padding: const EdgeInsets.symmetric(vertical: 13),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(15),
+                          borderRadius: BorderRadius.circular(16),
+                          side: const BorderSide(
+                            color: Color.fromARGB(255, 145, 184, 244),
+                            width: 1.5,
+                          ),
                         ),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
                       ),
                       child: Text(
                         widget.buttonText,
-                        style: const TextStyle(fontSize: 16, color: Colors.white),
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFFE24B4A),
+                        ),
                       ),
                     ),
                   ),
