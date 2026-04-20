@@ -12,19 +12,14 @@ import '../widgets/flashcard_study_header.dart';
 class FlashcardStudyScreen extends StatefulWidget {
   final String setId;
 
-  const FlashcardStudyScreen({
-    super.key,
-    required this.setId,
-  });
+  const FlashcardStudyScreen({super.key, required this.setId});
 
   @override
-  State<FlashcardStudyScreen> createState() =>
-      _FlashcardStudyScreenState();
+  State<FlashcardStudyScreen> createState() => _FlashcardStudyScreenState();
 }
 
 class _FlashcardStudyScreenState extends State<FlashcardStudyScreen> {
-  final FlashcardStudyController controller =
-      FlashcardStudyController();
+  final FlashcardStudyController controller = FlashcardStudyController();
 
   late Future<List<FlashcardModel>> futureCards;
 
@@ -33,8 +28,7 @@ class _FlashcardStudyScreenState extends State<FlashcardStudyScreen> {
   @override
   void initState() {
     super.initState();
-    futureCards =
-        controller.getFlashcardsBySetId(widget.setId);
+    futureCards = controller.getFlashcardsBySetId(widget.setId);
   }
 
   void nextCard(int total) {
@@ -72,7 +66,7 @@ class _FlashcardStudyScreenState extends State<FlashcardStudyScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            const FlashcardStudyHeader(),
+            FlashcardStudyHeader(setId: widget.setId, ),
 
             // load data
             Expanded(
@@ -80,30 +74,23 @@ class _FlashcardStudyScreenState extends State<FlashcardStudyScreen> {
                 future: futureCards,
                 builder: (context, snapshot) {
                   // loading
-                  if (snapshot.connectionState ==
-                      ConnectionState.waiting) {
-                    return const Center(
-                        child: CircularProgressIndicator());
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
                   }
 
                   // error
                   if (snapshot.hasError) {
-                    return Center(
-                      child: Text("Error: ${snapshot.error}"),
-                    );
+                    return Center(child: Text("Error: ${snapshot.error}"));
                   }
 
                   final flashcards = snapshot.data ?? [];
 
                   // empty
                   if (flashcards.isEmpty) {
-                    return const Center(
-                      child: Text("No flashcards found"),
-                    );
+                    return const Center(child: Text("No flashcards found"));
                   }
 
-                  final flashcard =
-                      flashcards[currentIndex];
+                  final flashcard = flashcards[currentIndex];
 
                   return Padding(
                     padding: const EdgeInsets.all(16),
@@ -126,8 +113,7 @@ class _FlashcardStudyScreenState extends State<FlashcardStudyScreen> {
                         const SizedBox(height: 16),
 
                         FlashcardStudyControls(
-                          onNext: () =>
-                              nextCard(flashcards.length),
+                          onNext: () => nextCard(flashcards.length),
                           onBack: prevCard,
                         ),
 
@@ -141,17 +127,14 @@ class _FlashcardStudyScreenState extends State<FlashcardStudyScreen> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (_) =>
-                                      const SentenceGameScreen(),
+                                  builder: (_) => const SentenceGameScreen(),
                                 ),
                               );
                             },
                             style: ElevatedButton.styleFrom(
-                              backgroundColor:
-                                  const Color(0xFFF7D6D5),
+                              backgroundColor: const Color(0xFFF7D6D5),
                               shape: RoundedRectangleBorder(
-                                borderRadius:
-                                    BorderRadius.circular(30),
+                                borderRadius: BorderRadius.circular(30),
                               ),
                             ),
                             child: const Text(

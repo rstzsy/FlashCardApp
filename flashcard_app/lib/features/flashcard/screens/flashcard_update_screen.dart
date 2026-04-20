@@ -3,30 +3,38 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../core/themes/app_colors.dart';
+import '../../../core/widgets/app_popup.dart';
 import '../../../models/flashcard_form_model.dart';
+import '../controllers/flashcard_update_controller.dart';
 import '../widgets/flashcard_list.dart';
 
 class UpdateFlashcardScreen extends StatefulWidget {
-  const UpdateFlashcardScreen({super.key});
+  final String setId;
+
+  const UpdateFlashcardScreen({super.key, required this.setId});
 
   @override
   State<UpdateFlashcardScreen> createState() => _UpdateFlashcardScreenState();
 }
 
 class _UpdateFlashcardScreenState extends State<UpdateFlashcardScreen> {
-  List<FlashcardFormModel> cards = [];
+  final controller = FlashcardUpdateController();
 
+  List<FlashcardFormModel> cards = [];
   final _titleCtrl = TextEditingController();
   final _subtitleCtrl = TextEditingController();
 
   IconData _selectedIcon = Icons.menu_book;
   Color _selectedColor = const Color(0xFFE9B4B3);
 
+  bool isLoading = true;
+  bool isSaving = false;
+
   Color _darken(Color c, double amount) => Color.fromARGB(
     c.alpha,
-    (c.red   * (1 - amount)).round().clamp(0, 255),
+    (c.red * (1 - amount)).round().clamp(0, 255),
     (c.green * (1 - amount)).round().clamp(0, 255),
-    (c.blue  * (1 - amount)).round().clamp(0, 255),
+    (c.blue * (1 - amount)).round().clamp(0, 255),
   );
 
   final List<IconData> _icons = [
@@ -54,35 +62,31 @@ class _UpdateFlashcardScreenState extends State<UpdateFlashcardScreen> {
   @override
   void initState() {
     super.initState();
-    _loadMockData();
+    _loadData();
   }
 
-  void _loadMockData() {
-    _titleCtrl.text = "English Vocabulary";
-    _subtitleCtrl.text = "Basic words";
-    _selectedIcon = Icons.language;
-    _selectedColor = _colors[2];
+  // load data
+  Future<void> _loadData() async {
+    setState(() => isLoading = true);
 
-    cards = [
-      FlashcardFormModel(
-        word: TextEditingController(text: "Apple"),
-        meaning: TextEditingController(text: "Quả táo"),
-        phonetic: TextEditingController(text: "/ˈæp.əl/"),
-        example: TextEditingController(text: "I eat an apple"),
-      ),
-      FlashcardFormModel(
-        word: TextEditingController(text: "Book"),
-        meaning: TextEditingController(text: "Quyển sách"),
-        phonetic: TextEditingController(text: "/bʊk/"),
-        example: TextEditingController(text: "This is my book"),
-      ),
-    ];
+    await controller.loadData(
+      setId: widget.setId,
+      titleCtrl: _titleCtrl,
+      subtitleCtrl: _subtitleCtrl,
+      onCardsLoaded: (loadedCards) {
+        cards = loadedCards;
+      },
+      onMetaLoaded: (icon, color) {
+        _selectedIcon = icon;
+        _selectedColor = color;
+      },
+    );
+
+    setState(() => isLoading = false);
   }
 
   void _addCard() {
-    setState(() {
-      cards.add(FlashcardFormModel.empty());
-    });
+    setState(() => cards.add(FlashcardFormModel.empty()));
   }
 
   void _deleteCard(int index) {
@@ -100,6 +104,50 @@ class _UpdateFlashcardScreenState extends State<UpdateFlashcardScreen> {
     }
   }
 
+  // update
+  Future<void> _submitUpdate() async {
+    if (_titleCtrl.text.trim().isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Title cannot be empty")));
+      return;
+    }
+
+    setState(() => isSaving = true);
+
+    // update
+    await controller.update(
+      setId: widget.setId,
+      title: _titleCtrl.text.trim(),
+      subtitle: _subtitleCtrl.text.trim(),
+      icon: _selectedIcon,
+      color: _selectedColor,
+      cards: cards,
+    );
+
+    // reload data after update to get new card IDs and image URLs
+    await _loadData();
+
+    setState(() => isSaving = false);
+
+    if (mounted) {
+      AppPopup.show(
+        context: context,
+        title: "Success 🎉",
+        message: "Flashcard updated successfully!",
+        icon: Icons.check_circle,
+        iconColor: Colors.green,
+        showConfetti: true,
+        buttonText: "OK",
+
+        // return true if reload needed
+        onPressed: () {
+          Navigator.pop(context, true); 
+        },
+      );
+    }
+  }
+
   void _pickIcon() {
     showModalBottomSheet(
       context: context,
@@ -112,7 +160,13 @@ class _UpdateFlashcardScreenState extends State<UpdateFlashcardScreen> {
             ),
             itemBuilder: (_, i) {
               return IconButton(
-                icon: Icon(_icons[i]),
+                icon: Icon(
+                  _icons[i],
+                  color:
+                      _selectedIcon == _icons[i]
+                          ? AppColors.highlightColor
+                          : Colors.black,
+                ),
                 onPressed: () {
                   setState(() => _selectedIcon = _icons[i]);
                   Navigator.pop(context);
@@ -144,6 +198,10 @@ class _UpdateFlashcardScreenState extends State<UpdateFlashcardScreen> {
                   decoration: BoxDecoration(
                     color: _colors[i],
                     shape: BoxShape.circle,
+                    border:
+                        _selectedColor == _colors[i]
+                            ? Border.all(color: Colors.white, width: 3)
+                            : null,
                   ),
                 ),
               );
@@ -152,34 +210,14 @@ class _UpdateFlashcardScreenState extends State<UpdateFlashcardScreen> {
     );
   }
 
-  void _submitUpdate() {
-    debugPrint("=== UPDATE FLASHCARD ===");
-    debugPrint("Title: ${_titleCtrl.text}");
-    debugPrint("Subtitle: ${_subtitleCtrl.text}");
-    debugPrint("Icon: $_selectedIcon");
-    debugPrint("Color: $_selectedColor");
-
-    for (int i = 0; i < cards.length; i++) {
-      final c = cards[i];
-      debugPrint("---- Card ${i + 1} ----");
-      debugPrint("Word: ${c.word.text}");
-      debugPrint("Meaning: ${c.meaning.text}");
-      debugPrint("Phonetic: ${c.phonetic.text}");
-      debugPrint("Example: ${c.example.text}");
-      debugPrint("Image: ${c.image?.path}");
-    }
-  }
-
-  Widget _input(TextEditingController ctrl, String hint,
-      {int maxLines = 1}) {
+  Widget _input(TextEditingController ctrl, String hint, {int maxLines = 1}) {
     return TextField(
       controller: ctrl,
       maxLines: maxLines,
       style: const TextStyle(color: Color(0xFF0C2B53), fontSize: 18),
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle:
-            const TextStyle(color: Color(0xFFB3B1B1), fontSize: 14),
+        hintStyle: const TextStyle(color: Color(0xFFB3B1B1), fontSize: 14),
         border: InputBorder.none,
         enabledBorder: const UnderlineInputBorder(
           borderSide: BorderSide(color: AppColors.primary, width: 1),
@@ -197,154 +235,193 @@ class _UpdateFlashcardScreenState extends State<UpdateFlashcardScreen> {
       backgroundColor: AppColors.mainColor,
       appBar: AppBar(
         title: const Text(
-          "Update Flashcard",
+          "Update Flashcard Set",
           style: TextStyle(
             color: AppColors.highlightColor,
             fontWeight: FontWeight.bold,
           ),
         ),
         backgroundColor: AppColors.mainColor,
+        actions: [
+          if (isSaving)
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            )
+          else
+            IconButton(
+              icon: const Icon(Icons.save, color: AppColors.highlightColor),
+              onPressed: _submitUpdate,
+            ),
+        ],
       ),
-      body: Column(
-        children: [
-          // header
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  flex: 2,
-                  child: Column(
-                    children: [
-                      _input(_titleCtrl, "Title"),
-                      const SizedBox(height: 10),
-                      _input(_subtitleCtrl, "Subtitle"),
-                      const SizedBox(height: 10),
-
-                      Row(
-                        children: [
-                          Expanded(
-                            child: SelectOptionButton(
-                              label: "Icon",
-                              icon: _selectedIcon,
-                              onTap: _pickIcon,
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: SelectOptionButton(
-                              label: "Color",
-                              color: _selectedColor,
-                              onTap: _pickColor,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+      body:
+          isLoading
+              ? const Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CircularProgressIndicator(),
+                    SizedBox(height: 16),
+                    Text("Loading flashcard data..."),
+                  ],
                 ),
-
-                const SizedBox(width: 16),
-
-                Expanded(
-                  flex: 1,
-                  child: SizedBox(
-                    height: 120,
-                    child: Stack(
+              )
+              : Column(
+                children: [
+                  // header
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Tab góc trên trái
-                        Positioned(
-                          top: 10,
-                          left: 0,
-                          child: Container(
-                            width: 52,
-                            height: 22,
-                            decoration: BoxDecoration(
-                              color: _darken(_selectedColor, 0.15),
-                              borderRadius: const BorderRadius.only(
-                                topLeft: Radius.circular(10),
-                                topRight: Radius.circular(10),
+                        Expanded(
+                          flex: 2,
+                          child: Column(
+                            children: [
+                              _input(_titleCtrl, "Set Title"),
+                              const SizedBox(height: 10),
+                              _input(_subtitleCtrl, "Set Description"),
+                              const SizedBox(height: 10),
+
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: SelectOptionButton(
+                                      label: "Icon",
+                                      icon: _selectedIcon,
+                                      onTap: _pickIcon,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: SelectOptionButton(
+                                      label: "Color",
+                                      color: _selectedColor,
+                                      onTap: _pickColor,
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ),
+                            ],
                           ),
                         ),
-                        // Thân folder
-                        Positioned(
-                          top: 32,
-                          left: 0,
-                          right: 0,
-                          bottom: 0,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: _selectedColor,
-                              borderRadius: const BorderRadius.only(
-                                topRight: Radius.circular(14),
-                                bottomLeft: Radius.circular(14),
-                                bottomRight: Radius.circular(14),
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: _darken(_selectedColor, 0.15).withOpacity(0.3),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 5),
+
+                        const SizedBox(width: 16),
+
+                        Expanded(
+                          flex: 1,
+                          child: SizedBox(
+                            height: 120,
+                            child: Stack(
+                              children: [
+                                // Tab góc trên trái
+                                Positioned(
+                                  top: 10,
+                                  left: 0,
+                                  child: Container(
+                                    width: 52,
+                                    height: 22,
+                                    decoration: BoxDecoration(
+                                      color: _darken(_selectedColor, 0.15),
+                                      borderRadius: const BorderRadius.only(
+                                        topLeft: Radius.circular(10),
+                                        topRight: Radius.circular(10),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                // Thân folder
+                                Positioned(
+                                  top: 32,
+                                  left: 0,
+                                  right: 0,
+                                  bottom: 0,
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      color: _selectedColor,
+                                      borderRadius: const BorderRadius.only(
+                                        topRight: Radius.circular(14),
+                                        bottomLeft: Radius.circular(14),
+                                        bottomRight: Radius.circular(14),
+                                      ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: _darken(
+                                            _selectedColor,
+                                            0.15,
+                                          ).withOpacity(0.3),
+                                          blurRadius: 10,
+                                          offset: const Offset(0, 5),
+                                        ),
+                                      ],
+                                    ),
+                                    child: Center(
+                                      child: Icon(
+                                        _selectedIcon,
+                                        size: 40,
+                                        color: _darken(
+                                          _selectedColor,
+                                          0.22,
+                                        ).withOpacity(0.5),
+                                      ),
+                                    ),
+                                  ),
                                 ),
                               ],
-                            ),
-                            child: Center(
-                              child: Icon(
-                                _selectedIcon,
-                                size: 40,
-                                color: _darken(_selectedColor, 0.22).withOpacity(0.5),
-                              ),
                             ),
                           ),
                         ),
                       ],
                     ),
                   ),
-                ),
-              ],
-            ),
-          ),
 
-          // list
-          Expanded(
-            child: FlashcardList(
-              cards: cards,
-              onPickImage: _pickImage,
-              onDelete: _deleteCard,
-            ),
-          ),
+                  // list
+                  Expanded(
+                    child: FlashcardList(
+                      cards: cards,
+                      onPickImage: _pickImage,
+                      onDelete: _deleteCard,
+                    ),
+                  ),
 
-          Row(
-            children: [
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: CustomButton(
-                    text: "Add Card",
-                    backgroundColor: Colors.white,
-                    textColor: AppColors.primary,
-                    onTap: _addCard,
+                  // buttons
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: CustomButton(
+                            text: "Add Card",
+                            backgroundColor: Colors.white,
+                            textColor: AppColors.primary,
+                            onTap: _addCard,
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: CustomButton(
+                            text: isSaving ? "Saving..." : "Update Set",
+                            backgroundColor:
+                                isSaving ? Colors.grey : Colors.white,
+                            textColor:
+                                isSaving
+                                    ? Colors.white
+                                    : AppColors.highlightColor,
+                            onTap: isSaving ? () {} : () => _submitUpdate(),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ),
+                ],
               ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: CustomButton(
-                    text: "Save Flashcard",
-                    backgroundColor: Colors.white,
-                    textColor: AppColors.highlightColor,
-                    onTap: _submitUpdate,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
     );
   }
 }

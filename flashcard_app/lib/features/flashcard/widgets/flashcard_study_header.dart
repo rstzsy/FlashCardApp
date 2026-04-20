@@ -4,7 +4,14 @@ import 'package:flashcard_app/core/themes/app_colors.dart';
 import '../screens/flashcard_update_screen.dart';
 
 class FlashcardStudyHeader extends StatelessWidget {
-  const FlashcardStudyHeader({super.key});
+  final String setId;
+  final VoidCallback? onReload; // callback
+
+  const FlashcardStudyHeader({
+    super.key,
+    required this.setId,
+    this.onReload,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -20,7 +27,7 @@ class FlashcardStudyHeader extends StatelessWidget {
           const Spacer(),
 
           const Text(
-            "Animals",
+            "Study Flashcards",
             style: TextStyle(
               fontSize: 25,
               fontWeight: FontWeight.bold,
@@ -30,22 +37,30 @@ class FlashcardStudyHeader extends StatelessWidget {
 
           const Spacer(),
 
+          // edit
           _circleButton(
             icon: Icons.edit,
-            onPressed: () {
-              Navigator.push(
+            onPressed: () async {
+              final result = await Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const UpdateFlashcardScreen(),
+                  builder: (context) =>
+                      UpdateFlashcardScreen(setId: setId),
                 ),
               );
+
+              // reload after update
+              if (result == true && onReload != null) {
+                onReload!();
+              }
             },
           ),
 
+          // delete
           _circleButton(
             icon: Icons.delete,
             onPressed: () {
-              //func
+              // TODO
             },
           ),
         ],
@@ -62,10 +77,13 @@ class FlashcardStudyHeader extends StatelessWidget {
         color: Colors.white,
         shape: BoxShape.circle,
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 6),
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 6,
+          ),
         ],
       ),
-      margin: EdgeInsets.all(6),
+      margin: const EdgeInsets.all(6),
       child: IconButton(
         icon: Icon(icon, color: AppColors.highlightColor),
         onPressed: onPressed,
