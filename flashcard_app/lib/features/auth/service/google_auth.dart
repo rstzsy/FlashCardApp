@@ -5,9 +5,12 @@ import 'package:google_sign_in/google_sign_in.dart';
 class GoogleSignInService {
   static final FirebaseAuth _auth = FirebaseAuth.instance;
 
+  // static final GoogleSignIn _googleSignIn = GoogleSignIn(
+  //   serverClientId:
+  //       '738496033296-firhv68vr8uessin82hel07ihs250hah.apps.googleusercontent.com',
+  //   scopes: ['email', 'profile'],
+  // );
   static final GoogleSignIn _googleSignIn = GoogleSignIn(
-    serverClientId:
-        '738496033296-firhv68vr8uessin82hel07ihs250hah.apps.googleusercontent.com',
     scopes: ['email', 'profile'],
   );
 
@@ -34,13 +37,15 @@ class GoogleSignInService {
         idToken: idToken,
       );
 
-      final UserCredential userCredential =
-          await _auth.signInWithCredential(credential);
+      final UserCredential userCredential = await _auth.signInWithCredential(
+        credential,
+      );
 
       final User? user = userCredential.user;
       if (user != null) {
-        final userDoc =
-            FirebaseFirestore.instance.collection('users').doc(user.uid);
+        final userDoc = FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid);
         final docSnapshot = await userDoc.get();
         if (!docSnapshot.exists) {
           await userDoc.set({
@@ -76,7 +81,7 @@ class GoogleSignInService {
       await _auth.signOut();
     } catch (e) {
       print('Error signing out: $e');
-      rethrow; 
+      rethrow;
     }
   }
 
