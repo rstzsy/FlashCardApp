@@ -10,7 +10,10 @@ class FlashcardService {
 
   // upload image
   Future<String?> uploadCardImage(
-      File file, String setId, String cardId) async {
+    File file,
+    String setId,
+    String cardId,
+  ) async {
     try {
       final ref = _storage.ref('flashcards/$setId/$cardId.jpg');
       await ref.putFile(file);
@@ -73,11 +76,7 @@ class FlashcardService {
       String? imageUrl;
 
       if (card["image"] != null && card["image"] is File) {
-        imageUrl = await uploadCardImage(
-          card["image"],
-          setId,
-          cardId,
-        );
+        imageUrl = await uploadCardImage(card["image"], setId, cardId);
       }
 
       await _firestore.collection("Flashcards").doc(cardId).set({

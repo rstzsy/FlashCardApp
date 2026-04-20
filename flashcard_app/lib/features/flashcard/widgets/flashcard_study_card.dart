@@ -58,15 +58,39 @@ class _FlashcardStudyCardState extends State<FlashcardStudyCard>
     setState(() => isFront = !isFront);
   }
 
+  Widget _buildImage(String? url) {
+    if (url == null || url.isEmpty) {
+      return const Center(child: Icon(Icons.image_not_supported, size: 60));
+    }
+
+    if (url.startsWith('http')) {
+      return Image.network(
+        url,
+        fit: BoxFit.cover,
+        loadingBuilder: (context, child, progress) {
+          if (progress == null) return child;
+          return const Center(child: CircularProgressIndicator());
+        },
+        errorBuilder:
+            (_, __, ___) =>
+                const Center(child: Icon(Icons.broken_image, size: 60)),
+      );
+    }
+
+    return Image.asset(url, fit: BoxFit.cover);
+  }
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: flipCard,
       child: SizedBox(
         width: double.infinity,
+        height: 480,
         child: AnimatedBuilder(
           animation: _animation,
           builder: (context, _) {
+            // flip
             final angle = _animation.value * pi;
             final showFront = angle < pi / 2;
 
@@ -91,18 +115,21 @@ class _FlashcardStudyCardState extends State<FlashcardStudyCard>
     );
   }
 
+  // front card
   Widget _buildFront() {
     final f = widget.flashcard;
 
     return Container(
       width: double.infinity,
       height: double.infinity,
+      margin: const EdgeInsets.only(top: 40),
       decoration: BoxDecoration(
         color: kCardBack,
         borderRadius: BorderRadius.circular(28),
       ),
       child: Stack(
         children: [
+          // Tag Day
           Positioned(
             top: 16,
             right: 16,
@@ -124,20 +151,22 @@ class _FlashcardStudyCardState extends State<FlashcardStudyCard>
             ),
           ),
 
+          // flashcard content
           Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                SizedBox(
+                Container(
                   width: 130,
                   height: 130,
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(20),
-                    child: Image.asset(f.image, fit: BoxFit.contain),
+                    child: _buildImage(f.imageUrl),
                   ),
                 ),
                 const SizedBox(height: 20),
 
+                // word
                 Text(
                   f.word,
                   style: const TextStyle(
@@ -149,6 +178,7 @@ class _FlashcardStudyCardState extends State<FlashcardStudyCard>
                 ),
                 const SizedBox(height: 6),
 
+                // Phonetic
                 Text(
                   f.phonetic,
                   style: GoogleFonts.notoSans(
@@ -161,6 +191,7 @@ class _FlashcardStudyCardState extends State<FlashcardStudyCard>
             ),
           ),
 
+          // Hint to flip
           Positioned(
             bottom: 16,
             left: 0,
@@ -182,12 +213,14 @@ class _FlashcardStudyCardState extends State<FlashcardStudyCard>
     );
   }
 
+  // back card
   Widget _buildBack() {
     final f = widget.flashcard;
 
     return Container(
       width: double.infinity,
       height: double.infinity,
+      margin: const EdgeInsets.only(top: 40),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: kCardBack,
@@ -197,6 +230,7 @@ class _FlashcardStudyCardState extends State<FlashcardStudyCard>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // top badge
           Row(
             children: [
               _Badge(text: 'Day ${f.day}', bg: kBadgeDay, fg: kAccentMid),
@@ -210,15 +244,16 @@ class _FlashcardStudyCardState extends State<FlashcardStudyCard>
           ),
           const SizedBox(height: 16),
 
+          // row(image + word)
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              SizedBox(
+              Container(
                 width: 72,
                 height: 72,
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(16),
-                  child: Image.asset(f.image, fit: BoxFit.contain),
+                  child: _buildImage(f.imageUrl),
                 ),
               ),
               const SizedBox(width: 14),
@@ -256,9 +291,11 @@ class _FlashcardStudyCardState extends State<FlashcardStudyCard>
           ),
           const SizedBox(height: 14),
 
+          // Divider
           const Divider(color: kDivider, thickness: 0.5, height: 1),
           const SizedBox(height: 14),
 
+          // Example box
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -296,6 +333,7 @@ class _FlashcardStudyCardState extends State<FlashcardStudyCard>
   }
 }
 
+// badge
 class _Badge extends StatelessWidget {
   final String text;
   final Color bg;

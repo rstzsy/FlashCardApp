@@ -7,9 +7,11 @@ import 'flashcard_create_screen.dart';
 import 'flashcard_study_screen.dart';
 
 class FlashcardManagerScreen extends StatelessWidget {
+  
   FlashcardManagerScreen({super.key});
 
   final controller = FlashcardManagerController();
+  
 
   @override
   Widget build(BuildContext context) {
@@ -89,7 +91,10 @@ class FlashcardManagerScreen extends StatelessWidget {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) => const FlashcardStudyScreen(),
+                              builder:
+                                  (_) => FlashcardStudyScreen(
+                                    setId: item['setId'],
+                                  ),
                             ),
                           );
                         },

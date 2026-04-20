@@ -6,13 +6,13 @@ class FlashcardManagerController {
   final FlashcardManagerService _service = FlashcardManagerService();
 
   // load data
-  Future<List<Map<String, dynamic>>> loadFlashcardSets(
-      String userId) async {
+  Future<List<Map<String, dynamic>>> loadFlashcardSets(String userId) async {
     final data = await _service.getFlashcardSets(userId);
 
     // convert Firestore -> UI model
     return data.map((e) {
       return {
+        "setId": e["SetId"],
         "title": e["Title"] ?? "",
         "subtitle": e["Subtitle"] ?? "",
         "color": _hexToColor(e["ColorHex"]),
@@ -39,9 +39,6 @@ class FlashcardManagerController {
   IconData _iconFromString(String? iconCode) {
     if (iconCode == null) return Icons.menu_book;
 
-    return IconData(
-      int.parse(iconCode),
-      fontFamily: 'MaterialIcons',
-    );
+    return IconData(int.parse(iconCode), fontFamily: 'MaterialIcons');
   }
 }
