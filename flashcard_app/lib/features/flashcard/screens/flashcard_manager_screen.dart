@@ -1,51 +1,15 @@
+import 'package:firebase_auth/firebase_auth.dart' show FirebaseAuth;
 import 'package:flashcard_app/core/themes/app_colors.dart';
 import 'package:flutter/material.dart';
 import '../../../core/widgets/collection_card.dart';
+import '../controllers/flashcard_manage_controller.dart';
 import 'flashcard_create_screen.dart';
 import 'flashcard_study_screen.dart';
 
 class FlashcardManagerScreen extends StatelessWidget {
-  const FlashcardManagerScreen({super.key});
+  FlashcardManagerScreen({super.key});
 
-  // fake data
-  static final List<Map<String, dynamic>> _collections = [
-    {
-      'title': 'Basic English',
-      'subtitle': 'Library - 100 words',
-      'color': const Color(0xFFF59CB2),
-      'icon': Icons.menu_book_rounded,
-    },
-    {
-      'title': 'IELTS Vocabulary',
-      'subtitle': 'Classroom',
-      'color': const Color(0xFFB48D71),
-      'icon': Icons.school_rounded,
-    },
-    {
-      'title': 'Daily Phrases',
-      'subtitle': 'Social Network',
-      'color': const Color(0xFFA05C46),
-      'icon': Icons.chat_rounded,
-    },
-    {
-      'title': 'Business English',
-      'subtitle': 'Bussiness',
-      'color': const Color(0xFFE49E91),
-      'icon': Icons.work_outline_rounded,
-    },
-    {
-      'title': 'Travel',
-      'subtitle': 'Around the word',
-      'color': const Color(0xFFD5708B),
-      'icon': Icons.flight_takeoff_rounded,
-    },
-    {
-      'title': 'Slang',
-      'subtitle': 'Emotions',
-      'color': const Color(0xFFE9B4B3),
-      'icon': Icons.sentiment_satisfied_rounded,
-    },
-  ];
+  final controller = FlashcardManagerController();
 
   @override
   Widget build(BuildContext context) {
@@ -87,34 +51,50 @@ class FlashcardManagerScreen extends StatelessWidget {
 
             // grid list
             Expanded(
-              child: GridView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                itemCount: _collections.length,
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3, //1row - 3 items
-                  mainAxisSpacing: 24,
-                  crossAxisSpacing: 16,
-                  childAspectRatio: 0.8,
+              child: FutureBuilder(
+                future: controller.loadFlashcardSets(
+                  FirebaseAuth.instance.currentUser!.uid,
                 ),
-                itemBuilder: (context, index) {
-                  final item = _collections[index];
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
 
-                  return CollectionCard(
-                    title: item['title'],
-                    subtitle: item['subtitle'],
-                    setsCount: 0,
-                    color: item['color'],
-                    icon: item['icon'],
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const FlashcardStudyScreen(),
+                  final collections = snapshot.data ?? [];
+
+                  if (collections.isEmpty) {
+                    return const Center(child: Text("No flashcards yet"));
+                  }
+
+                  return GridView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    itemCount: collections.length,
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 3,
+                          mainAxisSpacing: 24,
+                          crossAxisSpacing: 16,
+                          childAspectRatio: 0.8,
                         ),
+                    itemBuilder: (context, index) {
+                      final item = collections[index];
+
+                      return CollectionCard(
+                        title: item['title'],
+                        subtitle: item['subtitle'],
+                        setsCount: item['totalCards'],
+                        color: item['color'],
+                        icon: item['icon'],
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const FlashcardStudyScreen(),
+                            ),
+                          );
+                        },
+                        onFavoriteChanged: (fav) {},
                       );
-                    },
-                    onFavoriteChanged: (fav) {
-                      debugPrint("${item['title']} favorite: $fav");
                     },
                   );
                 },
