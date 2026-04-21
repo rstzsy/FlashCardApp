@@ -2,7 +2,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import '../themes/app_colors.dart';
 
-class AppPopup {
+class AppPopupCancel {
   static void show({
     required BuildContext context,
     required String title,
@@ -12,7 +12,10 @@ class AppPopup {
     Widget? iconWidget,
     String buttonText = "OK",
     VoidCallback? onPressed,
-    bool showConfetti = false, 
+    bool showConfetti = false,
+    bool showCancelButton = false,
+    String cancelButtonText = "Hủy",
+    VoidCallback? onCancelPressed,
   }) {
     showDialog(
       context: context,
@@ -26,6 +29,9 @@ class AppPopup {
         buttonText: buttonText,
         onPressed: onPressed,
         showConfetti: showConfetti,
+        showCancelButton: showCancelButton,
+        cancelButtonText: cancelButtonText,
+        onCancelPressed: onCancelPressed,
       ),
     );
   }
@@ -39,6 +45,9 @@ class _AppPopupContent extends StatefulWidget {
   final Widget? iconWidget;
   final VoidCallback? onPressed;
   final bool showConfetti;
+  final bool showCancelButton;
+  final String cancelButtonText;
+  final VoidCallback? onCancelPressed;
 
   const _AppPopupContent({
     required this.title,
@@ -49,6 +58,9 @@ class _AppPopupContent extends StatefulWidget {
     required this.buttonText,
     required this.onPressed,
     required this.showConfetti,
+    required this.showCancelButton,
+    required this.cancelButtonText,
+    required this.onCancelPressed,
   });
 
   @override
@@ -127,33 +139,69 @@ class _AppPopupContentState extends State<_AppPopupContent>
                     ),
                   ),
                   const SizedBox(height: 25),
-                  SizedBox(
-                    width: double.infinity,
-                    child: TextButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        widget.onPressed?.call();
-                      },
-                      style: TextButton.styleFrom(
-                        backgroundColor: const Color.fromARGB(255, 193, 226, 255),
-                        padding: const EdgeInsets.symmetric(vertical: 13),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          side: const BorderSide(
-                            color: Color.fromARGB(255, 145, 184, 244),
-                            width: 1.5,
+
+                  // ── Button row ──────────────────────────────────────────
+                  Row(
+                    children: [
+                      if (widget.showCancelButton) ...[
+                        Expanded(
+                          child: TextButton(
+                            onPressed: () {
+                              Navigator.pop(context);
+                              widget.onCancelPressed?.call();
+                            },
+                            style: TextButton.styleFrom(
+                              backgroundColor: const Color.fromARGB(255, 235, 235, 235),
+                              padding: const EdgeInsets.symmetric(vertical: 13),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                side: const BorderSide(
+                                  color: Color.fromARGB(255, 200, 200, 200),
+                                  width: 1.5,
+                                ),
+                              ),
+                            ),
+                            child: Text(
+                              widget.cancelButtonText,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF888888),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                      ],
+
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            widget.onPressed?.call();
+                          },
+                          style: TextButton.styleFrom(
+                            backgroundColor: const Color.fromARGB(255, 193, 226, 255),
+                            padding: const EdgeInsets.symmetric(vertical: 13),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              side: const BorderSide(
+                                color: Color.fromARGB(255, 145, 184, 244),
+                                width: 1.5,
+                              ),
+                            ),
+                          ),
+                          child: Text(
+                            widget.buttonText,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFFE24B4A),
+                            ),
                           ),
                         ),
                       ),
-                      child: Text(
-                        widget.buttonText,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFFE24B4A),
-                        ),
-                      ),
-                    ),
+                    ],
                   ),
                 ],
               ),

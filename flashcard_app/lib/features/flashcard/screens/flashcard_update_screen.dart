@@ -106,15 +106,16 @@ class _UpdateFlashcardScreenState extends State<UpdateFlashcardScreen> {
 
   // update
   Future<void> _submitUpdate() async {
-    if (_titleCtrl.text.trim().isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Title cannot be empty")));
-      return;
-    }
+  if (_titleCtrl.text.trim().isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Title cannot be empty")),
+    );
+    return;
+  }
 
-    setState(() => isSaving = true);
+  setState(() => isSaving = true);
 
+  try {
     // update
     await controller.update(
       setId: widget.setId,
@@ -125,28 +126,37 @@ class _UpdateFlashcardScreenState extends State<UpdateFlashcardScreen> {
       cards: cards,
     );
 
-    // reload data after update to get new card IDs and image URLs
+    // reload data
     await _loadData();
+
+    if (!mounted) return;
 
     setState(() => isSaving = false);
 
-    if (mounted) {
-      AppPopup.show(
-        context: context,
-        title: "Success 🎉",
-        message: "Flashcard updated successfully!",
-        icon: Icons.check_circle,
-        iconColor: Colors.green,
-        showConfetti: true,
-        buttonText: "OK",
+    AppPopup.show(
+      context: context,
+      title: "Success 🎉",
+      message: "Flashcard updated successfully!",
+      icon: Icons.check_circle,
+      iconColor: Colors.green,
+      showConfetti: true,
+      buttonText: "OK",
+      onPressed: () {
+        // use root navigator to avoid black screen
+        Navigator.of(context, rootNavigator: true).pop(); 
+        Navigator.of(context).pop(true);
+      },
+    );
+  } catch (e) {
+    if (!mounted) return;
 
-        // return true if reload needed
-        onPressed: () {
-          Navigator.pop(context, true); 
-        },
-      );
-    }
+    setState(() => isSaving = false);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Update failed")),
+    );
   }
+}
 
   void _pickIcon() {
     showModalBottomSheet(

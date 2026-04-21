@@ -1,10 +1,10 @@
-import 'package:flashcard_app/routes/main_navigation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flashcard_app/features/auth/screens/auth_wrapper.dart';
 import '../routes/app_router.dart';
-import '../routes/app_routes.dart';
 import 'core/firebase/firebase_config.dart';
+
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   await FirebaseConfig.init();
@@ -17,6 +17,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: navigatorKey,
       debugShowCheckedModeBanner: false,
       title: 'Study English',
 

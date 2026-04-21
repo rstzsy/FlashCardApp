@@ -1,4 +1,3 @@
-import 'dart:math';
 
 import 'package:flashcard_app/core/themes/app_colors.dart';
 import 'package:flutter/material.dart';

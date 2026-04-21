@@ -10,7 +10,7 @@ class RecentStudyCard extends StatelessWidget {
   final Color bgColor;
   final VoidCallback onTap;
 
-  const RecentStudyCard({
+  const RecentStudyCard({super.key, 
     required this.title,
     required this.description,
     required this.totalCards,

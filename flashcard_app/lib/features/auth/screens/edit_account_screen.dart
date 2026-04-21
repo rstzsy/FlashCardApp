@@ -21,7 +21,6 @@ class _EditAccountScreenState extends State<EditAccountScreen> {
   File? _pickedImage;
   String? _currentPhotoUrl;
   String? _currentEmail;
-  String? _currentProvider;
   bool _isSaving = false;
 
   static const _surface = Color(0xFFF2F5FA);
@@ -53,7 +52,6 @@ class _EditAccountScreenState extends State<EditAccountScreen> {
       _nameController.text = data['name'] ?? user.displayName ?? '';
       _currentEmail = data['email'] ?? user.email ?? '';
       _currentPhotoUrl = data['photoUrl'] ?? data['photoURL'] ?? '';
-      _currentProvider = data['provider'] ?? 'google';
     });
   }
 
@@ -127,18 +125,6 @@ class _EditAccountScreenState extends State<EditAccountScreen> {
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
-  }
-
-  void _showSnack(String msg, {required bool isError}) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(msg,
-          style: const TextStyle(
-              color: Colors.white, fontWeight: FontWeight.w600)),
-      backgroundColor: isError ? _danger : AppColors.primary,
-      behavior: SnackBarBehavior.floating,
-      shape:
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-    ));
   }
 
   @override

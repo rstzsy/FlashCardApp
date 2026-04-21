@@ -476,7 +476,7 @@ class _FeedbackCard extends StatelessWidget {
   final String message;
 
   const _FeedbackCard(
-      {super.key, required this.isCorrect, required this.message});
+      {required this.isCorrect, required this.message});
 
   @override
   Widget build(BuildContext context) {

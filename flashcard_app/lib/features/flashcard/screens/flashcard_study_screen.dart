@@ -28,7 +28,14 @@ class _FlashcardStudyScreenState extends State<FlashcardStudyScreen> {
   @override
   void initState() {
     super.initState();
-    futureCards = controller.getFlashcardsBySetId(widget.setId);
+    _loadData();
+  }
+
+  void _loadData() {
+    setState(() {
+      futureCards = controller.getFlashcardsBySetId(widget.setId);
+      currentIndex = 0; // reset first card
+    });
   }
 
   void nextCard(int total) {
@@ -66,7 +73,7 @@ class _FlashcardStudyScreenState extends State<FlashcardStudyScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            FlashcardStudyHeader(setId: widget.setId, ),
+            FlashcardStudyHeader(setId: widget.setId, onReload: _loadData),
 
             // load data
             Expanded(

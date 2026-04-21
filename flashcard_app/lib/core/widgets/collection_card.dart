@@ -184,7 +184,7 @@ class _CollectionCardState extends State<CollectionCard>
 
           // ── Hex label ──
           Text(
-            widget.subtitle,
+            widget.title,
             style: const TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,

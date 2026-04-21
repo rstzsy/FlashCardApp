@@ -156,7 +156,7 @@ class _FlashcardStudyCardState extends State<FlashcardStudyCard>
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Container(
+                SizedBox(
                   width: 130,
                   height: 130,
                   child: ClipRRect(
@@ -248,7 +248,7 @@ class _FlashcardStudyCardState extends State<FlashcardStudyCard>
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Container(
+              SizedBox(
                 width: 72,
                 height: 72,
                 child: ClipRRect(

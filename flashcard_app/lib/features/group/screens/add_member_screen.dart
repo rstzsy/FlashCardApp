@@ -27,7 +27,7 @@ class _AddMemberPageState extends State<AddMemberPage> {
   ];
 
   List<UserModel> _filteredUsers = [];
-  List<UserModel> _selectedUsers = [];
+  final List<UserModel> _selectedUsers = [];
 
   @override
   void initState() {
