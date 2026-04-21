@@ -23,7 +23,7 @@ class _MainNavigationState extends State<MainNavigation> {
     // ✅ Khai báo trong build() để dùng được setState
     final List<Widget> pages = [
       const HomeScreen(),
-      const FlashcardManagerScreen(),
+      FlashcardManagerScreen(),
       const StatisticsScreen(),
       IntroGameScreen(
         onBack: () => setState(() => currentIndex = 0),

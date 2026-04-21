@@ -92,25 +92,7 @@ class FlashcardItem extends StatelessWidget {
                     border: Border.all(color: Colors.black),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: card.image == null
-                      ? const Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.image, color: Colors.black),
-                            SizedBox(height: 6),
-                            Text(
-                              "Image",
-                              style: TextStyle(color: Colors.black),
-                            ),
-                          ],
-                        )
-                      : ClipRRect(
-                          borderRadius: BorderRadius.circular(10),
-                          child: Image.file(
-                            card.image!,
-                            fit: BoxFit.cover,
-                          ),
-                        ),
+                  child: _buildImageWidget(),
                 ),
               ),
             ],
@@ -127,6 +109,68 @@ class FlashcardItem extends StatelessWidget {
           _input(card.example, "Example"),
         ],
       ),
+    );
+  }
+
+  Widget _buildImageWidget() {
+    // show image from file if exists (new image)
+    if (card.image != null) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(10),
+        child: Image.file(
+          card.image!,
+          fit: BoxFit.cover,
+        ),
+      );
+    }
+
+    // show image from url if exists (old image)
+    if (card.imageUrl != null && card.imageUrl!.isNotEmpty) {
+      if (card.imageUrl!.startsWith('http')) {
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(10),
+          child: Image.network(
+            card.imageUrl!,
+            fit: BoxFit.cover,
+            loadingBuilder: (context, child, progress) {
+              if (progress == null) return child;
+              return const Center(child: CircularProgressIndicator());
+            },
+            errorBuilder: (_, __, ___) => const Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.broken_image, color: Colors.black),
+                SizedBox(height: 6),
+                Text(
+                  "Error",
+                  style: TextStyle(color: Colors.black, fontSize: 10),
+                ),
+              ],
+            ),
+          ),
+        );
+      } else {
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(10),
+          child: Image.asset(
+            card.imageUrl!,
+            fit: BoxFit.cover,
+          ),
+        );
+      }
+    }
+
+    // if no image, show placeholder
+    return const Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(Icons.image, color: Colors.black),
+        SizedBox(height: 6),
+        Text(
+          "Image",
+          style: TextStyle(color: Colors.black),
+        ),
+      ],
     );
   }
 
