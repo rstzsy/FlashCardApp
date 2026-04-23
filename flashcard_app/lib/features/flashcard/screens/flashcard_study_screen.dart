@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/widgets/app_popup.dart';
 import '../../../models/flashcardModel.dart';
 import '../../exercise/screens/compound_word_screen.dart';
+import '../../exercise/screens/intro_exercise_screen.dart';
 import '../controllers/flashcard_study_controller.dart';
 import '../widgets/flashcard_study_card.dart';
 import '../widgets/flashcard_study_control.dart';
@@ -134,7 +135,7 @@ class _FlashcardStudyScreenState extends State<FlashcardStudyScreen> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (_) => const SentenceGameScreen(),
+                                  builder: (_) => const IntroExerciseScreen(),
                                 ),
                               );
                             },
