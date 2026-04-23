@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
+import '../../../core/widgets/app_popup.dart';
 import '../../../models/flashcard_form_model.dart';
 import '../services/flashcard_create_service.dart';
 
@@ -18,7 +19,7 @@ class FlashcardController {
     try {
       final user = FirebaseAuth.instance.currentUser;
 
-      /// check login
+      // check login
       if (user == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Bạn chưa đăng nhập")),
@@ -26,9 +27,7 @@ class FlashcardController {
         return;
       }
 
-      print("UID: ${user.uid}");
-
-      // convert UI -> data
+      // convert data
       final cardData = cards.map((c) {
         return {
           "word": c.word.text.trim(),
@@ -39,23 +38,35 @@ class FlashcardController {
         };
       }).toList();
 
+      // create
       await _service.createFlashcardSet(
         userId: user.uid,
         title: title,
         subtitle: subtitle,
         icon: icon.codePoint.toString(),
-        colorHex:
-            '#${color.value.toRadixString(16).substring(2)}', // remove alpha
+        colorHex: '#${color.value.toRadixString(16).substring(2)}',
         cards: cardData,
       );
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Create success")),
-      );
+      if (!context.mounted) return;
 
-      Navigator.pop(context);
+      AppPopup.show(
+        context: context,
+        title: "Success 🎉",
+        message: "Flashcard created successfully!",
+        icon: Icons.check_circle,
+        iconColor: Colors.green,
+        showConfetti: true,
+        buttonText: "OK",
+
+        onPressed: () {
+          Navigator.pop(context, true); // return result
+        },
+      );
     } catch (e) {
-      print("ERROR: $e");
+      debugPrint("ERROR: $e");
+
+      if (!context.mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Create failed")),

@@ -72,8 +72,8 @@ class SettingsSwitchTile extends StatelessWidget {
           CupertinoSwitch(
             value: value,
             onChanged: onChanged,
-            activeColor: AppColors.primary, 
-            trackColor: iconBg,                   
+            activeTrackColor: AppColors.primary, 
+            inactiveTrackColor: iconBg,                   
             thumbColor: Colors.white,
           ),
         ],

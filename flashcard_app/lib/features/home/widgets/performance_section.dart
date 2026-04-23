@@ -6,7 +6,7 @@ class PerformanceSection extends StatefulWidget {
   final List<String> completedDays;
 
   const PerformanceSection(
-      {required this.streakDays, required this.completedDays});
+      {super.key, required this.streakDays, required this.completedDays});
 
   @override
   State<PerformanceSection> createState() => PerformanceSectionState();

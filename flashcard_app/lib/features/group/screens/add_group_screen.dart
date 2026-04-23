@@ -39,7 +39,7 @@ class _AddGroupPageState extends State<AddGroupPage> {
   ];
 
   List<UserModel> _filteredUsers = [];
-  List<UserModel> _selectedUsers = [];
+  final List<UserModel> _selectedUsers = [];
 
   @override
   void initState() {

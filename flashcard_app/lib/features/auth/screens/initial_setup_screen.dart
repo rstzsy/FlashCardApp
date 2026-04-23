@@ -4,7 +4,6 @@ import '../../../routes/app_routes.dart';
 import 'package:flashcard_app/core/themes/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../../core/widgets/app_popup.dart';
 
 class SetupScreen extends StatefulWidget {
   const SetupScreen({super.key});

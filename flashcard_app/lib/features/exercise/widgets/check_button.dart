@@ -7,7 +7,7 @@ class CheckButton extends StatelessWidget {
   final bool enabled;
   final VoidCallback onPressed;
 
-  const CheckButton({required this.enabled, required this.onPressed});
+  const CheckButton({super.key, required this.enabled, required this.onPressed});
 
   @override
   Widget build(BuildContext context) {
