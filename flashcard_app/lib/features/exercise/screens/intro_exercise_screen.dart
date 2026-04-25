@@ -4,7 +4,9 @@ import 'compound_word_screen.dart';
 import 'fertilizer_challenge_screen.dart';
 
 class IntroExerciseScreen extends StatelessWidget {
-  const IntroExerciseScreen({super.key});
+  final String setId;
+
+  const IntroExerciseScreen({super.key, required this.setId});
 
   void _push(BuildContext context, Widget page) {
     Navigator.push(context, MaterialPageRoute(builder: (_) => page));
@@ -22,14 +24,17 @@ class IntroExerciseScreen extends StatelessWidget {
                   children: [
                     Expanded(
                       child: _NavBox(
-                        image: 'assets/component/game.png', 
+                        image: 'assets/component/game.png',
                         gradient: const LinearGradient(
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                           colors: [Color(0xFFFFD6E0), Color(0xFFFFB3C6)],
                         ),
                         label: 'Compound\nWords Game',
-                        onTap: () => _push(context, const SentenceGameScreen()),
+                        onTap: () => _push(
+                          context,
+                          SentenceGameScreen(setId: setId),
+                        ),
                       ),
                     ),
                     Expanded(
@@ -60,14 +65,17 @@ class IntroExerciseScreen extends StatelessWidget {
                     ),
                     Expanded(
                       child: _NavBox(
-                        image: 'assets/component/game.png', 
+                        image: 'assets/component/game.png',
                         gradient: const LinearGradient(
                           begin: Alignment.topRight,
                           end: Alignment.bottomLeft,
                           colors: [Color(0xFFFFE5B4), Color(0xFFFFD08A)],
                         ),
                         label: 'Words\nFilling Game',
-                        onTap: () => _push(context, const FertilizerChallengeScreen()),
+                        onTap: () => _push(
+                          context,
+                          const FertilizerChallengeScreen(),
+                        ),
                       ),
                     ),
                   ],
@@ -116,8 +124,11 @@ class IntroExerciseScreen extends StatelessWidget {
                       ),
                     ],
                   ),
-                  child: const Icon(Icons.arrow_back_ios_new_rounded,
-                      size: 18, color: Color(0xFF333355)),
+                  child: const Icon(
+                    Icons.arrow_back_ios_new_rounded,
+                    size: 18,
+                    color: Color(0xFF333355),
+                  ),
                 ),
               ),
             ),

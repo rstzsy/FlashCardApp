@@ -1,7 +1,7 @@
 import 'package:flashcard_app/core/themes/app_colors.dart';
 import 'package:flutter/material.dart';
-import 'dart:math';
 import '../../../models/questionModel.dart';
+import '../controllers/compound_word_controller.dart';
 import '../widgets/answer_zone.dart';
 import '../widgets/available_word_ship.dart';
 import '../widgets/check_button.dart';
@@ -11,40 +11,48 @@ import '../widgets/progress_bar.dart';
 import 'score_game_screen.dart';
 
 class SentenceGameScreen extends StatefulWidget {
-  const SentenceGameScreen({super.key});
+  final String setId;
+
+  const SentenceGameScreen({super.key, required this.setId});
 
   @override
   State<SentenceGameScreen> createState() => _SentenceGameScreenState();
 }
 
 class _SentenceGameScreenState extends State<SentenceGameScreen> {
+  final CompoundWordController controller = CompoundWordController();
+
   int currentIndex = 0;
   int score = 0;
   List<String> selectedWords = [];
   List<String> availableWords = [];
-  late List<QuestionModel> questions;
+  List<QuestionModel> questions = [];
+
+  bool isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    questions = _mockData();
-    availableWords = [...questions[0].shuffledWords];
+    loadData();
   }
 
-  // fake data
-  List<QuestionModel> _mockData() {
-    List<String> sentences = [
-      "I love Flutter",
-      "She is very happy",
-      "We are learning English for the following test",
-      "This is a beautiful day",
-      "He likes playing football",
-    ];
-    return sentences.map((sentence) {
-      List<String> words = sentence.split(" ");
-      words.shuffle(Random());
-      return QuestionModel(correctSentence: sentence, shuffledWords: words);
-    }).toList();
+  // get data
+  Future<void> loadData() async {
+    await controller.loadQuestions(widget.setId);
+
+    if (controller.questions.isEmpty) {
+      // avoid crashes if no questions
+      setState(() {
+        isLoading = false;
+      });
+      return;
+    }
+
+    setState(() {
+      questions = controller.questions;
+      availableWords = [...questions[0].shuffledWords];
+      isLoading = false;
+    });
   }
 
   void onWordTap(int index) {
@@ -62,40 +70,49 @@ class _SentenceGameScreenState extends State<SentenceGameScreen> {
   }
 
   void checkAnswer() {
-    String userAnswer = selectedWords.join(" ");
-    String correct = questions[currentIndex].correctSentence;
-    bool isCorrect = userAnswer == correct;
-    if (isCorrect) score++;
+    bool isCorrect = controller.checkAnswer(selectedWords);
+    score = controller.score;
 
     showModalBottomSheet(
       context: context,
       isDismissible: false,
       backgroundColor: Colors.transparent,
-      builder:
-          (_) => FeedbackOverlay(
-            isCorrect: isCorrect,
-            correctSentence: correct,
-            isLast: currentIndex >= questions.length - 1,
-            onNext: () {
-              Navigator.pop(context);
-              nextQuestion();
-            },
-          ),
+      builder: (_) => FeedbackOverlay(
+        isCorrect: isCorrect,
+        correctSentence: controller.currentQuestion.correctSentence,
+        isLast: controller.isLastQuestion,
+        onNext: () {
+          Navigator.pop(context);
+          nextQuestion();
+        },
+      ),
     );
   }
 
-  void nextQuestion() {
-    if (currentIndex < questions.length - 1) {
+  Future<void> nextQuestion() async {
+    if (!controller.isLastQuestion) {
+      await controller.nextQuestion();
+
       setState(() {
-        currentIndex++;
+        currentIndex = controller.currentIndex;
         selectedWords.clear();
-        availableWords = [...questions[currentIndex].shuffledWords];
+        availableWords = [...controller.currentQuestion.shuffledWords];
       });
     } else {
+      // save result
+      await controller.finishGame(
+        setId: widget.setId,
+      );
+
+      // next level
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (_) => ScoreScreen(score: score, total: questions.length),
+          builder: (_) => ScoreScreen(
+            score: controller.score,
+            total: controller.questions.length,
+            setId: widget.setId,
+          ),
         ),
       );
     }
@@ -103,6 +120,18 @@ class _SentenceGameScreenState extends State<SentenceGameScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (questions.isEmpty) {
+      return const Scaffold(
+        body: Center(child: Text("No questions available")),
+      );
+    }
+
     return Scaffold(
       backgroundColor: AppColors.mainColor,
       body: SafeArea(
@@ -126,7 +155,6 @@ class _SentenceGameScreenState extends State<SentenceGameScreen> {
 
                         const SizedBox(width: 10),
 
-                        // Progress bar
                         Expanded(
                           child: KidsProgressBar(
                             current: currentIndex + 1,
@@ -138,24 +166,21 @@ class _SentenceGameScreenState extends State<SentenceGameScreen> {
                     const SizedBox(height: 20),
 
                     // Question label
-                    Row(
-                      children: const [
-                        SizedBox(width: 10),
-                        Flexible(
-                          child: Text(
-                            "Arrange them into the correct sentence!",
-                            style: TextStyle(
-                              fontSize: 26,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.highlightColor,
-                            ),
-                          ),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 10),
+                      child: Text(
+                        "Arrange them into the correct sentence!",
+                        style: TextStyle(
+                          fontSize: 26,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.highlightColor,
                         ),
-                      ],
+                      ),
                     ),
+
                     const SizedBox(height: 60),
 
-                    // word answer
+                    // answer zone
                     Expanded(
                       child: AnswerZone(
                         selectedWords: selectedWords,
@@ -180,7 +205,6 @@ class _SentenceGameScreenState extends State<SentenceGameScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Available words
                     Wrap(
                       spacing: 10,
                       runSpacing: 10,
@@ -194,7 +218,6 @@ class _SentenceGameScreenState extends State<SentenceGameScreen> {
                       }),
                     ),
 
-                    // Check button
                     CheckButton(
                       enabled: selectedWords.isNotEmpty,
                       onPressed: checkAnswer,
@@ -221,7 +244,7 @@ class _SentenceGameScreenState extends State<SentenceGameScreen> {
           BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 6),
         ],
       ),
-      margin: EdgeInsets.all(6),
+      margin: const EdgeInsets.all(6),
       child: IconButton(
         icon: Icon(icon, color: AppColors.highlightColor),
         onPressed: onPressed,

@@ -6,8 +6,9 @@ import 'compound_word_screen.dart';
 class ScoreScreen extends StatelessWidget {
   final int score;
   final int total;
+  final String setId;
 
-  const ScoreScreen({super.key, required this.score, required this.total});
+  const ScoreScreen({super.key, required this.score, required this.total, required this.setId});
 
   Widget _stars() {
     int starCount = 0;
@@ -147,7 +148,7 @@ class ScoreScreen extends StatelessWidget {
                       Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => const SentenceGameScreen(),
+                          builder: (_) => SentenceGameScreen(setId: setId),
                         ),
                       );
                     },
