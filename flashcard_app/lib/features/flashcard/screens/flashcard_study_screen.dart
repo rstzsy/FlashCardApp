@@ -2,7 +2,7 @@ import 'package:flashcard_app/core/themes/app_colors.dart';
 import 'package:flutter/material.dart';
 import '../../../core/widgets/app_popup.dart';
 import '../../../models/flashcardModel.dart';
-import '../../exercise/screens/compound_word_screen.dart';
+import '../../exercise/screens/intro_exercise_screen.dart';
 import '../controllers/flashcard_study_controller.dart';
 import '../widgets/flashcard_study_card.dart';
 import '../widgets/flashcard_study_control.dart';
@@ -15,7 +15,8 @@ class FlashcardStudyScreen extends StatefulWidget {
   const FlashcardStudyScreen({super.key, required this.setId});
 
   @override
-  State<FlashcardStudyScreen> createState() => _FlashcardStudyScreenState();
+  State<FlashcardStudyScreen> createState() =>
+      _FlashcardStudyScreenState();
 }
 
 class _FlashcardStudyScreenState extends State<FlashcardStudyScreen> {
@@ -34,7 +35,7 @@ class _FlashcardStudyScreenState extends State<FlashcardStudyScreen> {
   void _loadData() {
     setState(() {
       futureCards = controller.getFlashcardsBySetId(widget.setId);
-      currentIndex = 0; // reset first card
+      currentIndex = 0;
     });
   }
 
@@ -66,6 +67,17 @@ class _FlashcardStudyScreenState extends State<FlashcardStudyScreen> {
     }
   }
 
+  void goToPractice() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => IntroExerciseScreen(
+          setId: widget.setId, 
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -73,28 +85,34 @@ class _FlashcardStudyScreenState extends State<FlashcardStudyScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            FlashcardStudyHeader(setId: widget.setId, onReload: _loadData),
+            FlashcardStudyHeader(
+              setId: widget.setId,
+              onReload: _loadData,
+            ),
 
-            // load data
             Expanded(
               child: FutureBuilder<List<FlashcardModel>>(
                 future: futureCards,
                 builder: (context, snapshot) {
                   // loading
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
+                  if (snapshot.connectionState ==
+                      ConnectionState.waiting) {
+                    return const Center(
+                        child: CircularProgressIndicator());
                   }
 
                   // error
                   if (snapshot.hasError) {
-                    return Center(child: Text("Error: ${snapshot.error}"));
+                    return Center(
+                        child: Text("Error: ${snapshot.error}"));
                   }
 
                   final flashcards = snapshot.data ?? [];
 
                   // empty
                   if (flashcards.isEmpty) {
-                    return const Center(child: Text("No flashcards found"));
+                    return const Center(
+                        child: Text("No flashcards found"));
                   }
 
                   final flashcard = flashcards[currentIndex];
@@ -120,7 +138,8 @@ class _FlashcardStudyScreenState extends State<FlashcardStudyScreen> {
                         const SizedBox(height: 16),
 
                         FlashcardStudyControls(
-                          onNext: () => nextCard(flashcards.length),
+                          onNext: () =>
+                              nextCard(flashcards.length),
                           onBack: prevCard,
                         ),
 
@@ -130,18 +149,13 @@ class _FlashcardStudyScreenState extends State<FlashcardStudyScreen> {
                           width: double.infinity,
                           height: 55,
                           child: ElevatedButton(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const SentenceGameScreen(),
-                                ),
-                              );
-                            },
+                            onPressed: goToPractice, 
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFF7D6D5),
+                              backgroundColor:
+                                  const Color(0xFFF7D6D5),
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(30),
+                                borderRadius:
+                                    BorderRadius.circular(30),
                               ),
                             ),
                             child: const Text(
