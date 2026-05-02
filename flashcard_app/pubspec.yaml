@@ -45,6 +45,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   cloud_firestore: ^5.6.12
   provider: ^6.1.5+1
+  flame: ^1.37.0
 
 dev_dependencies:
   flutter_test:
@@ -71,4 +72,5 @@ flutter:
     - assets/achievement/
     - assets/account/
     - assets/game/
+    - assets/game/player/idle/
     - assets/game/intro_story_popup1.png
