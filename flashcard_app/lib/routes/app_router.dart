@@ -8,7 +8,6 @@ import '../features/auth/screens/login_screen.dart';
 import 'package:flashcard_app/features/auth/screens/intro_home_screen.dart';
 import '../features/group/screens/group_dashboard_screen.dart';
 import '../features/group/screens/group_list_screen.dart';
-import '../features/exercise/screens/fertilizer_challenge_screen.dart';
 import 'app_routes.dart';
 import 'package:flashcard_app/routes/main_navigation.dart';
 
@@ -39,9 +38,6 @@ class AppRouter {
       
       case AppRoutes.introGameScreen:
         return MaterialPageRoute(builder: (context) => IntroGameScreen(onBack: () => Navigator.pop(context)));
-
-      case AppRoutes.fertilizerChallenge:
-        return MaterialPageRoute(builder: (_) => const FertilizerChallengeScreen());
 
       case AppRoutes.groupDashboard:
         return MaterialPageRoute(builder: (_) => const GroupDashboard());

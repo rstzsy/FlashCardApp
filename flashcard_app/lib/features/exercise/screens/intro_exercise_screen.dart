@@ -74,7 +74,7 @@ class IntroExerciseScreen extends StatelessWidget {
                         label: 'Words\nFilling Game',
                         onTap: () => _push(
                           context,
-                          const FertilizerChallengeScreen(),
+                          FertilizerChallengeScreen(setId: setId),
                         ),
                       ),
                     ),
