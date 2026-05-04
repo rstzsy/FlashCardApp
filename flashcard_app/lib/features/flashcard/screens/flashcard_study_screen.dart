@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import '../../../core/widgets/app_popup.dart';
 import '../../../models/flashcardModel.dart';
 import '../../exercise/screens/intro_exercise_screen.dart';
+import '../../game/services/word_garden_service.dart';
 import '../controllers/flashcard_study_controller.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../widgets/flashcard_study_card.dart';
 import '../widgets/flashcard_study_control.dart';
 import '../widgets/flashcard_study_footer.dart';
@@ -15,8 +17,7 @@ class FlashcardStudyScreen extends StatefulWidget {
   const FlashcardStudyScreen({super.key, required this.setId});
 
   @override
-  State<FlashcardStudyScreen> createState() =>
-      _FlashcardStudyScreenState();
+  State<FlashcardStudyScreen> createState() => _FlashcardStudyScreenState();
 }
 
 class _FlashcardStudyScreenState extends State<FlashcardStudyScreen> {
@@ -39,14 +40,25 @@ class _FlashcardStudyScreenState extends State<FlashcardStudyScreen> {
     });
   }
 
-  void nextCard(int total) {
+  void nextCard(int total) async {
     if (currentIndex < total - 1) {
       setState(() => currentIndex++);
-    } else {
+    } 
+    else {
+      // create seed
+      final user = FirebaseAuth.instance.currentUser;
+
+      if (user != null) {
+        await WordGardenService().createTree(
+          userId: user.uid,
+          setId: widget.setId,
+        );
+      }
+
       AppPopup.show(
         context: context,
         title: "Congratulation!",
-        message: "You studied all flashcards",
+        message: "You studied all flashcards and get a seed for your word garden!",
         iconWidget: Image.asset(
           'assets/component/trophy1.png',
           width: 150,
@@ -71,9 +83,7 @@ class _FlashcardStudyScreenState extends State<FlashcardStudyScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => IntroExerciseScreen(
-          setId: widget.setId, 
-        ),
+        builder: (_) => IntroExerciseScreen(setId: widget.setId),
       ),
     );
   }
@@ -85,34 +95,27 @@ class _FlashcardStudyScreenState extends State<FlashcardStudyScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            FlashcardStudyHeader(
-              setId: widget.setId,
-              onReload: _loadData,
-            ),
+            FlashcardStudyHeader(setId: widget.setId, onReload: _loadData),
 
             Expanded(
               child: FutureBuilder<List<FlashcardModel>>(
                 future: futureCards,
                 builder: (context, snapshot) {
                   // loading
-                  if (snapshot.connectionState ==
-                      ConnectionState.waiting) {
-                    return const Center(
-                        child: CircularProgressIndicator());
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
                   }
 
                   // error
                   if (snapshot.hasError) {
-                    return Center(
-                        child: Text("Error: ${snapshot.error}"));
+                    return Center(child: Text("Error: ${snapshot.error}"));
                   }
 
                   final flashcards = snapshot.data ?? [];
 
                   // empty
                   if (flashcards.isEmpty) {
-                    return const Center(
-                        child: Text("No flashcards found"));
+                    return const Center(child: Text("No flashcards found"));
                   }
 
                   final flashcard = flashcards[currentIndex];
@@ -138,8 +141,7 @@ class _FlashcardStudyScreenState extends State<FlashcardStudyScreen> {
                         const SizedBox(height: 16),
 
                         FlashcardStudyControls(
-                          onNext: () =>
-                              nextCard(flashcards.length),
+                          onNext: () => nextCard(flashcards.length),
                           onBack: prevCard,
                         ),
 
@@ -149,13 +151,11 @@ class _FlashcardStudyScreenState extends State<FlashcardStudyScreen> {
                           width: double.infinity,
                           height: 55,
                           child: ElevatedButton(
-                            onPressed: goToPractice, 
+                            onPressed: goToPractice,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor:
-                                  const Color(0xFFF7D6D5),
+                              backgroundColor: const Color(0xFFF7D6D5),
                               shape: RoundedRectangleBorder(
-                                borderRadius:
-                                    BorderRadius.circular(30),
+                                borderRadius: BorderRadius.circular(30),
                               ),
                             ),
                             child: const Text(
