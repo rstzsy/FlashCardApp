@@ -166,6 +166,8 @@ class FertilizerService {
         starCount = 1;
       }
 
+      int fertilizerReward = starCount >= 2 ? 1 : 0;
+
       await doc.set({
         'ResultId': doc.id,
         'UserId': userId,
@@ -175,6 +177,7 @@ class FertilizerService {
         'Score': score,
         'Total': total,
         'StarCount': starCount,
+        'FertilizerReward': fertilizerReward,
         'Accuracy': accuracy,
         'TimeSpentSeconds': timeSpentSeconds,
         'CompletedAt': FieldValue.serverTimestamp(),
