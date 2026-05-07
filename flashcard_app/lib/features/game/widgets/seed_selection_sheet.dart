@@ -1,7 +1,3 @@
-// lib/features/game/widgets/seed_selection_sheet.dart
-//
-// Flow: Bấm dot (+) → sheet mở → chọn seed → bấm "Trồng" → đóng sheet → cây xuất hiện
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flashcard_app/features/game/models/garden_models.dart';

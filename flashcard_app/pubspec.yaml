@@ -74,3 +74,5 @@ flutter:
     - assets/game/
     - assets/game/player/idle/
     - assets/game/intro_story_popup1.png
+    - assets/game/tree/
+    - assets/game/fertilizer.png

@@ -5,6 +5,7 @@ import 'package:flashcard_app/features/game/models/garden_models.dart';
 import 'package:flashcard_app/features/game/widgets/draggable_seed_tray.dart';
 import 'package:flashcard_app/features/game/widgets/player_game.dart';
 import 'package:flashcard_app/features/game/screens/shop_game_screen.dart';
+import 'package:flashcard_app/features/game/widgets/garden_tool_tray.dart';
 import 'package:flutter/material.dart';
 
 class HomeGameScreen extends StatefulWidget {
@@ -18,10 +19,15 @@ class _HomeGameScreenState extends State<HomeGameScreen> {
   final PlayerGame _playerGame = PlayerGame();
   int? _selectedPlotIndex;
 
+  // ── Garden plots ───────────────────────────────────────────────────────────
   late final List<GardenPlot> _plots =
       List.generate(9, (i) => GardenPlot(plotIndex: i));
 
-  // ── Add imagePath to every SeedItem ──────────────────────────────────────
+  // ── Tool inventory (nhận từ server / quest rewards) ────────────────────────
+  int _waterCount = 12;
+  int _fertilizerCount = 5;
+
+  // ── Seeds ──────────────────────────────────────────────────────────────────
   final List<SeedItem> _availableSeeds = [
     SeedItem(
       setId: 'set_001', title: 'Animals', subtitle: 'Nature',
@@ -56,7 +62,7 @@ class _HomeGameScreenState extends State<HomeGameScreen> {
       subtitle: s.subtitle,
       totalCards: s.totalCards,
       difficulty: s.difficulty,
-      imagePath: s.imagePath, // ← carry imagePath through
+      imagePath: s.imagePath,
       alreadyPlanted: planted.contains(s.setId),
     )).toList();
   }
@@ -64,18 +70,54 @@ class _HomeGameScreenState extends State<HomeGameScreen> {
   List<SeedItem> get _plantableSeeds =>
       _seedsWithStatus.where((s) => !s.alreadyPlanted).toList();
 
+  // ── Plot interactions ──────────────────────────────────────────────────────
+
   void _onPlotTapped(int i) {
+    // Chỉ mở tray chọn hạt giống khi ô đất trống
     if (_plots[i].status == PlotStatus.empty) {
       setState(() => _selectedPlotIndex = i);
-    } else {
-      _showCareOptions(i);
     }
+    // Ô đã trồng: không cần mở bottom sheet nữa
+    // — người dùng dùng tool tray để tưới/bón trực tiếp
   }
 
   void _onSeedDropped(int i, SeedItem seed) {
     if (!seed.alreadyPlanted) {
       _plantSeed(i, seed);
       setState(() => _selectedPlotIndex = null);
+    }
+  }
+
+  /// Xử lý khi người dùng thả tool vào ô cây
+  void _onToolDropped(int plotIndex, GardenTool tool) {
+    final plot = _plots[plotIndex];
+    if (plot.status != PlotStatus.planted) return;
+
+    switch (tool) {
+      case GardenTool.water:
+        if (_waterCount <= 0) {
+          _showToast('Hết nước rồi! 💧', const Color(0xFF0288D1));
+          return;
+        }
+        setState(() {
+          _waterCount--;
+          _plots[plotIndex].lastWatered = DateTime.now();
+          _plots[plotIndex].canFertilize = true;
+        });
+        _showToast('Đã tưới "${plot.setTitle}" 💧', const Color(0xFF0288D1));
+
+      case GardenTool.fertilizer:
+        if (_fertilizerCount <= 0) {
+          _showToast('Hết phân bón rồi! 🌿', const Color(0xFF388E3C));
+          return;
+        }
+        setState(() {
+          _fertilizerCount--;
+          // Bón phân tăng trưởng nhanh hơn
+          _plots[plotIndex].growthStage =
+              (_plots[plotIndex].growthStage + 1).clamp(0, 5);
+        });
+        _showToast('Đã bón phân "${plot.setTitle}" 🌿', const Color(0xFF388E3C));
     }
   }
 
@@ -89,68 +131,22 @@ class _HomeGameScreenState extends State<HomeGameScreen> {
         ..growthStage = 0
         ..lastWatered = DateTime.now();
     });
+    _showToast('Đã trồng "${seed.title}" 🌱', const Color(0xFF558B2F));
+  }
+
+  void _showToast(String message, Color color) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text('Planted "${seed.title}" 🌱',
+      content: Text(message,
           style: const TextStyle(fontWeight: FontWeight.w600)),
-      backgroundColor: const Color(0xFF558B2F),
+      backgroundColor: color,
       behavior: SnackBarBehavior.floating,
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 80),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       duration: const Duration(seconds: 2),
     ));
   }
 
-  void _showCareOptions(int i) {
-    final plot = _plots[i];
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (_) => Container(
-        decoration: const BoxDecoration(
-          color: Color(0xFFFFF8EC),
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        padding: const EdgeInsets.all(24),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Container(
-            width: 40, height: 4,
-            decoration: BoxDecoration(
-              color: const Color(0xFFD4B896),
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          const SizedBox(height: 20),
-          Text(
-            plot.setTitle ?? 'Vocab Plant',
-            style: const TextStyle(
-              fontSize: 18, fontWeight: FontWeight.w700,
-              color: Color(0xFF5D4037),
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'Stage ${plot.growthStage}/5',
-            style: const TextStyle(fontSize: 13, color: Color(0xFF9E9E9E)),
-          ),
-          const SizedBox(height: 20),
-          Row(children: [
-            Expanded(child: _CareBtn(
-              emoji: '💧', label: 'Water',
-              color: const Color(0xFF29B6F6),
-              onTap: () => Navigator.pop(context),
-            )),
-            const SizedBox(width: 12),
-            Expanded(child: _CareBtn(
-              emoji: '🌿', label: 'Fertilize',
-              color: const Color(0xFF66BB6A),
-              onTap: () => Navigator.pop(context),
-            )),
-          ]),
-          const SizedBox(height: 12),
-        ]),
-      ),
-    );
-  }
+  // ── Build ──────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
@@ -160,7 +156,7 @@ class _HomeGameScreenState extends State<HomeGameScreen> {
     return Scaffold(
       body: Stack(children: [
 
-        // ── Background ──────────────────────────────────────────────────────
+        // ── Background ────────────────────────────────────────────────────────
         Container(decoration: const BoxDecoration(
           image: DecorationImage(
             image: AssetImage('assets/game/home_game_bg.png'),
@@ -168,7 +164,7 @@ class _HomeGameScreenState extends State<HomeGameScreen> {
           ),
         )),
 
-        // ── Tap background to close tray ────────────────────────────────────
+        // ── Tap background to close seed tray ────────────────────────────────
         if (trayOpen)
           Positioned.fill(
             child: GestureDetector(
@@ -177,14 +173,15 @@ class _HomeGameScreenState extends State<HomeGameScreen> {
             ),
           ),
 
-        // ── Garden plots ─────────────────────────────────────────────────────
+        // ── Garden plots (nhận cả seed drop + tool drop) ──────────────────────
         DroppableGardenPlots(
           plots: _plots,
           onPlotTapped: _onPlotTapped,
           onSeedDropped: _onSeedDropped,
+          onToolDropped: _onToolDropped,   // ← MỚI
         ),
 
-        // ── Player character ─────────────────────────────────────────────────
+        // ── Player character ──────────────────────────────────────────────────
         Positioned(
           left: 0, right: 20, bottom: size.height * 0.16,
           child: Center(
@@ -208,7 +205,7 @@ class _HomeGameScreenState extends State<HomeGameScreen> {
           ),
         ),
 
-        // ── Back button ──────────────────────────────────────────────────────
+        // ── Back button ───────────────────────────────────────────────────────
         Positioned(
           top: MediaQuery.of(context).padding.top + 14, left: 18,
           child: GestureDetector(
@@ -218,7 +215,15 @@ class _HomeGameScreenState extends State<HomeGameScreen> {
           ),
         ),
 
-        // ── Planting tray – slides up when a plot is tapped ──────────────────
+        // ── Tool Tray — bình tưới & phân bón (luôn hiển thị) ─────────────────
+        // Ẩn khi seed tray đang mở để tránh chồng UI
+        if (!trayOpen)
+          GardenToolTray(
+            waterCount: _waterCount,
+            fertilizerCount: _fertilizerCount,
+          ),
+
+        // ── Seed planting tray (slides up khi chọn ô trống) ──────────────────
         AnimatedPositioned(
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeOutCubic,
@@ -237,7 +242,7 @@ class _HomeGameScreenState extends State<HomeGameScreen> {
           ),
         ),
 
-        // ── Bottom nav ───────────────────────────────────────────────────────
+        // ── Bottom nav ────────────────────────────────────────────────────────
         AnimatedPositioned(
           duration: const Duration(milliseconds: 250),
           curve: Curves.easeOutCubic,
@@ -263,35 +268,4 @@ class _HomeGameScreenState extends State<HomeGameScreen> {
       ]),
     );
   }
-}
-
-class _CareBtn extends StatelessWidget {
-  final String emoji, label;
-  final Color color;
-  final VoidCallback onTap;
-
-  const _CareBtn({
-    required this.emoji, required this.label,
-    required this.color, required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext ctx) => GestureDetector(
-    onTap: onTap,
-    child: Container(
-      padding: const EdgeInsets.symmetric(vertical: 14),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: color.withOpacity(0.35)),
-      ),
-      child: Column(children: [
-        Text(emoji, style: const TextStyle(fontSize: 26)),
-        const SizedBox(height: 4),
-        Text(label, style: TextStyle(
-          fontSize: 13, fontWeight: FontWeight.w600, color: color,
-        )),
-      ]),
-    ),
-  );
 }
