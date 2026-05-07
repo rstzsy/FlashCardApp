@@ -113,6 +113,8 @@ class CompoundWordService {
         starCount = 1;
       }
 
+      int waterReward = starCount >= 2 ? 1 : 0;
+
       await doc.set({
         'ResultId': doc.id,
         'UserId': userId,
@@ -121,6 +123,7 @@ class CompoundWordService {
         'Score': score,
         'Total': total,
         'StarCount': starCount,
+        'WaterReward': waterReward, 
         'Accuracy': accuracy,
         'TimeSpentSeconds': timeSpentSeconds,
         'CompletedAt': FieldValue.serverTimestamp(),
