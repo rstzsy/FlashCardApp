@@ -1,6 +1,7 @@
 // lib/features/game/screens/home_game_screen.dart
 
 import 'package:flame/game.dart';
+import 'package:flashcard_app/features/game/data/shop_data.dart';         // ← MỚI
 import 'package:flashcard_app/features/game/models/garden_models.dart';
 import 'package:flashcard_app/features/game/widgets/draggable_seed_tray.dart';
 import 'package:flashcard_app/features/game/widgets/player_game.dart';
@@ -23,33 +24,13 @@ class _HomeGameScreenState extends State<HomeGameScreen> {
   late final List<GardenPlot> _plots =
       List.generate(9, (i) => GardenPlot(plotIndex: i));
 
-  // ── Tool inventory (nhận từ server / quest rewards) ────────────────────────
+  // ── Tool inventory ─────────────────────────────────────────────────────────
   int _waterCount = 12;
   int _fertilizerCount = 5;
 
-  // ── Seeds ──────────────────────────────────────────────────────────────────
-  final List<SeedItem> _availableSeeds = [
-    SeedItem(
-      setId: 'set_001', title: 'Animals', subtitle: 'Nature',
-      totalCards: 20, difficulty: 'Easy',
-      imagePath: 'assets/game/tulip.png',
-    ),
-    SeedItem(
-      setId: 'set_002', title: 'Business', subtitle: 'Commerce',
-      totalCards: 30, difficulty: 'Hard',
-      imagePath: 'assets/game/rose.png',
-    ),
-    SeedItem(
-      setId: 'set_003', title: 'Daily Talk', subtitle: 'Conversation',
-      totalCards: 15, difficulty: 'Medium',
-      imagePath: 'assets/game/lotus.png',
-    ),
-    SeedItem(
-      setId: 'set_004', title: 'Travel', subtitle: 'Tourism',
-      totalCards: 25, difficulty: 'Medium',
-      imagePath: 'assets/game/Frangipani.png',
-    ),
-  ];
+  // ── Seeds: lấy từ shop_data thay vì hardcode ──────────────────────────────
+  // unlockedSeeds() trả về đúng các cây đang mở trong Shop
+  List<SeedItem> get _availableSeeds => unlockedSeeds();
 
   List<SeedItem> get _seedsWithStatus {
     final planted = _plots
@@ -73,12 +54,9 @@ class _HomeGameScreenState extends State<HomeGameScreen> {
   // ── Plot interactions ──────────────────────────────────────────────────────
 
   void _onPlotTapped(int i) {
-    // Chỉ mở tray chọn hạt giống khi ô đất trống
     if (_plots[i].status == PlotStatus.empty) {
       setState(() => _selectedPlotIndex = i);
     }
-    // Ô đã trồng: không cần mở bottom sheet nữa
-    // — người dùng dùng tool tray để tưới/bón trực tiếp
   }
 
   void _onSeedDropped(int i, SeedItem seed) {
@@ -88,7 +66,6 @@ class _HomeGameScreenState extends State<HomeGameScreen> {
     }
   }
 
-  /// Xử lý khi người dùng thả tool vào ô cây
   void _onToolDropped(int plotIndex, GardenTool tool) {
     final plot = _plots[plotIndex];
     if (plot.status != PlotStatus.planted) return;
@@ -113,7 +90,6 @@ class _HomeGameScreenState extends State<HomeGameScreen> {
         }
         setState(() {
           _fertilizerCount--;
-          // Bón phân tăng trưởng nhanh hơn
           _plots[plotIndex].growthStage =
               (_plots[plotIndex].growthStage + 1).clamp(0, 5);
         });
@@ -156,7 +132,6 @@ class _HomeGameScreenState extends State<HomeGameScreen> {
     return Scaffold(
       body: Stack(children: [
 
-        // ── Background ────────────────────────────────────────────────────────
         Container(decoration: const BoxDecoration(
           image: DecorationImage(
             image: AssetImage('assets/game/home_game_bg.png'),
@@ -164,7 +139,6 @@ class _HomeGameScreenState extends State<HomeGameScreen> {
           ),
         )),
 
-        // ── Tap background to close seed tray ────────────────────────────────
         if (trayOpen)
           Positioned.fill(
             child: GestureDetector(
@@ -173,15 +147,13 @@ class _HomeGameScreenState extends State<HomeGameScreen> {
             ),
           ),
 
-        // ── Garden plots (nhận cả seed drop + tool drop) ──────────────────────
         DroppableGardenPlots(
           plots: _plots,
           onPlotTapped: _onPlotTapped,
           onSeedDropped: _onSeedDropped,
-          onToolDropped: _onToolDropped,   // ← MỚI
+          onToolDropped: _onToolDropped,
         ),
 
-        // ── Player character ──────────────────────────────────────────────────
         Positioned(
           left: 0, right: 20, bottom: size.height * 0.16,
           child: Center(
@@ -205,7 +177,6 @@ class _HomeGameScreenState extends State<HomeGameScreen> {
           ),
         ),
 
-        // ── Back button ───────────────────────────────────────────────────────
         Positioned(
           top: MediaQuery.of(context).padding.top + 14, left: 18,
           child: GestureDetector(
@@ -215,15 +186,12 @@ class _HomeGameScreenState extends State<HomeGameScreen> {
           ),
         ),
 
-        // ── Tool Tray — bình tưới & phân bón (luôn hiển thị) ─────────────────
-        // Ẩn khi seed tray đang mở để tránh chồng UI
         if (!trayOpen)
           GardenToolTray(
             waterCount: _waterCount,
             fertilizerCount: _fertilizerCount,
           ),
 
-        // ── Seed planting tray (slides up khi chọn ô trống) ──────────────────
         AnimatedPositioned(
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeOutCubic,
@@ -242,7 +210,6 @@ class _HomeGameScreenState extends State<HomeGameScreen> {
           ),
         ),
 
-        // ── Bottom nav ────────────────────────────────────────────────────────
         AnimatedPositioned(
           duration: const Duration(milliseconds: 250),
           curve: Curves.easeOutCubic,

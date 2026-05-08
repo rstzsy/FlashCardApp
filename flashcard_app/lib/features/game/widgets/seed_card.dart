@@ -1,4 +1,5 @@
 // lib/features/game/widgets/seed_card.dart
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flashcard_app/features/game/models/garden_models.dart';
 
@@ -54,7 +55,6 @@ class SeedCard extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  // ── Flower image – fixed ratio, always centered ──────────
                   Expanded(
                     flex: 5,
                     child: Center(
@@ -71,8 +71,6 @@ class SeedCard extends StatelessWidget {
                       ),
                     ),
                   ),
-
-                  // ── Title ────────────────────────────────────────────────
                   const SizedBox(height: 4),
                   Expanded(
                     flex: 2,
@@ -92,8 +90,6 @@ class SeedCard extends StatelessWidget {
                       ),
                     ),
                   ),
-
-                  // ── Card count badge ─────────────────────────────────────
                   Container(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 10, vertical: 3),
@@ -115,7 +111,6 @@ class SeedCard extends StatelessWidget {
               ),
             ),
 
-            // Badge: already planted
             if (isDisabled)
               Positioned(
                 top: 6,
@@ -140,7 +135,6 @@ class SeedCard extends StatelessWidget {
                 ),
               ),
 
-            // Checkmark when selected
             if (isSelected && !isDisabled)
               Positioned(
                 top: 6,
@@ -168,76 +162,206 @@ class SeedCard extends StatelessWidget {
 
 // ─── Ghost widget while dragging a seed ──────────────────────────────────────
 
-class SeedDragFeedback extends StatelessWidget {
+class SeedDragFeedback extends StatefulWidget {
   final SeedItem seed;
-
   const SeedDragFeedback({super.key, required this.seed});
+
+  @override
+  State<SeedDragFeedback> createState() => _SeedDragFeedbackState();
+}
+
+class _SeedDragFeedbackState extends State<SeedDragFeedback>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 2400),
+  )..repeat();
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 110,
-      height: 150,
+      width: 140,
+      height: 140,
       child: Stack(
         alignment: Alignment.center,
         children: [
-          // Outer glow shadow
-          Positioned(
-            bottom: 0,
-            child: Container(
-              width: 100,
-              height: 55,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(50),
-                gradient: RadialGradient(
-                  colors: [
-                    const Color(0xFF64B5F6).withOpacity(0.85),
-                    const Color(0xFF7E57C2).withOpacity(0.55),
-                    Colors.transparent,
-                  ],
-                  stops: const [0.0, 0.5, 1.0],
-                ),
+          // Kim cương trắng vàng rải nhiều lớp — vẽ trước ảnh hoa
+          AnimatedBuilder(
+            animation: _ctrl,
+            builder: (_, __) => SizedBox(
+              width: 140,
+              height: 140,
+              child: CustomPaint(
+                painter: _ScatteredDiamondPainter(progress: _ctrl.value),
               ),
             ),
           ),
-          // Inner highlight
-          Positioned(
-            bottom: 8,
-            child: Container(
-              width: 60,
-              height: 30,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(30),
-                gradient: RadialGradient(
-                  colors: [
-                    Colors.white.withOpacity(0.7),
-                    const Color(0xFF64B5F6).withOpacity(0.4),
-                    Colors.transparent,
-                  ],
-                ),
+
+          // Vệt trắng to đậm phía sau hoa
+          Container(
+            width: 130,
+            height: 100,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(70),
+              gradient: RadialGradient(
+                colors: [
+                  Colors.white.withOpacity(0.72),
+                  Colors.white.withOpacity(0.28),
+                  Colors.transparent,
+                ],
+                stops: const [0.0, 0.55, 1.0],
               ),
             ),
           ),
-          // Flower image – centered in drag ghost
-          Positioned(
-            top: 0,
-            left: 10,
-            right: 10,
-            child: Image.asset(
-              seed.imagePath ?? 'assets/game/tulip.png',
-              width: 90,
-              height: 90,
+
+          // Ảnh hoa — nằm trên tất cả
+          Image.asset(
+            widget.seed.imagePath ?? 'assets/game/tulip.png',
+            width: 82,
+            height: 82,
+            fit: BoxFit.contain,
+            errorBuilder: (_, __, ___) => Image.asset(
+              'assets/game/tulip.png',
+              width: 82,
+              height: 82,
               fit: BoxFit.contain,
-              errorBuilder: (_, __, ___) => Image.asset(
-                'assets/game/tulip.png',
-                width: 90,
-                height: 90,
-                fit: BoxFit.contain,
-              ),
             ),
           ),
         ],
       ),
     );
   }
+}
+
+// ─── Painter: kim cương trắng vàng rải 3 lớp xung quanh + đằng sau hoa ───────
+
+class _ScatteredDiamondPainter extends CustomPainter {
+  final double progress;
+
+  static const Color _starNear  = Color(0xFFFFFBE6); // trắng hơi vàng
+  static const Color _starMid   = Color(0xFFFFEDAA); // vàng nhạt
+  static const Color _glowColor = Color(0xFFFFD966); // vàng glow
+
+  static final List<_DiamondSeed> _seeds = _buildSeeds();
+
+  static List<_DiamondSeed> _buildSeeds() {
+    final rng = Random(42);
+    final list = <_DiamondSeed>[];
+
+    // Lớp 0: gần trung tâm — đằng sau cây, nhỏ mờ
+    for (int i = 0; i < 5; i++) {
+      list.add(_DiamondSeed(
+        angle: rng.nextDouble() * 2 * pi,
+        dist: 10.0 + rng.nextDouble() * 24.0,
+        size: 1.8 + rng.nextDouble() * 1.8,
+        speedMul: 0.5 + rng.nextDouble() * 0.5,
+        phaseOff: rng.nextDouble(),
+        layer: 0,
+      ));
+    }
+
+    // Lớp 1: giữa
+    for (int i = 0; i < 6; i++) {
+      list.add(_DiamondSeed(
+        angle: rng.nextDouble() * 2 * pi,
+        dist: 36.0 + rng.nextDouble() * 18.0,
+        size: 2.4 + rng.nextDouble() * 2.4,
+        speedMul: 0.7 + rng.nextDouble() * 0.6,
+        phaseOff: rng.nextDouble(),
+        layer: 1,
+      ));
+    }
+
+    // Lớp 2: ngoài — sáng hơn, lớn hơn
+    for (int i = 0; i < 4; i++) {
+      list.add(_DiamondSeed(
+        angle: rng.nextDouble() * 2 * pi,
+        dist: 56.0 + rng.nextDouble() * 10.0,
+        size: 3.2 + rng.nextDouble() * 2.2,
+        speedMul: 0.9 + rng.nextDouble() * 0.5,
+        phaseOff: rng.nextDouble(),
+        layer: 2,
+      ));
+    }
+
+    return list;
+  }
+
+  const _ScatteredDiamondPainter({required this.progress});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+
+    for (final s in _seeds) {
+      final rotSpeed = [0.12, 0.22, 0.32][s.layer];
+      final angle = s.angle + progress * rotSpeed * 2 * pi * s.speedMul;
+
+      final pos = Offset(
+        center.dx + s.dist * cos(angle),
+        center.dy + s.dist * sin(angle),
+      );
+
+      // Nhấp nháy
+      final blink = 0.5 + 0.5 * sin((progress * 2 * pi * 1.5) + s.phaseOff * 2 * pi);
+      final baseOpacity = [0.30, 0.52, 0.78][s.layer];
+      final opacity = (baseOpacity * (0.45 + 0.55 * blink)).clamp(0.10, 1.0);
+
+      final color = s.layer == 2 ? _starMid : _starNear;
+
+      // Glow
+      if (s.layer >= 1) {
+        canvas.drawCircle(
+          pos,
+          s.size * 1.6,
+          Paint()
+            ..color = _glowColor.withOpacity(opacity * 0.28)
+            ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4),
+        );
+      }
+
+      // Kim cương
+      _drawDiamond(canvas, pos, s.size,
+          Paint()
+            ..color = color.withOpacity(opacity)
+            ..style = PaintingStyle.fill);
+    }
+  }
+
+  void _drawDiamond(Canvas canvas, Offset c, double r, Paint paint) {
+    final path = Path()
+      ..moveTo(c.dx,            c.dy - r)
+      ..lineTo(c.dx + r * 0.45, c.dy)
+      ..lineTo(c.dx,            c.dy + r)
+      ..lineTo(c.dx - r * 0.45, c.dy)
+      ..close();
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(_ScatteredDiamondPainter old) => old.progress != progress;
+}
+
+class _DiamondSeed {
+  final double angle;
+  final double dist;
+  final double size;
+  final double speedMul;
+  final double phaseOff;
+  final int layer;
+
+  const _DiamondSeed({
+    required this.angle,
+    required this.dist,
+    required this.size,
+    required this.speedMul,
+    required this.phaseOff,
+    required this.layer,
+  });
 }

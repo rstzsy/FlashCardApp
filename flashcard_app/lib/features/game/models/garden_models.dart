@@ -57,31 +57,39 @@ class SeedItem {
   final bool alreadyPlanted;
   final String? imagePath;
 
-  SeedItem({
+  const SeedItem({
     required this.setId,
     required this.title,
     this.subtitle,
     required this.totalCards,
     required this.difficulty,
     this.alreadyPlanted = false,
-    this.imagePath, // ← required so no card ever falls back to emoji
+    this.imagePath,
   });
 
   String get difficultyLabel {
     switch (difficulty) {
-      case 'Easy':   return 'Easy';
-      case 'Medium': return 'Medium';
-      case 'Hard':   return 'Hard';
-      default:       return difficulty;
+      case 'Easy':
+        return 'Easy';
+      case 'Medium':
+        return 'Medium';
+      case 'Hard':
+        return 'Hard';
+      default:
+        return difficulty;
     }
   }
 
   Color get difficultyColor {
     switch (difficulty) {
-      case 'Easy':   return const Color(0xFF4CAF50);
-      case 'Medium': return const Color(0xFFFF9800);
-      case 'Hard':   return const Color(0xFFE53935);
-      default:       return const Color(0xFF9E9E9E);
+      case 'Easy':
+        return const Color(0xFF4CAF50);
+      case 'Medium':
+        return const Color(0xFFFF9800);
+      case 'Hard':
+        return const Color(0xFFE53935);
+      default:
+        return const Color(0xFF9E9E9E);
     }
   }
 }

@@ -9,6 +9,7 @@
 import 'package:flutter/material.dart';
 import 'package:flashcard_app/features/game/models/garden_models.dart';
 import 'package:flashcard_app/features/game/widgets/seed_selection_sheet.dart';
+import 'package:flashcard_app/features/game/widgets/cute_notification_dialog.dart';
 
 // ─── Palette ──────────────────────────────────────────────────────────────────
 class _C {
@@ -641,28 +642,26 @@ class _PlantCard extends StatelessWidget {
     else if (item.isUnlockedNoSeed) _studyDialog(ctx);
   }
 
-  void _lockedDialog(BuildContext ctx) => showDialog(context: ctx,
-    builder: (_) => _FlowerDialog(
-      icon: '🔒', title: 'Locked',
-      body: 'Complete this flashcard set to unlock "${item.name}":',
-      setTitle: item.requiredSetTitle,
-      setBg: _C.purpleLight, setBorder: const Color(0xFFCE93D8),
-      setTitleColor: const Color(0xFF6A1B9A),
-      setSub: 'View all cards + pass the quiz', setSubColor: _C.purple,
-      onStudy: () => Navigator.pop(ctx),
-    ),
+  void _lockedDialog(BuildContext ctx) => CuteNotificationDialog.show(
+    context: ctx,
+    icon: '🔒', title: 'Locked',
+    body: 'Complete this flashcard set to unlock "${item.name}":',
+    setTitle: item.requiredSetTitle,
+    setBg: _C.purpleLight, setBorder: const Color(0xFFCE93D8),
+    setTitleColor: const Color(0xFF6A1B9A),
+    setSub: 'View all cards + pass the quiz', setSubColor: _C.purple,
+    onStudy: () => Navigator.pop(ctx),
   );
 
-  void _studyDialog(BuildContext ctx) => showDialog(context: ctx,
-    builder: (_) => _FlowerDialog(
-      icon: '🌱', title: item.name,
-      body: 'Unlocked! Complete the set below to receive a seed 🌟',
-      setTitle: item.requiredSetTitle,
-      setBg: _C.greenLight, setBorder: _C.greenBdr,
-      setTitleColor: const Color(0xFF2E7D32),
-      setSub: 'Complete → get seed → plant', setSubColor: _C.textGreen,
-      onStudy: () => Navigator.pop(ctx),
-    ),
+  void _studyDialog(BuildContext ctx) => CuteNotificationDialog.show(
+    context: ctx,
+    icon: '🌱', title: item.name,
+    body: 'Unlocked! Complete the set below to receive a seed 🌟',
+    setTitle: item.requiredSetTitle,
+    setBg: _C.greenLight, setBorder: _C.greenBdr,
+    setTitleColor: const Color(0xFF2E7D32),
+    setSub: 'Complete → get seed → plant', setSubColor: _C.textGreen,
+    onStudy: () => Navigator.pop(ctx),
   );
 
   void _plantSheet(BuildContext ctx) {
