@@ -50,13 +50,10 @@ class PlayerGame extends FlameGame {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 
 class _BounceEffect extends Component with HasGameRef {
   final double baseX;
   final double baseY;
-
-  // ── Physics ───────────────────────────────────────────────────────────────
   static const double _jumpForce = -320.0;
   static const double _gravity   = 850.0;
   static const double _maxJump   = 70.0;
@@ -64,15 +61,12 @@ class _BounceEffect extends Component with HasGameRef {
   double _vy      = 0;
   double _offsetY = 0;
   bool   _jumping = false;
-
-  // ── Squash & Stretch ──────────────────────────────────────────────────────
   double _scaleX = 1.0;
   double _scaleY = 1.0;
 
-  // ── Idle bob ──────────────────────────────────────────────────────────────
   double _idleTime = 0;
-  static const double _bobAmp   = 1.8; // nhẹ hơn, trông tự nhiên hơn
-  static const double _bobSpeed = 0.9; // chậm hơn, như thở
+  static const double _bobAmp   = 1.8; 
+  static const double _bobSpeed = 0.9; 
 
   _BounceEffect({required this.baseX, required this.baseY});
 
@@ -80,7 +74,6 @@ class _BounceEffect extends Component with HasGameRef {
     if (_jumping) return;
     _vy      = _jumpForce;
     _jumping = true;
-    // Squash ngang khi bắt đầu bật
     _scaleX = 1.25;
     _scaleY = 0.78;
   }
@@ -99,18 +92,15 @@ class _BounceEffect extends Component with HasGameRef {
         _vy      = 0;
       }
 
-      // Bay lên → kéo dài dọc
       if (_vy < 0) {
         _scaleX = _lerp(_scaleX, 0.88, dt * 14);
         _scaleY = _lerp(_scaleY, 1.18, dt * 14);
       }
-      // Rơi xuống → thu về bình thường
       else {
         _scaleX = _lerp(_scaleX, 1.0, dt * 10);
         _scaleY = _lerp(_scaleY, 1.0, dt * 10);
       }
 
-      // Chạm đất → squash dọc rồi bật về
       if (_offsetY >= 0) {
         _offsetY = 0;
         _vy      = 0;
@@ -120,11 +110,8 @@ class _BounceEffect extends Component with HasGameRef {
       }
 
     } else {
-      // ── Idle: thở nhẹ lên xuống ───────────────────────────────────────
       _idleTime += dt;
       _offsetY   = sin(_idleTime * _bobSpeed * pi * 2) * _bobAmp;
-
-      // Phục hồi scale mượt sau squash
       _scaleX = _lerp(_scaleX, 1.0, dt * 16);
       _scaleY = _lerp(_scaleY, 1.0, dt * 16);
     }

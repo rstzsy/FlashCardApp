@@ -1,9 +1,7 @@
-// lib/features/game/widgets/seed_card.dart
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flashcard_app/features/game/models/garden_models.dart';
 
-// ─── Seed card (flower / plant) ──────────────────────────────────────────────
 
 class SeedCard extends StatelessWidget {
   final SeedItem seed;
@@ -160,7 +158,6 @@ class SeedCard extends StatelessWidget {
   }
 }
 
-// ─── Ghost widget while dragging a seed ──────────────────────────────────────
 
 class SeedDragFeedback extends StatefulWidget {
   final SeedItem seed;
@@ -191,7 +188,6 @@ class _SeedDragFeedbackState extends State<SeedDragFeedback>
       child: Stack(
         alignment: Alignment.center,
         children: [
-          // Kim cương trắng vàng rải nhiều lớp — vẽ trước ảnh hoa
           AnimatedBuilder(
             animation: _ctrl,
             builder: (_, __) => SizedBox(
@@ -203,7 +199,6 @@ class _SeedDragFeedbackState extends State<SeedDragFeedback>
             ),
           ),
 
-          // Vệt trắng to đậm phía sau hoa
           Container(
             width: 130,
             height: 100,
@@ -220,7 +215,6 @@ class _SeedDragFeedbackState extends State<SeedDragFeedback>
             ),
           ),
 
-          // Ảnh hoa — nằm trên tất cả
           Image.asset(
             widget.seed.imagePath ?? 'assets/game/tulip.png',
             width: 82,
@@ -239,7 +233,6 @@ class _SeedDragFeedbackState extends State<SeedDragFeedback>
   }
 }
 
-// ─── Painter: kim cương trắng vàng rải 3 lớp xung quanh + đằng sau hoa ───────
 
 class _ScatteredDiamondPainter extends CustomPainter {
   final double progress;
@@ -254,7 +247,6 @@ class _ScatteredDiamondPainter extends CustomPainter {
     final rng = Random(42);
     final list = <_DiamondSeed>[];
 
-    // Lớp 0: gần trung tâm — đằng sau cây, nhỏ mờ
     for (int i = 0; i < 5; i++) {
       list.add(_DiamondSeed(
         angle: rng.nextDouble() * 2 * pi,
@@ -266,7 +258,6 @@ class _ScatteredDiamondPainter extends CustomPainter {
       ));
     }
 
-    // Lớp 1: giữa
     for (int i = 0; i < 6; i++) {
       list.add(_DiamondSeed(
         angle: rng.nextDouble() * 2 * pi,
@@ -278,7 +269,6 @@ class _ScatteredDiamondPainter extends CustomPainter {
       ));
     }
 
-    // Lớp 2: ngoài — sáng hơn, lớn hơn
     for (int i = 0; i < 4; i++) {
       list.add(_DiamondSeed(
         angle: rng.nextDouble() * 2 * pi,
@@ -308,14 +298,12 @@ class _ScatteredDiamondPainter extends CustomPainter {
         center.dy + s.dist * sin(angle),
       );
 
-      // Nhấp nháy
       final blink = 0.5 + 0.5 * sin((progress * 2 * pi * 1.5) + s.phaseOff * 2 * pi);
       final baseOpacity = [0.30, 0.52, 0.78][s.layer];
       final opacity = (baseOpacity * (0.45 + 0.55 * blink)).clamp(0.10, 1.0);
 
       final color = s.layer == 2 ? _starMid : _starNear;
 
-      // Glow
       if (s.layer >= 1) {
         canvas.drawCircle(
           pos,
@@ -326,7 +314,6 @@ class _ScatteredDiamondPainter extends CustomPainter {
         );
       }
 
-      // Kim cương
       _drawDiamond(canvas, pos, s.size,
           Paint()
             ..color = color.withOpacity(opacity)

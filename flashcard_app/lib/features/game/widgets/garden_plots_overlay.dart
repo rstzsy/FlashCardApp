@@ -1,18 +1,16 @@
-// lib/features/game/widgets/garden_plots_overlay.dart
-
 import 'package:flutter/material.dart';
 import 'package:flashcard_app/features/game/models/garden_models.dart';
 
 const List<_Anchor> _kAnchors = [
-  _Anchor(cx: 0.500, cy: 0.495),
-  _Anchor(cx: 0.330, cy: 0.540),
-  _Anchor(cx: 0.670, cy: 0.540),
-  _Anchor(cx: 0.150, cy: 0.585),
-  _Anchor(cx: 0.520, cy: 0.580),
+  _Anchor(cx: 0.500, cy: 0.510),
+  _Anchor(cx: 0.330, cy: 0.555),
+  _Anchor(cx: 0.670, cy: 0.550),
+  _Anchor(cx: 0.150, cy: 0.595),
+  _Anchor(cx: 0.520, cy: 0.570),
   _Anchor(cx: 0.885, cy: 0.575),
-  _Anchor(cx: 0.320, cy: 0.630),
-  _Anchor(cx: 0.720, cy: 0.620),
-  _Anchor(cx: 0.500, cy: 0.675),
+  _Anchor(cx: 0.320, cy: 0.625),
+  _Anchor(cx: 0.720, cy: 0.625),
+  _Anchor(cx: 0.520, cy: 0.685),
 ];
 
 class _Anchor {
@@ -20,8 +18,8 @@ class _Anchor {
   const _Anchor({required this.cx, required this.cy});
 }
 
-const double _kTapW = 0.16;
-const double _kTapH = 0.09;
+const double _kTapW = 0.20;
+const double _kTapH = 0.12;
 
 const List<String> _kStageAssets = [
   'assets/game/tree/stage_0.png',
@@ -32,9 +30,8 @@ const List<String> _kStageAssets = [
   'assets/game/tree/stage_5.png',
 ];
 const List<String> _kEmoji = ['🌰', '🌱', '🌿', '🪴', '🌸', '🍎'];
-const List<double> _kTreeSize = [38.0, 44.0, 52.0];
+const List<double> _kTreeSize = [64.0, 69.0, 78.0];
 
-// ─────────────────────────────────────────────────────────────────────────────
 
 class GardenPlotsOverlay extends StatelessWidget {
   final List<GardenPlot> plots;
@@ -78,7 +75,6 @@ class GardenPlotsOverlay extends StatelessWidget {
   }
 }
 
-// ─── Cell widget ─────────────────────────────────────────────────────────────
 
 class _PlotCell extends StatefulWidget {
   final GardenPlot plot;
@@ -135,7 +131,9 @@ class _PlotCellState extends State<_PlotCell> with TickerProviderStateMixin {
           children: [
             Stack(clipBehavior: Clip.none, children: [
               Image.asset(
-                _kStageAssets[stage],
+                stage >= 5 && widget.plot.imagePath != null
+                    ? widget.plot.imagePath!
+                    : _kStageAssets[stage],
                 width: treeSize, height: treeSize,
                 fit: BoxFit.contain,
                 errorBuilder: (_, __, ___) => Text(
@@ -175,11 +173,11 @@ class _PlotCellState extends State<_PlotCell> with TickerProviderStateMixin {
           mainAxisSize: MainAxisSize.min,
           children: [
             Image.asset(
-              _kStageAssets[5],
+              widget.plot.imagePath ?? _kStageAssets[4], // fallback stage_4
               width: treeSize + 6, height: treeSize + 6,
               fit: BoxFit.contain,
               errorBuilder: (_, __, ___) =>
-                  Text('🍎', style: TextStyle(fontSize: (treeSize + 6) * 0.65)),
+                  Text('🌸', style: TextStyle(fontSize: (treeSize + 6) * 0.65)),
             ),
             const SizedBox(height: 2),
             Container(
@@ -203,7 +201,6 @@ class _PlotCellState extends State<_PlotCell> with TickerProviderStateMixin {
   }
 }
 
-// ─── Label & StageBar ────────────────────────────────────────────────────────
 
 class _Label extends StatelessWidget {
   final String text;

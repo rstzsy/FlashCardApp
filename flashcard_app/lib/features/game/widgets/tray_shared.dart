@@ -1,8 +1,6 @@
-// lib/features/game/widgets/tray_shared.dart
 import 'dart:math';
 import 'package:flutter/material.dart';
 
-// ─── Nút + trên ô đất trống ──────────────────────────────────────────────────
 
 class PlotPlusDot extends StatelessWidget {
   const PlotPlusDot({super.key});
@@ -11,7 +9,6 @@ class PlotPlusDot extends StatelessWidget {
   Widget build(BuildContext context) => const SizedBox.shrink();
 }
 
-// ─── Highlight vòng tròn khi drag thả vào ô ──────────────────────────────────
 
 class PlotDropHighlight extends StatefulWidget {
   const PlotDropHighlight({super.key});
@@ -55,7 +52,6 @@ class _PlotDropHighlightState extends State<PlotDropHighlight>
       child: Stack(
         alignment: Alignment.center,
         children: [
-          // Vòng trắng mờ pulse
           ScaleTransition(
             scale: _rippleScale,
             child: Container(
@@ -79,7 +75,6 @@ class _PlotDropHighlightState extends State<PlotDropHighlight>
             ),
           ),
 
-          // Ngôi sao kim cương vàng xoay quanh
           AnimatedBuilder(
             animation: _starCtrl,
             builder: (_, __) => SizedBox(
@@ -95,7 +90,6 @@ class _PlotDropHighlightState extends State<PlotDropHighlight>
             ),
           ),
 
-          // Ảnh cây / icon trung tâm
           Image.asset(
             'assets/game/tree/stage_0.png',
             width: 38,
@@ -112,7 +106,6 @@ class _PlotDropHighlightState extends State<PlotDropHighlight>
   }
 }
 
-// ─── Painter: ngôi sao kim cương vàng bay quanh quỹ đạo ──────────────────────
 
 class _StarOrbitPainter extends CustomPainter {
   final double progress;
@@ -144,13 +137,11 @@ class _StarOrbitPainter extends CustomPainter {
       final raw = (i / count + progress * 0.7) % 1.0;
       final opacity = (0.45 + 0.55 * raw).clamp(0.3, 1.0);
 
-      // Glow halo
       final glowPaint = Paint()
         ..color = glowColor.withOpacity(opacity * 0.45)
         ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5);
       canvas.drawCircle(pos, starR * 1.5, glowPaint);
 
-      // Kim cương
       final paint = Paint()
         ..color = starColor.withOpacity(opacity)
         ..style = PaintingStyle.fill;
@@ -172,7 +163,6 @@ class _StarOrbitPainter extends CustomPainter {
   bool shouldRepaint(_StarOrbitPainter old) => old.progress != progress;
 }
 
-// ─── Họa tiết hoa văn nền tray ───────────────────────────────────────────────
 
 class FlowerPatternPainter extends CustomPainter {
   @override

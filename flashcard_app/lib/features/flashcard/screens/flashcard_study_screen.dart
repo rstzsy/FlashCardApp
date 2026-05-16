@@ -43,34 +43,59 @@ class _FlashcardStudyScreenState extends State<FlashcardStudyScreen> {
   void nextCard(int total) async {
     if (currentIndex < total - 1) {
       setState(() => currentIndex++);
-    } 
-    else {
-      // create seed
-      final user = FirebaseAuth.instance.currentUser;
+      return;
+    }
 
-      if (user != null) {
-        await WordGardenService().createTree(
-          userId: user.uid,
-          setId: widget.setId,
-        );
-      }
+    final user = FirebaseAuth.instance.currentUser;
+    Map<String, String>? receivedPlant;
 
-      AppPopup.show(
-        context: context,
-        title: "Congratulation!",
-        message: "You studied all flashcards and get a seed for your word garden!",
-        iconWidget: Image.asset(
-          'assets/component/trophy1.png',
-          width: 150,
-          height: 150,
-        ),
-        buttonText: "Again",
-        showConfetti: true,
-        onPressed: () {
-          setState(() => currentIndex = 0);
-        },
+    if (user != null) {
+      // Trong nextCard()
+      receivedPlant = await WordGardenService().createRandomSeed(
+        userId: user.uid,
+        setId:  widget.setId,
       );
     }
+
+    if (!mounted) return;
+
+    AppPopup.show(
+      context: context,
+      title: "Congratulations! 🎉",
+      message: receivedPlant != null
+          ? "You received a ${receivedPlant['name']} seed\nfor your word garden!"
+          : "You've already planted a seed\nfor this set. Keep studying!",
+      iconWidget: receivedPlant != null
+          ? Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Image.asset(
+                  receivedPlant['imagePath']!,
+                  width: 120,
+                  height: 120,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  receivedPlant['name']!,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF7A3333),
+                  ),
+                ),
+              ],
+            )
+          : Image.asset(
+              'assets/component/trophy1.png',
+              width: 150,
+              height: 150,
+            ),
+      buttonText: "Again",
+      showConfetti: receivedPlant != null, // confetti chỉ khi nhận seed mới
+      onPressed: () {
+        setState(() => currentIndex = 0);
+      },
+    );
   }
 
   void prevCard() {

@@ -13,11 +13,13 @@ class GardenPlot {
   String? treeId;
   String? setId;
   String? setTitle;
-  int growthStage;          // 0–5
+  String? plantName;   // ← THÊM
+  String? imagePath;   // ← THÊM
+  int growthStage;
   DateTime? lastWatered;
   DateTime? lastFertilized;
   bool isMastered;
-  bool canFertilize;        // watered at least once and stage >= 1
+  bool canFertilize;     // watered at least once and stage >= 1
 
   GardenPlot({
     required this.plotIndex,
@@ -25,6 +27,8 @@ class GardenPlot {
     this.treeId,
     this.setId,
     this.setTitle,
+    this.plantName,    // ← THÊM
+    this.imagePath,    // ← THÊM
     this.growthStage = 0,
     this.lastWatered,
     this.lastFertilized,
@@ -46,16 +50,42 @@ class GardenPlot {
     if (status == PlotStatus.empty) return 0;
     return growthStage / 5.0;
   }
+
+  GardenPlot copyWith({
+    PlotStatus? status,
+    int? growthStage,
+    String? treeId,
+    String? setId,
+    String? setTitle,
+    String? plantName,
+    String? imagePath,
+    DateTime? lastWatered,
+    bool? isMastered,
+    bool? canFertilize,
+  }) => GardenPlot(
+    plotIndex:    plotIndex,
+    status:       status       ?? this.status,
+    growthStage:  growthStage  ?? this.growthStage,
+    treeId:       treeId       ?? this.treeId,
+    setId:        setId        ?? this.setId,
+    setTitle:     setTitle     ?? this.setTitle,
+    plantName:    plantName    ?? this.plantName,
+    imagePath:    imagePath    ?? this.imagePath,
+    lastWatered:  lastWatered  ?? this.lastWatered,
+    isMastered:   isMastered   ?? this.isMastered,
+    canFertilize: canFertilize ?? this.canFertilize,
+  );
 }
 
 class SeedItem {
-  final String setId;
-  final String title;
+  final String  setId;
+  final String  title;
   final String? subtitle;
-  final int totalCards;
-  final String difficulty;
-  final bool alreadyPlanted;
+  final int     totalCards;
+  final String  difficulty;
+  final bool    alreadyPlanted;
   final String? imagePath;
+  final String? seedDocId; // ← THÊM: Firestore document ID của UserSeeds
 
   const SeedItem({
     required this.setId,
@@ -65,7 +95,9 @@ class SeedItem {
     required this.difficulty,
     this.alreadyPlanted = false,
     this.imagePath,
+    this.seedDocId,      // ← THÊM
   });
+
 
   String get difficultyLabel {
     switch (difficulty) {
@@ -100,3 +132,4 @@ const List<String> kStageNames = [
 ];
 
 const List<String> kStageEmoji = ['🌰','🌱','🌿','🪴','🌸','🍎'];
+

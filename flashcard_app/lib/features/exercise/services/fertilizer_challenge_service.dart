@@ -144,46 +144,47 @@ class FertilizerService {
 
  // save result
   Future<void> saveGameResult({
-    required String userId,
-    required String gameType,
-    required String setId,
-    required String setTitle,
-    required int score,
-    required int total,
-    required int timeSpentSeconds,
-  }) async {
-    try {
-      final doc = _firestore.collection('GameResults').doc();
+  required String userId,
+  required String gameType,
+  required String setId,
+  required String setTitle,
+  required int score,
+  required int total,
+  required int timeSpentSeconds,
+}) async {
+  try {
+    final doc = _firestore.collection('GameResults').doc();
+    final double accuracy = total == 0 ? 0 : (score / total) * 100;
 
-      final double accuracy = total == 0 ? 0 : (score / total) * 100;
+    int starCount = 0;
+    if (score == total)            starCount = 3;
+    else if (score >= total * 0.6) starCount = 2;
+    else if (score > 0)            starCount = 1;
 
-      int starCount = 0;
-      if (score == total) {
-        starCount = 3;
-      } else if (score >= total * 0.6) {
-        starCount = 2;
-      } else if (score > 0) {
-        starCount = 1;
-      }
+    int fertilizerReward = starCount >= 2 ? 1 : 0;
 
-      int fertilizerReward = starCount >= 2 ? 1 : 0;
+    await doc.set({
+      'ResultId':          doc.id,
+      'UserId':            userId,
+      'GameType':          gameType,
+      'SetId':             setId,
+      'SetTitle':          setTitle,
+      'Score':             score,
+      'Total':             total,
+      'StarCount':         starCount,
+      'FertilizerReward':  fertilizerReward,
+      'Accuracy':          accuracy,
+      'TimeSpentSeconds':  timeSpentSeconds,
+      'CompletedAt':       FieldValue.serverTimestamp(),
+    });
 
-      await doc.set({
-        'ResultId': doc.id,
-        'UserId': userId,
-        'GameType': gameType,
-        'SetId': setId,
-        'SetTitle': setTitle,
-        'Score': score,
-        'Total': total,
-        'StarCount': starCount,
-        'FertilizerReward': fertilizerReward,
-        'Accuracy': accuracy,
-        'TimeSpentSeconds': timeSpentSeconds,
-        'CompletedAt': FieldValue.serverTimestamp(),
-      });
-    } catch (e) {
-      print("Error saving result: $e");
-    }
+    // ── Cộng vào users document ──────────────────────────
+    await _firestore.collection('users').doc(userId).update({
+      'fertilizerCount': FieldValue.increment(fertilizerReward),
+      'stars':           FieldValue.increment(starCount),
+    });
+  } catch (e) {
+    print("Error saving result: $e");
   }
+}
 }

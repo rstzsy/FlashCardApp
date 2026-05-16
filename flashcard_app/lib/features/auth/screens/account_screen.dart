@@ -7,6 +7,7 @@ import '../widgets/account_header.dart';
 import '../widgets/overview_section.dart';
 import '../widgets/month_badge.dart';
 import '../widgets/achievement_section.dart';
+import '../widgets/harvested_plants_section.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
@@ -62,6 +63,8 @@ class _ProfileContent extends StatelessWidget {
               const AchievementSection(),
 
               const SizedBox(height: 40),
+              const SizedBox(height: 25),
+              const HarvestedPlantsSection(),
             ],
           ),
         ),

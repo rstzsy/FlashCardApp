@@ -1,4 +1,3 @@
-// lib/features/game/widgets/planting_tray.dart
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -6,15 +5,9 @@ import 'package:flashcard_app/features/game/models/garden_models.dart';
 import 'package:flashcard_app/features/game/widgets/seed_card.dart';
 import 'package:flashcard_app/features/game/widgets/tray_shared.dart';
 
-// ─────────────────────────────────────────────────────────────────────────────
-// PlantingTray – PageView lướt ngang, card lớn, cây đã trồng mờ
-// ─────────────────────────────────────────────────────────────────────────────
-
 class PlantingTray extends StatefulWidget {
-  /// Tất cả seeds (kể cả đã trồng – sẽ hiển thị mờ)
   final List<SeedItem> allSeeds;
 
-  /// Seeds chưa trồng (dùng để validate)
   final List<SeedItem> plantableSeeds;
 
   final int plotIndex;
@@ -67,7 +60,6 @@ class _PlantingTrayState extends State<PlantingTray> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        // ── Nút Trồng nhanh ─────────────────────────────────────────────────
         Padding(
           padding: const EdgeInsets.only(right: 16, bottom: 6),
           child: _QuickPlantButton(
@@ -81,7 +73,6 @@ class _PlantingTrayState extends State<PlantingTray> {
           ),
         ),
 
-        // ── Tray chính ──────────────────────────────────────────────────────
         _TrayContainer(
           bottomPad: bottomPad,
           child: widget.allSeeds.isEmpty
@@ -151,7 +142,6 @@ class _PlantingTrayState extends State<PlantingTray> {
   }
 }
 
-// ─── Nút Trồng nhanh ─────────────────────────────────────────────────────────
 
 class _QuickPlantButton extends StatelessWidget {
   final bool enabled;
@@ -239,7 +229,6 @@ class _QuickPlantButton extends StatelessWidget {
   }
 }
 
-// ─── Container nền nâu đất + BackdropFilter ───────────────────────────────────
 
 class _TrayContainer extends StatelessWidget {
   final double bottomPad;
@@ -293,7 +282,6 @@ class _TrayContainer extends StatelessWidget {
   }
 }
 
-// ─── Empty state khi không có seed nào ───────────────────────────────────────
 
 class _EmptyState extends StatelessWidget {
   const _EmptyState();

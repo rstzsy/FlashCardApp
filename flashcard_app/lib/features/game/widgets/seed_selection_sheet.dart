@@ -14,7 +14,6 @@ class SeedSelectionSheet extends StatefulWidget {
     required this.onSeedSelected,
   });
 
-  /// Mở bottom sheet từ bên ngoài
   static Future<void> show({
     required BuildContext context,
     required List<SeedItem> availableSeeds,
@@ -100,7 +99,6 @@ class _SeedSelectionSheetState extends State<SeedSelectionSheet>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // ── Handle bar ──────────────────────────────────
               const SizedBox(height: 12),
               Container(
                 width: 40,
@@ -112,13 +110,11 @@ class _SeedSelectionSheetState extends State<SeedSelectionSheet>
               ),
               const SizedBox(height: 20),
 
-              // ── Header ──────────────────────────────────────
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Icon vùng đất
                     Container(
                       width: 48,
                       height: 48,
@@ -167,7 +163,6 @@ class _SeedSelectionSheetState extends State<SeedSelectionSheet>
                         ],
                       ),
                     ),
-                    // Nút đóng
                     GestureDetector(
                       onTap: () => Navigator.pop(context),
                       child: Container(
@@ -197,7 +192,6 @@ class _SeedSelectionSheetState extends State<SeedSelectionSheet>
                     : _buildEmptyState(),
               ),
 
-              // ── Bottom: nút Trồng ───────────────────────────
               if (hasSeeds) _buildBottomBar(),
 
               SizedBox(
@@ -238,7 +232,6 @@ class _SeedSelectionSheetState extends State<SeedSelectionSheet>
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Preview seed được chọn
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 200),
             child: isActive
@@ -250,7 +243,6 @@ class _SeedSelectionSheetState extends State<SeedSelectionSheet>
                 : const SizedBox.shrink(),
           ),
 
-          // Nút Trồng
           SizedBox(
             width: double.infinity,
             height: 54,
@@ -358,7 +350,6 @@ class _SeedSelectionSheetState extends State<SeedSelectionSheet>
   }
 }
 
-// ─── Preview seed đã chọn (hiện ngay trước nút Trồng) ───────────────────────
 
 class _SelectedPreview extends StatelessWidget {
   final SeedItem seed;
@@ -402,7 +393,6 @@ class _SelectedPreview extends StatelessWidget {
   }
 }
 
-// ─── Badge số thứ tự ô đất ──────────────────────────────────────────────────
 
 class _PlotBadge extends StatelessWidget {
   final int index;
@@ -429,7 +419,6 @@ class _PlotBadge extends StatelessWidget {
   }
 }
 
-// ─── Card từng hạt giống ────────────────────────────────────────────────────
 
 class _SeedCard extends StatelessWidget {
   final SeedItem seed;
@@ -470,7 +459,6 @@ class _SeedCard extends StatelessWidget {
         ),
         child: Row(
           children: [
-            // ── Icon hạt giống ──────────────────────────────
             AnimatedContainer(
               duration: const Duration(milliseconds: 200),
               width: 52,
@@ -494,7 +482,6 @@ class _SeedCard extends StatelessWidget {
             ),
             const SizedBox(width: 14),
 
-            // ── Thông tin seed ──────────────────────────────
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -544,7 +531,6 @@ class _SeedCard extends StatelessWidget {
             ),
             const SizedBox(width: 10),
 
-            // ── Radio / check ───────────────────────────────
             AnimatedContainer(
               duration: const Duration(milliseconds: 200),
               width: 26,

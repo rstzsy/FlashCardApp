@@ -1,10 +1,7 @@
-// lib/features/game/widgets/garden_tool_tray.dart
-
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-// ─── Data ─────────────────────────────────────────────────────────────────────
 
 enum GardenTool { water, fertilizer }
 
@@ -13,7 +10,6 @@ class GardenToolDrop {
   const GardenToolDrop(this.tool);
 }
 
-// ─── Tool Tray (fixed overlay) ────────────────────────────────────────────────
 
 class GardenToolTray extends StatelessWidget {
   final int waterCount;
@@ -28,8 +24,8 @@ class GardenToolTray extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Positioned(
-      left: 16,                                             // ← bên trái màn hình
-      bottom: MediaQuery.of(context).size.height * 0.60,   // xích lên cao
+      left: 16,
+      bottom: MediaQuery.of(context).size.height * 0.60,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -52,7 +48,6 @@ class GardenToolTray extends StatelessWidget {
   }
 }
 
-// ─── Single draggable tool item ───────────────────────────────────────────────
 
 class _DraggableToolItem extends StatefulWidget {
   final GardenTool tool;
@@ -73,13 +68,22 @@ class _DraggableToolItem extends StatefulWidget {
 
 class _DraggableToolItemState extends State<_DraggableToolItem>
     with SingleTickerProviderStateMixin {
-  late final AnimationController _pulseCtrl = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 1400),
-  )..repeat(reverse: true);
 
-  late final Animation<double> _pulseScale = Tween(begin: 1.0, end: 1.09)
-      .animate(CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeInOut));
+  late AnimationController _pulseCtrl;
+  late Animation<double> _pulseScale;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulseCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
+    )..repeat(reverse: true);
+
+    _pulseScale = Tween<double>(begin: 1.0, end: 1.09).animate(
+      CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeInOut),
+    );
+  }
 
   @override
   void dispose() {
@@ -97,10 +101,10 @@ class _DraggableToolItemState extends State<_DraggableToolItem>
       delay: Duration.zero,
       onDragStarted: () {
         HapticFeedback.mediumImpact();
-        _pulseCtrl.stop();
+        if (mounted) _pulseCtrl.stop();
       },
       onDragEnd: (_) {
-        _pulseCtrl.repeat(reverse: true);
+        if (mounted) _pulseCtrl.repeat(reverse: true);
       },
       feedback: _DragFeedback(imagePath: widget.imagePath, tool: widget.tool),
       childWhenDragging: _buildIcon(isEmpty: false),
@@ -145,7 +149,6 @@ class _DraggableToolItemState extends State<_DraggableToolItem>
   }
 }
 
-// ─── Badge ────────────────────────────────────────────────────────────────────
 
 class _CountBadge extends StatelessWidget {
   final int count;
@@ -186,7 +189,6 @@ class _CountBadge extends StatelessWidget {
   }
 }
 
-// ─── Drag feedback: icon trắng theo ngón tay ──────────────────────────────────
 
 class _DragFeedback extends StatelessWidget {
   final String imagePath;
@@ -213,7 +215,6 @@ class _DragFeedback extends StatelessWidget {
   }
 }
 
-// ─── Drop highlight: nền trắng + ngôi sao kim cương vàng nhẹ ─────────────────
 
 class ToolDropHighlight extends StatefulWidget {
   final GardenTool tool;
@@ -225,18 +226,28 @@ class ToolDropHighlight extends StatefulWidget {
 
 class _ToolDropHighlightState extends State<ToolDropHighlight>
     with TickerProviderStateMixin {
-  late final AnimationController _rippleCtrl = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 850),
-  )..repeat(reverse: true);
 
-  late final Animation<double> _rippleScale = Tween(begin: 0.86, end: 1.10)
-      .animate(CurvedAnimation(parent: _rippleCtrl, curve: Curves.easeInOut));
+  late AnimationController _rippleCtrl;
+  late Animation<double> _rippleScale;
+  late AnimationController _starCtrl;
 
-  late final AnimationController _starCtrl = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 2600),
-  )..repeat();
+  @override
+  void initState() {
+    super.initState();
+    _rippleCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 850),
+    )..repeat(reverse: true);
+
+    _rippleScale = Tween<double>(begin: 0.86, end: 1.10).animate(
+      CurvedAnimation(parent: _rippleCtrl, curve: Curves.easeInOut),
+    );
+
+    _starCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2600),
+    )..repeat();
+  }
 
   @override
   void dispose() {
@@ -253,12 +264,11 @@ class _ToolDropHighlightState extends State<ToolDropHighlight>
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 220, // kích thước đủ lớn để chứa cả hiệu ứng ripple và ngôi sao bay quanh
+      width: 220,
       height: 220,
       child: Stack(
         alignment: Alignment.center,
         children: [
-          // Vòng trắng pulse
           ScaleTransition(
             scale: _rippleScale,
             child: Container(
@@ -279,7 +289,6 @@ class _ToolDropHighlightState extends State<ToolDropHighlight>
             ),
           ),
 
-          // Ngôi sao kim cương vàng xoay quanh
           AnimatedBuilder(
             animation: _starCtrl,
             builder: (_, __) => SizedBox(
@@ -295,7 +304,6 @@ class _ToolDropHighlightState extends State<ToolDropHighlight>
             ),
           ),
 
-          // Icon trung tâm trắng
           Icon(
             widget.tool == GardenTool.water
                 ? Icons.water_drop_rounded
@@ -309,7 +317,6 @@ class _ToolDropHighlightState extends State<ToolDropHighlight>
   }
 }
 
-// ─── Painter: ngôi sao kim cương vàng bay quanh quỹ đạo ──────────────────────
 
 class _StarOrbitPainter extends CustomPainter {
   final double progress;
@@ -341,13 +348,11 @@ class _StarOrbitPainter extends CustomPainter {
       final raw = (i / count + progress * 0.7) % 1.0;
       final opacity = (0.45 + 0.55 * raw).clamp(0.3, 1.0);
 
-      // Glow halo
       final glowPaint = Paint()
         ..color = glowColor.withOpacity(opacity * 0.45)
         ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5);
       canvas.drawCircle(pos, starR * 1.5, glowPaint);
 
-      // Kim cương
       final paint = Paint()
         ..color = starColor.withOpacity(opacity)
         ..style = PaintingStyle.fill;

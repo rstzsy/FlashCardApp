@@ -1,13 +1,15 @@
-// lib/features/game/screens/home_game_screen.dart
-
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flame/game.dart';
-import 'package:flashcard_app/features/game/data/shop_data.dart';         // ← MỚI
 import 'package:flashcard_app/features/game/models/garden_models.dart';
+import 'package:flashcard_app/features/game/services/garden_service.dart';
+import 'package:flashcard_app/features/game/services/word_garden_service.dart';
 import 'package:flashcard_app/features/game/widgets/draggable_seed_tray.dart';
+import 'package:flashcard_app/features/game/widgets/planting_tray.dart';
 import 'package:flashcard_app/features/game/widgets/player_game.dart';
 import 'package:flashcard_app/features/game/screens/shop_game_screen.dart';
 import 'package:flashcard_app/features/game/widgets/garden_tool_tray.dart';
 import 'package:flutter/material.dart';
+import 'dart:math';
 
 class HomeGameScreen extends StatefulWidget {
   const HomeGameScreen({super.key});
@@ -17,58 +19,102 @@ class HomeGameScreen extends StatefulWidget {
 }
 
 class _HomeGameScreenState extends State<HomeGameScreen> {
-  final PlayerGame _playerGame = PlayerGame();
+  final PlayerGame        _playerGame        = PlayerGame();
+  final GardenService     _gardenService     = GardenService();
+  final WordGardenService _wordGardenService = WordGardenService();
+
   int? _selectedPlotIndex;
+  bool _isLoading = true;
+  int? _harvestingPlotIndex;
 
-  // ── Garden plots ───────────────────────────────────────────────────────────
-  late final List<GardenPlot> _plots =
-      List.generate(9, (i) => GardenPlot(plotIndex: i));
+  List<GardenPlot> _plots = List.generate(
+    GardenService.kMaxPlots, (i) => GardenPlot(plotIndex: i),
+  );
+  List<SeedItem> _userSeeds = [];
 
-  // ── Tool inventory ─────────────────────────────────────────────────────────
-  int _waterCount = 12;
-  int _fertilizerCount = 5;
+  int _waterCount      = 0;
+  int _fertilizerCount = 0;
+  int _totalStars      = 0;
 
-  // ── Seeds: lấy từ shop_data thay vì hardcode ──────────────────────────────
-  // unlockedSeeds() trả về đúng các cây đang mở trong Shop
-  List<SeedItem> get _availableSeeds => unlockedSeeds();
-
-  List<SeedItem> get _seedsWithStatus {
-    final planted = _plots
-        .where((p) => p.setId != null)
-        .map((p) => p.setId!)
-        .toSet();
-    return _availableSeeds.map((s) => SeedItem(
-      setId: s.setId,
-      title: s.title,
-      subtitle: s.subtitle,
-      totalCards: s.totalCards,
-      difficulty: s.difficulty,
-      imagePath: s.imagePath,
-      alreadyPlanted: planted.contains(s.setId),
-    )).toList();
+  @override
+  void initState() {
+    super.initState();
+    _loadGarden();
   }
 
-  List<SeedItem> get _plantableSeeds =>
-      _seedsWithStatus.where((s) => !s.alreadyPlanted).toList();
+  Future<void> _loadGarden() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) { setState(() => _isLoading = false); return; }
 
-  // ── Plot interactions ──────────────────────────────────────────────────────
+    try {
+      final plots     = await _gardenService.loadGardenPlots(uid);
+      final seeds     = await _gardenService.loadUserSeeds(uid);
+      final resources = await _gardenService.loadUserResources(uid);
+
+      if (mounted) setState(() {
+        _plots           = plots;
+        _userSeeds       = seeds;
+        _waterCount      = resources['water']      ?? 0;
+        _fertilizerCount = resources['fertilizer'] ?? 0;
+        _totalStars      = resources['stars']      ?? 0;
+        _isLoading       = false;
+      });
+    } catch (e) {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  List<SeedItem> get _seedsWithStatus  => _userSeeds;
+  List<SeedItem> get _plantableSeeds   =>
+      _userSeeds.where((s) => !s.alreadyPlanted).toList();
 
   void _onPlotTapped(int i) {
-    if (_plots[i].status == PlotStatus.empty) {
+    final plot = _plots[i];
+
+    if (plot.status == PlotStatus.mastered) {
+      _harvestPlot(i);
+      return;
+    }
+
+    if (plot.status == PlotStatus.empty) {
       setState(() => _selectedPlotIndex = i);
     }
   }
 
+  Future<void> _harvestPlot(int i) async {
+    final plot = _plots[i];
+    final uid  = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null || plot.treeId == null) return;
+
+    setState(() => _harvestingPlotIndex = i);
+
+    await Future.delayed(const Duration(milliseconds: 1200));
+
+    await _gardenService.harvestTree(
+      userId:    uid,
+      treeId:    plot.treeId!,
+      plantName: plot.plantName ?? plot.setTitle ?? '',
+      imagePath: plot.imagePath ?? '',
+      setId:     plot.setId ?? '',
+    );
+
+    if (mounted) setState(() {
+      _plots[i]            = GardenPlot(plotIndex: i);
+      _harvestingPlotIndex = null;
+    });
+
+    _showToast('Thu hoạch "${plot.plantName}" thành công! 🌸', const Color(0xFFFFB300));
+  }
+
   void _onSeedDropped(int i, SeedItem seed) {
-    if (!seed.alreadyPlanted) {
-      _plantSeed(i, seed);
-      setState(() => _selectedPlotIndex = null);
-    }
+    if (!seed.alreadyPlanted) _plantSeed(i, seed);
   }
 
   void _onToolDropped(int plotIndex, GardenTool tool) {
+    if (!mounted) return;
     final plot = _plots[plotIndex];
     if (plot.status != PlotStatus.planted) return;
+    final uid = FirebaseAuth.instance.currentUser?.uid;
 
     switch (tool) {
       case GardenTool.water:
@@ -78,39 +124,75 @@ class _HomeGameScreenState extends State<HomeGameScreen> {
         }
         setState(() {
           _waterCount--;
-          _plots[plotIndex].lastWatered = DateTime.now();
-          _plots[plotIndex].canFertilize = true;
+          _plots[plotIndex] = _plots[plotIndex].copyWith(
+            lastWatered:  DateTime.now(),
+            canFertilize: true,
+          );
         });
-        _showToast('Đã tưới "${plot.setTitle}" 💧', const Color(0xFF0288D1));
+        if (plot.treeId != null) _gardenService.waterTree(plot.treeId!);
+        if (uid != null) _gardenService.deductResource(userId: uid, type: 'water');
+        _showToast('Đã tưới "${plot.plantName ?? plot.setTitle}" 💧', const Color(0xFF0288D1));
 
       case GardenTool.fertilizer:
         if (_fertilizerCount <= 0) {
           _showToast('Hết phân bón rồi! 🌿', const Color(0xFF388E3C));
           return;
         }
+        final newStage = (_plots[plotIndex].growthStage + 1).clamp(0, 5);
         setState(() {
           _fertilizerCount--;
-          _plots[plotIndex].growthStage =
-              (_plots[plotIndex].growthStage + 1).clamp(0, 5);
+          // ✅ copyWith → object mới → didUpdateWidget detect growthStage thay đổi
+          _plots[plotIndex] = _plots[plotIndex].copyWith(
+            growthStage: newStage,
+            status: newStage >= 5 ? PlotStatus.mastered : PlotStatus.planted,
+          );
         });
-        _showToast('Đã bón phân "${plot.setTitle}" 🌿', const Color(0xFF388E3C));
+        if (plot.treeId != null) {
+          _gardenService.updateGrowthStage(
+            treeId: plot.treeId!,
+            stage:  newStage,
+          );
+        }
+        if (uid != null) _gardenService.deductResource(userId: uid, type: 'fertilizer');
+        _showToast('Đã bón phân "${plot.plantName ?? plot.setTitle}" 🌿', const Color(0xFF388E3C));
     }
   }
 
   void _plantSeed(int i, SeedItem seed) {
     setState(() {
       _selectedPlotIndex = null;
-      _plots[i]
-        ..status = PlotStatus.planted
-        ..setId = seed.setId
-        ..setTitle = seed.title
-        ..growthStage = 0
-        ..lastWatered = DateTime.now();
+      _plots[i] = _plots[i].copyWith(
+        status:      PlotStatus.planted,
+        setId:       seed.setId,
+        setTitle:    seed.title,
+        plantName:   seed.title,
+        imagePath:   seed.imagePath,
+        growthStage: 0,
+        lastWatered: DateTime.now(),
+      );
+
+      _userSeeds = _userSeeds
+          .where((s) => s.setId != seed.setId)
+          .toList();
     });
+
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid != null && seed.seedDocId != null) {
+      _wordGardenService.plantSeedToPlot(
+        userId:    uid,
+        setId:     seed.setId,
+        plantName: seed.title,
+        imagePath: seed.imagePath ?? '',
+        seedDocId: seed.seedDocId!,
+        plotIndex: i,
+      );
+    }
+
     _showToast('Đã trồng "${seed.title}" 🌱', const Color(0xFF558B2F));
   }
 
   void _showToast(String message, Color color) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text(message,
           style: const TextStyle(fontWeight: FontWeight.w600)),
@@ -122,12 +204,29 @@ class _HomeGameScreenState extends State<HomeGameScreen> {
     ));
   }
 
-  // ── Build ──────────────────────────────────────────────────────────────────
-
+  // ── Build ────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
+    final size     = MediaQuery.of(context).size;
     final trayOpen = _selectedPlotIndex != null;
+
+    if (_isLoading) {
+      return const Scaffold(
+        body: Stack(children: [
+          Positioned.fill(child: DecoratedBox(
+            decoration: BoxDecoration(
+              image: DecorationImage(
+                image: AssetImage('assets/game/home_game_bg.png'),
+                fit: BoxFit.cover,
+              ),
+            ),
+          )),
+          Center(child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation(Colors.white),
+          )),
+        ]),
+      );
+    }
 
     return Scaffold(
       body: Stack(children: [
@@ -147,11 +246,21 @@ class _HomeGameScreenState extends State<HomeGameScreen> {
             ),
           ),
 
-        DroppableGardenPlots(
-          plots: _plots,
-          onPlotTapped: _onPlotTapped,
-          onSeedDropped: _onSeedDropped,
-          onToolDropped: _onToolDropped,
+        Stack(
+          children: [
+            DroppableGardenPlots(
+              plots:         _plots,
+              onPlotTapped:  _onPlotTapped,
+              onSeedDropped: _onSeedDropped,
+              onToolDropped: _onToolDropped,
+            ),
+
+            if (_harvestingPlotIndex != null)
+              _HarvestEffect(
+                plotIndex: _harvestingPlotIndex!,
+                onComplete: () {},
+              ),
+          ],
         ),
 
         Positioned(
@@ -188,7 +297,7 @@ class _HomeGameScreenState extends State<HomeGameScreen> {
 
         if (!trayOpen)
           GardenToolTray(
-            waterCount: _waterCount,
+            waterCount:      _waterCount,
             fertilizerCount: _fertilizerCount,
           ),
 
@@ -198,9 +307,9 @@ class _HomeGameScreenState extends State<HomeGameScreen> {
           left: 0, right: 0,
           bottom: trayOpen ? 0 : -260,
           child: PlantingTray(
-            allSeeds: _seedsWithStatus,
+            allSeeds:       _seedsWithStatus,
             plantableSeeds: _plantableSeeds,
-            plotIndex: _selectedPlotIndex ?? 0,
+            plotIndex:      _selectedPlotIndex ?? 0,
             onSeedSelected: (seed) {
               if (_selectedPlotIndex != null) {
                 _plantSeed(_selectedPlotIndex!, seed);
@@ -217,8 +326,19 @@ class _HomeGameScreenState extends State<HomeGameScreen> {
           left: 0, right: 0,
           child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
             GestureDetector(
-              onTap: () => Navigator.push(context,
-                  MaterialPageRoute(builder: (_) => ShopGameScreen(plots: _plots))),
+              onTap: () async {
+                if (!mounted) return;
+                await Navigator.push(context, MaterialPageRoute(
+                  builder: (_) => ShopGameScreen(
+                    plots: _plots,
+                    userSeeds: _userSeeds,
+                    onPlantFromShop: (plotIndex, seed) {
+                      _plantSeed(plotIndex, seed);
+                    },
+                  ),
+                ));
+                _loadGarden();
+              },
               child: Image.asset('assets/game/btn_home.png',
                   width: size.width * 0.25, height: size.width * 0.25,
                   fit: BoxFit.contain),
@@ -235,4 +355,128 @@ class _HomeGameScreenState extends State<HomeGameScreen> {
       ]),
     );
   }
+}
+
+
+class _HarvestEffect extends StatefulWidget {
+  final int plotIndex;
+  final VoidCallback onComplete;
+
+  const _HarvestEffect({required this.plotIndex, required this.onComplete});
+
+  @override
+  State<_HarvestEffect> createState() => _HarvestEffectState();
+}
+
+class _HarvestEffectState extends State<_HarvestEffect>
+    with TickerProviderStateMixin {
+
+  late final AnimationController _ctrl = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1200),
+  )..forward().then((_) => widget.onComplete());
+
+  late final Animation<double> _scale = CurvedAnimation(
+    parent: _ctrl, curve: Curves.elasticOut,
+  );
+  late final Animation<double> _fade = Tween(begin: 1.0, end: 0.0).animate(
+    CurvedAnimation(
+      parent: _ctrl,
+      curve: const Interval(0.6, 1.0, curve: Curves.easeOut),
+    ),
+  );
+
+  static const _anchors = [
+    Offset(0.500, 0.500), Offset(0.330, 0.555), Offset(0.670, 0.550),
+    Offset(0.150, 0.595), Offset(0.520, 0.580), Offset(0.885, 0.575),
+    Offset(0.320, 0.630), Offset(0.720, 0.615), Offset(0.520, 0.695),
+  ];
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final size   = MediaQuery.of(context).size;
+    final anchor = _anchors[widget.plotIndex.clamp(0, _anchors.length - 1)];
+    final cx     = size.width  * anchor.dx;
+    final cy     = size.height * anchor.dy;
+
+    return Positioned(
+      left: cx - 80,
+      top:  cy - 80,
+      child: FadeTransition(
+        opacity: _fade,
+        child: ScaleTransition(
+          scale: _scale,
+          child: SizedBox(
+            width: 160, height: 160,
+            child: AnimatedBuilder(
+              animation: _ctrl,
+              builder: (_, __) => CustomPaint(
+                painter: _StarBurstPainter(progress: _ctrl.value),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _StarBurstPainter extends CustomPainter {
+  final double progress;
+  const _StarBurstPainter({required this.progress});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final maxR   = size.width / 2;
+    final paint  = Paint()..style = PaintingStyle.fill;
+
+    const starCount = 12;
+    for (int i = 0; i < starCount; i++) {
+      final angle   = (i / starCount) * 2 * pi;
+      final r       = maxR * progress;
+      final pos     = Offset(
+        center.dx + r * cos(angle),
+        center.dy + r * sin(angle),
+      );
+      final starSize = (6.0 + 4.0 * sin(progress * pi)) * (1 - progress * 0.4);
+      final opacity  = (1.0 - progress).clamp(0.0, 1.0);
+
+      paint.color      = Colors.amber.withOpacity(opacity * 0.4);
+      paint.maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
+      canvas.drawCircle(pos, starSize * 1.5, paint);
+      paint.maskFilter = null;
+
+      paint.color = Colors.white.withOpacity(opacity);
+      _drawStar(canvas, pos, starSize, paint);
+    }
+
+    final glowR  = maxR * 0.5 * progress;
+    final glowOp = (1.0 - progress * 1.5).clamp(0.0, 1.0);
+    paint.color      = Colors.white.withOpacity(glowOp * 0.6);
+    paint.maskFilter = const MaskFilter.blur(BlurStyle.normal, 20);
+    canvas.drawCircle(center, glowR, paint);
+  }
+
+  void _drawStar(Canvas canvas, Offset c, double r, Paint paint) {
+    final path = Path();
+    const n = 5;
+    for (int i = 0; i < n * 2; i++) {
+      final angle  = (i * pi / n) - pi / 2;
+      final radius = i.isEven ? r : r * 0.45;
+      final pt     = Offset(c.dx + radius * cos(angle), c.dy + radius * sin(angle));
+      i == 0 ? path.moveTo(pt.dx, pt.dy) : path.lineTo(pt.dx, pt.dy);
+    }
+    path.close();
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(_StarBurstPainter old) => old.progress != progress;
 }

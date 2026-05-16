@@ -44,7 +44,7 @@ class LoginController extends ChangeNotifier {
         'xp': data?['xp'] ?? 0,
         'streak': data?['streak'] ?? 0,
         'level': data?['level'] ?? 1,
-        'plants': data?['plants'] ?? 0,
+        // 'plants' ← XÓA DÒNG NÀY, không được ghi khi login
         'hasCompletedSetup': data?['hasCompletedSetup'] ?? false,
         'hasSeenIntroHome': data?['hasSeenIntroHome'] ?? false,
         'status': data?['status'] ?? 'active',

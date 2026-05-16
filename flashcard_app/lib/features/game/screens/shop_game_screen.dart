@@ -1,17 +1,13 @@
-// lib/features/game/screens/shop_game_screen.dart
-//
-// FIX CHÍNH:
-//   • Background dùng BoxFit.cover + alignment: Alignment.topCenter
-//     → ảnh giữ đúng tỉ lệ, không bị kéo méo
-//   • Content padding ngang/dưới căn theo viền hoa của frame ảnh
-//   • TabBar nằm sát awning, content scroll trong vùng kem trắng
-
 import 'package:flutter/material.dart';
 import 'package:flashcard_app/features/game/models/garden_models.dart';
 import 'package:flashcard_app/features/game/widgets/seed_selection_sheet.dart';
 import 'package:flashcard_app/features/game/widgets/cute_notification_dialog.dart';
+import 'package:flashcard_app/features/game/data/shop_data.dart';
+import 'package:flashcard_app/features/game/services/garden_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:async';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
-// ─── Palette ──────────────────────────────────────────────────────────────────
 class _C {
   static const rose        = Color(0xFFF4A8B0);
   static const roseDark    = Color(0xFFD4717A);
@@ -32,7 +28,6 @@ class _C {
   static const textBlue    = Color(0xFF0288D1);
 }
 
-// ─── Shop model ───────────────────────────────────────────────────────────────
 class ShopItem {
   final String imagePath;
   final String name;
@@ -41,29 +36,55 @@ class ShopItem {
   final String? requiredSetId;
   final String? requiredSetTitle;
   final SeedItem? linkedSeed;
+  final bool userHasSeed;
+  final bool userHasPlanted;
+  final bool userHasHarvested;
 
   const ShopItem({
     required this.imagePath,
     required this.name,
-    this.isLocked = false,
+    this.isLocked = true,
     this.price = 0,
     this.requiredSetId,
     this.requiredSetTitle,
     this.linkedSeed,
+    this.userHasSeed      = false,
+    this.userHasPlanted   = false,
+    this.userHasHarvested = false,
   });
 
-  bool get isReadyToPlant   => !isLocked && linkedSeed != null;
-  bool get isUnlockedNoSeed => !isLocked && linkedSeed == null;
+  bool get isReadyToPlant   => !isLocked && userHasSeed && !userHasPlanted && !userHasHarvested;
+  bool get isUnlockedNoSeed => !isLocked && !userHasSeed && !userHasPlanted && !userHasHarvested;
+
+  ShopItem copyWith({
+    bool? isLocked,
+    bool? userHasSeed,
+    bool? userHasPlanted,
+    bool? userHasHarvested,
+    SeedItem? linkedSeed,
+  }) => ShopItem(
+    imagePath:        imagePath,
+    name:             name,
+    isLocked:         isLocked         ?? this.isLocked,
+    price:            price,
+    requiredSetId:    requiredSetId,
+    requiredSetTitle: requiredSetTitle,
+    linkedSeed:       linkedSeed       ?? this.linkedSeed,
+    userHasSeed:      userHasSeed      ?? this.userHasSeed,
+    userHasPlanted:   userHasPlanted   ?? this.userHasPlanted,
+    userHasHarvested: userHasHarvested ?? this.userHasHarvested,
+  );
 }
 
-// ─── Screen ───────────────────────────────────────────────────────────────────
 class ShopGameScreen extends StatefulWidget {
   final List<GardenPlot> plots;
+  final List<SeedItem>   userSeeds;
   final Function(int plotIndex, SeedItem seed)? onPlantFromShop;
 
   const ShopGameScreen({
     super.key,
     required this.plots,
+    required this.userSeeds,
     this.onPlantFromShop,
   });
 
@@ -73,183 +94,203 @@ class ShopGameScreen extends StatefulWidget {
 
 class _ShopGameScreenState extends State<ShopGameScreen>
     with SingleTickerProviderStateMixin {
-  late TabController _tab;
 
-  static final List<ShopItem> _shopItems = [
-    ShopItem(
-      imagePath: 'assets/game/Frangipani.png',
-      name: 'White Frangipani',
-      isLocked: true,
-      price: 120,
-      requiredSetId: 'set_flowers_advanced',
-      requiredSetTitle: 'Advanced Flowers & Plants',
-    ),
-    ShopItem(
-      imagePath: 'assets/game/lotus.png',
-      name: 'Pink Lotus',
-      isLocked: true,
-      price: 200,
-      requiredSetId: 'set_nature_master',
-      requiredSetTitle: 'Nature – Master Level',
-    ),
-    ShopItem(
-      imagePath: 'assets/game/Plumeria.png',
-      name: 'Golden Plumeria',
-      isLocked: true,
-      price: 150,
-      requiredSetId: 'set_tropical_plants',
-      requiredSetTitle: 'Tropical Plants',
-    ),
-    ShopItem(
-      imagePath: 'assets/game/rose.png',
-      name: 'Rose',
-      isLocked: true,
-      price: 180,
-      requiredSetId: 'set_romance_vocab',
-      requiredSetTitle: 'Romantic Vocabulary',
-    ),
-    ShopItem(
-      imagePath: 'assets/game/sunFlower.png',
-      name: 'Sunflower',
-      isLocked: true,
-      price: 100,
-      requiredSetId: 'set_weather_nature',
-      requiredSetTitle: 'Weather & Nature',
-    ),
-    ShopItem(
-      imagePath: 'assets/game/tulip.png',
-      name: 'Tulip',
-      isLocked: false,
-      price: 80,
-      requiredSetId: 'set_basic_flowers',
-      requiredSetTitle: 'Basic Flowers',
-      linkedSeed: SeedItem(
-        setId: 'set_basic_flowers',
-        title: 'Basic Flowers',
-        subtitle: 'Tulip, Rose, Daisy...',
-        totalCards: 24,
-        difficulty: 'Easy',
-        imagePath: 'assets/game/tulip.png',
-      ),
-    ),
-    ShopItem(
-      imagePath: 'assets/game/Frangipani.png',
-      name: 'Purple Frangipani',
-      isLocked: false,
-      price: 90,
-      requiredSetId: 'set_garden_vocab',
-      requiredSetTitle: 'Garden Vocabulary',
-      linkedSeed: SeedItem(
-        setId: 'set_garden_vocab',
-        title: 'Garden Vocabulary',
-        subtitle: 'Plants, flowers, soil...',
-        totalCards: 32,
-        difficulty: 'Easy',
-        imagePath: 'assets/game/Frangipani.png',
-      ),
-    ),
-    ShopItem(
-      imagePath: 'assets/game/lotus.png',
-      name: 'White Lotus',
-      isLocked: false,
-      price: 110,
-      requiredSetId: 'set_water_plants',
-      requiredSetTitle: 'Aquatic Plants',
-      linkedSeed: SeedItem(
-        setId: 'set_water_plants',
-        title: 'Aquatic Plants',
-        subtitle: 'Lotus, water lily...',
-        totalCards: 18,
-        difficulty: 'Medium',
-        imagePath: 'assets/game/lotus.png',
-      ),
-    ),
-    ShopItem(
-      imagePath: 'assets/game/Plumeria.png',
-      name: 'Red Plumeria',
-      isLocked: false,
-      price: 95,
-      requiredSetId: 'set_color_adjectives',
-      requiredSetTitle: 'Color Adjectives',
-      linkedSeed: SeedItem(
-        setId: 'set_color_adjectives',
-        title: 'Color Adjectives',
-        subtitle: 'Scarlet, crimson...',
-        totalCards: 28,
-        difficulty: 'Medium',
-        imagePath: 'assets/game/Plumeria.png',
-      ),
-    ),
-    ShopItem(
-      imagePath: 'assets/game/rose.png',
-      name: 'Golden Rose',
-      isLocked: false,
-      price: 130,
-      requiredSetId: 'set_emotions_vocab',
-      requiredSetTitle: 'Emotion Vocabulary',
-      linkedSeed: SeedItem(
-        setId: 'set_emotions_vocab',
-        title: 'Emotion Vocabulary',
-        subtitle: 'Joy, melancholy...',
-        totalCards: 40,
-        difficulty: 'Hard',
-        imagePath: 'assets/game/rose.png',
-      ),
-    ),
-    ShopItem(
-      imagePath: 'assets/game/tulip.png',
-      name: 'Purple Tulip',
-      isLocked: false,
-      price: 85,
-      requiredSetId: 'set_spring_vocab',
-      requiredSetTitle: 'Spring Vocabulary',
-      linkedSeed: SeedItem(
-        setId: 'set_spring_vocab',
-        title: 'Spring Vocabulary',
-        subtitle: 'Bloom, blossom...',
-        totalCards: 22,
-        difficulty: 'Easy',
-        imagePath: 'assets/game/tulip.png',
-      ),
-    ),
-    ShopItem(
-      imagePath: 'assets/game/plant.png',
-      name: 'Exotic Plant',
-      isLocked: false,
-      price: 60,
-      requiredSetId: 'set_exotic_plants',
-      requiredSetTitle: 'World Exotic Plants',
-    ),
-  ];
+  late TabController _tab;
+  final GardenService    _gardenService = GardenService();
+  final FirebaseFirestore _db           = FirebaseFirestore.instance;
+
+  List<GardenPlot> _gardenPlots  = [];
+  List<SeedItem>   _allUserSeeds = [];
+  int              _totalStars   = 0;
+  bool             _gardenLoading = true;
+
+  Set<String> _plantedSetIds   = {};   
+  Set<String> _harvestedSetIds = {};  
+  StreamSubscription? _gardenSub;
+  StreamSubscription? _seedsSub;
+  StreamSubscription? _harvestedSub;
 
   @override
   void initState() {
     super.initState();
     _tab = TabController(length: 2, vsync: this);
+    _initStreams();
+  }
+
+  void _initStreams() {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) {
+      setState(() => _gardenLoading = false);
+      return;
+    }
+
+    _gardenSub = _db
+        .collection('WordGardenTrees')
+        .where('UserId', isEqualTo: uid)
+        .snapshots()
+        .listen((snap) {
+      final plots = List.generate(9, (i) => GardenPlot(plotIndex: i));
+      final plantedIds = <String>{};
+
+      for (final doc in snap.docs) {
+        final data        = doc.data();
+        final plotIndex   = (data['PlotIndex']   as int?)  ?? 0;
+        final growthStage = (data['GrowthStage'] as int?)  ?? 0;
+        final isMastered  = (data['IsMastered']  as bool?) ?? false;
+        final setId       = data['SetId'] as String?;
+
+        if (plotIndex < 0 || plotIndex >= 9) continue;
+        if (setId != null && setId.isNotEmpty) plantedIds.add(setId);
+
+        plots[plotIndex] = GardenPlot(
+          plotIndex:   plotIndex,
+          status:      isMastered ? PlotStatus.mastered : PlotStatus.planted,
+          treeId:      doc.id,
+          setId:       setId,
+          setTitle:    data['SetTitle']  as String?,
+          plantName:   data['PlantName'] as String?,
+          imagePath:   data['ImagePath'] as String?,
+          growthStage: growthStage.clamp(0, 5),
+          isMastered:  isMastered,
+          lastWatered: (data['LastWatered'] as Timestamp?)?.toDate(),
+          canFertilize: data['LastWatered'] != null && growthStage >= 1,
+        );
+      }
+
+      if (mounted) setState(() {
+        _gardenPlots   = plots.where((p) => p.status != PlotStatus.empty).toList();
+        _plantedSetIds = plantedIds;
+        _gardenLoading = false;
+      });
+    }, onError: (_) {
+      if (mounted) setState(() => _gardenLoading = false);
+    });
+
+    _seedsSub = _db
+        .collection('UserSeeds')
+        .where('UserId', isEqualTo: uid)
+        .snapshots()
+        .listen((snap) {
+      final seeds = snap.docs.map((doc) {
+        final data = doc.data();
+        return SeedItem(
+          setId:          data['SetId']     as String? ?? '',
+          title:          data['PlantName'] as String? ?? '',
+          totalCards:     0,
+          difficulty:     'Easy',
+          imagePath:      data['ImagePath'] as String?,
+          seedDocId:      doc.id,
+          alreadyPlanted: (data['IsPlanted'] as bool?) ?? false,
+        );
+      }).toList();
+      if (mounted) setState(() => _allUserSeeds = seeds);
+    });
+
+    _harvestedSub = _db
+        .collection('HarvestedPlants')
+        .where('UserId', isEqualTo: uid)
+        .snapshots()
+        .listen((snap) {
+      final ids = snap.docs
+          .map((d) => (d.data()['SetId'] as String? ?? '').trim())
+          .where((s) => s.isNotEmpty)
+          .toSet();
+      if (mounted) setState(() => _harvestedSetIds = ids);
+    });
+
+    _loadStars(uid);
+  }
+
+  Future<void> _loadStars(String uid) async {
+    try {
+      final resources = await _gardenService.loadUserResources(uid);
+      if (mounted) setState(() => _totalStars = resources['stars'] ?? 0);
+    } catch (_) {}
   }
 
   @override
   void dispose() {
+    _gardenSub?.cancel();
+    _seedsSub?.cancel();
+    _harvestedSub?.cancel();
     _tab.dispose();
     super.dispose();
   }
 
-  List<GardenPlot> get _planted =>
-      widget.plots.where((p) => p.status != PlotStatus.empty).toList();
-  List<GardenPlot> get _empty =>
+  Set<String> get _inTraySetIds {
+    final planted   = _plantedSetIds;
+    final harvested = _harvestedSetIds;
+    return widget.userSeeds
+        .map((s) => s.setId)
+        .where((id) => !planted.contains(id) && !harvested.contains(id))
+        .toSet();
+  }
+
+  List<ShopItem> get _mergedItems {
+    final inTraySetIds = _inTraySetIds;
+    final seedMap = <String, SeedItem>{
+      for (final s in widget.userSeeds) s.setId: s,
+    };
+
+    final unlockedItems = _allUserSeeds.map((seed) {
+      final hasHarvested = _harvestedSetIds.contains(seed.setId);
+      final hasPlanted   = !hasHarvested && _plantedSetIds.contains(seed.setId);
+      final hasSeed      = !hasHarvested && !hasPlanted && inTraySetIds.contains(seed.setId);
+
+      return ShopItem(
+        imagePath:        seed.imagePath ?? 'assets/game/tulip.png',
+        name:             seed.title,
+        isLocked:         false,
+        price:            0,
+        requiredSetId:    seed.setId,
+        userHasSeed:      hasSeed,
+        userHasPlanted:   hasPlanted,
+        userHasHarvested: hasHarvested,
+        linkedSeed:       hasSeed ? seedMap[seed.setId] : null,
+      );
+    }).toList();
+
+    final receivedNames = _allUserSeeds.map((s) => s.title).toSet();
+
+    final lockedItems = kShopItems
+        .where((item) => !receivedNames.contains(item.name))
+        .map((item) => item.copyWith(
+              isLocked:       true,
+              userHasSeed:    false,
+              userHasPlanted: false,
+              userHasHarvested: false,
+              linkedSeed:     null,
+            ))
+        .toList();
+
+    unlockedItems.sort((a, b) {
+      int score(ShopItem x) {
+        if (x.userHasHarvested) return 0;
+        if (x.userHasPlanted)   return 1;
+        if (x.userHasSeed)      return 2;
+        return 3;
+      }
+      return score(a).compareTo(score(b));
+    });
+
+    return [...unlockedItems, ...lockedItems];
+  }
+
+  List<GardenPlot> get _emptyPlots =>
       widget.plots.where((p) => p.status == PlotStatus.empty).toList();
 
   void _onPlant(int idx, SeedItem seed) {
+    if (!mounted) return;
     widget.onPlantFromShop?.call(idx, seed);
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Row(children: [
         const Text('🌱', style: TextStyle(fontSize: 16)),
         const SizedBox(width: 8),
-        Expanded(
-          child: Text('Planted "${seed.title}" in Plot #${idx + 1}!',
-              style: const TextStyle(fontWeight: FontWeight.w700)),
-        ),
+        Expanded(child: Text(
+          'Planted "${seed.title}" in Plot #${idx + 1}!',
+          style: const TextStyle(fontWeight: FontWeight.w700),
+        )),
       ]),
       backgroundColor: _C.green,
       behavior: SnackBarBehavior.floating,
@@ -261,161 +302,137 @@ class _ShopGameScreenState extends State<ShopGameScreen>
 
   @override
   Widget build(BuildContext context) {
-    final mq = MediaQuery.of(context);
-    final sw = mq.size.width;
-    final sh = mq.size.height;
-
-    // ── Ảnh nền tỉ lệ ~828×1690 portrait.
-    // Mái hiên (awning): ~0–27% chiều cao ảnh
-    // Viền hoa trái/phải: ~7% chiều rộng mỗi bên
-    // Hoa góc dưới: ~13% chiều cao
-    // Dùng MediaQuery để tính padding đúng trên mọi máy.
-    final sidePad  = sw * 0.12;   
-    final bottomPad = sh * 0.175; 
-    final tabTopPad = sh * 0.13; 
-
+    final mq        = MediaQuery.of(context);
+    final sw        = mq.size.width;
+    final sh        = mq.size.height;
+    final sidePad   = sw * 0.12;
+    final bottomPad = sh * 0.175;
+    final tabTopPad = sh * 0.13;
 
     return Scaffold(
       backgroundColor: Colors.black,
-      body: Stack(
-        children: [
-          Positioned.fill(
-            child: Image.asset(
-              'assets/game/shop_bg1.png',
-              fit: BoxFit.cover,              // ← KHÔNG kéo méo nữa
-              alignment: Alignment.topCenter,
-              errorBuilder: (_, __, ___) => Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [Color(0xFFFDE8D8), Color(0xFFF5EBD8)],
-                  ),
+      body: Stack(children: [
+        Positioned.fill(
+          child: Image.asset(
+            'assets/game/shop_bg1.png',
+            fit: BoxFit.cover,
+            alignment: Alignment.topCenter,
+            errorBuilder: (_, __, ___) => Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Color(0xFFFDE8D8), Color(0xFFF5EBD8)],
                 ),
               ),
             ),
           ),
-
-          // ── 2. UI layer ─────────────────────────────────────────────────────
-          SafeArea(
-            bottom: false,
-            child: Column(
-              children: [
-                _TopBar(onBack: () => Navigator.pop(context)),
-
-                SizedBox(height: tabTopPad), 
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: sidePad),
-                  child: _TabBarWidget(
-                    controller: _tab,
-                    plantedCount: _planted.length,
-                  ),
-                ),
-
-                const SizedBox(height: 4),
-
-                // Content: scroll trong vùng kem của frame
-                Expanded(
-                  child: Padding(
-                    padding: EdgeInsets.only(
-                      left: sidePad,
-                      right: sidePad,
-                      bottom: bottomPad,
-                    ),
-                    child: TabBarView(
-                      controller: _tab,
-                      physics: const NeverScrollableScrollPhysics(),
-                      children: [
-                        _ShopTab(
-                          items: _shopItems,
-                          emptyPlots: _empty,
-                          onPlant: _onPlant,
-                        ),
-                        _GardenTab(plots: _planted),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
+        ),
+        SafeArea(
+          bottom: false,
+          child: Column(children: [
+            _TopBar(onBack: () => Navigator.pop(context), stars: _totalStars),
+            SizedBox(height: tabTopPad),
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: sidePad),
+              child: _TabBarWidget(
+                controller: _tab,
+                plantedCount: _gardenPlots.length,
+              ),
             ),
-          ),
-        ],
-      ),
+            const SizedBox(height: 4),
+            Expanded(
+              child: Padding(
+                padding: EdgeInsets.only(
+                  left: sidePad, right: sidePad, bottom: bottomPad,
+                ),
+                child: TabBarView(
+                  controller: _tab,
+                  physics: const NeverScrollableScrollPhysics(),
+                  children: [
+                    _ShopTab(
+                      items:      _mergedItems,
+                      emptyPlots: _emptyPlots,
+                      onPlant:    _onPlant,
+                    ),
+                    _gardenLoading
+                        ? const Center(child: CircularProgressIndicator())
+                        : _GardenTab(plots: _gardenPlots),
+                  ],
+                ),
+              ),
+            ),
+          ]),
+        ),
+      ]),
     );
   }
 }
 
-// ─── Top bar ─────────────────────────────────────────────────────────────────
+
 class _TopBar extends StatelessWidget {
   final VoidCallback onBack;
-  const _TopBar({required this.onBack});
+  final int stars;
+  const _TopBar({required this.onBack, this.stars = 0});
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 10, 20, 8),
-      child: Row(
-        children: [
-          GestureDetector(
-            onTap: onBack,
-            child: Container(
-              width: 38, height: 38,
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.85),
-                shape: BoxShape.circle,
-                border: Border.all(color: _C.rose, width: 1.5),
-                boxShadow: [BoxShadow(
-                  color: _C.roseDark.withOpacity(0.20),
-                  blurRadius: 8, offset: const Offset(0, 2),
-                )],
-              ),
-              child: const Icon(Icons.arrow_back_ios_new_rounded,
-                  size: 16, color: _C.roseDark),
-            ),
-          ),
-          const SizedBox(width: 12),
-          const Text(
-            'Flower Shop',
-            style: TextStyle(
-              fontSize: 22, fontWeight: FontWeight.w900,
-              color: _C.textDark, letterSpacing: -0.5,
-              shadows: [Shadow(
-                color: Color(0x44000000),
-                blurRadius: 6, offset: Offset(0, 1),
-              )],
-            ),
-          ),
-          const Spacer(),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 7),
+      child: Row(children: [
+        GestureDetector(
+          onTap: onBack,
+          child: Container(
+            width: 38, height: 38,
             decoration: BoxDecoration(
-              color: _C.gold,
-              borderRadius: BorderRadius.circular(22),
-              border: Border.all(color: _C.goldDark, width: 1.5),
+              color: Colors.white.withOpacity(0.85),
+              shape: BoxShape.circle,
+              border: Border.all(color: _C.rose, width: 1.5),
               boxShadow: [BoxShadow(
-                color: _C.goldDark.withOpacity(0.25),
+                color: _C.roseDark.withOpacity(0.20),
                 blurRadius: 8, offset: const Offset(0, 2),
               )],
             ),
-            child: const Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text('⭐', style: TextStyle(fontSize: 14)),
-                SizedBox(width: 4),
-                Text('350', style: TextStyle(
-                  fontSize: 15, fontWeight: FontWeight.w900,
-                  color: _C.goldText,
-                )),
-              ],
-            ),
+            child: const Icon(Icons.arrow_back_ios_new_rounded,
+                size: 16, color: _C.roseDark),
           ),
-        ],
-      ),
+        ),
+        const SizedBox(width: 12),
+        const Text(
+          'Flower Shop',
+          style: TextStyle(
+            fontSize: 22, fontWeight: FontWeight.w900,
+            color: _C.textDark, letterSpacing: -0.5,
+            shadows: [Shadow(
+              color: Color(0x44000000), blurRadius: 6, offset: Offset(0, 1),
+            )],
+          ),
+        ),
+        const Spacer(),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 7),
+          decoration: BoxDecoration(
+            color: _C.gold,
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: _C.goldDark, width: 1.5),
+            boxShadow: [BoxShadow(
+              color: _C.goldDark.withOpacity(0.25),
+              blurRadius: 8, offset: const Offset(0, 2),
+            )],
+          ),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            const Text('⭐', style: TextStyle(fontSize: 14)),
+            const SizedBox(width: 4),
+            Text('$stars', style: const TextStyle(
+              fontSize: 15, fontWeight: FontWeight.w900, color: _C.goldText,
+            )),
+          ]),
+        ),
+      ]),
     );
   }
 }
 
-// ─── Tab bar ─────────────────────────────────────────────────────────────────
 class _TabBarWidget extends StatelessWidget {
   final TabController controller;
   final int plantedCount;
@@ -483,9 +500,8 @@ class _TabBarWidget extends StatelessWidget {
   }
 }
 
-// ─── Shop tab ─────────────────────────────────────────────────────────────────
 class _ShopTab extends StatelessWidget {
-  final List<ShopItem> items;
+  final List<ShopItem>   items;
   final List<GardenPlot> emptyPlots;
   final Function(int, SeedItem) onPlant;
 
@@ -500,10 +516,10 @@ class _ShopTab extends StatelessWidget {
     return GridView.builder(
       padding: const EdgeInsets.only(top: 8, bottom: 8),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        mainAxisSpacing: 10,
-        crossAxisSpacing: 10,
-        childAspectRatio: 0.68,
+        crossAxisCount:    3,
+        mainAxisSpacing:   10,
+        crossAxisSpacing:  10,
+        childAspectRatio:  0.68,
       ),
       itemCount: items.length,
       itemBuilder: (_, i) => _PlantCard(
@@ -513,116 +529,188 @@ class _ShopTab extends StatelessWidget {
   }
 }
 
-// ─── Plant card ───────────────────────────────────────────────────────────────
 class _PlantCard extends StatelessWidget {
-  final ShopItem item;
+  final ShopItem         item;
   final List<GardenPlot> emptyPlots;
   final Function(int, SeedItem) onPlant;
-  const _PlantCard({required this.item, required this.emptyPlots, required this.onPlant});
 
-  Color get _border => item.isLocked
-      ? const Color(0xFFE0CCBF)
-      : item.isReadyToPlant
-          ? _C.greenBdr
-          : const Color(0xFFEDD8C8);
+  const _PlantCard({
+    required this.item,
+    required this.emptyPlots,
+    required this.onPlant,
+  });
 
-  Color get _bg => item.isLocked
-      ? Colors.white.withOpacity(0.72)
-      : item.isReadyToPlant
-          ? const Color(0xEEF4FAF0)
-          : Colors.white.withOpacity(0.82);
+  Color get _border {
+    if (item.userHasHarvested) return Colors.amber.withOpacity(0.6);
+    if (item.isLocked)         return const Color(0xFFE0CCBF);
+    if (item.isReadyToPlant)   return _C.greenBdr;
+    return const Color(0xFFEDD8C8);
+  }
+
+  Color get _bg {
+    if (item.userHasHarvested) return const Color(0xFFFFF8E1).withOpacity(0.7);
+    if (item.isLocked)         return Colors.white.withOpacity(0.72);
+    if (item.isReadyToPlant)   return const Color(0xEEF4FAF0);
+    return Colors.white.withOpacity(0.82);
+  }
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => _tap(context),
-      child: Container(
-        decoration: BoxDecoration(
-          color: _bg,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: _border,
-              width: item.isReadyToPlant ? 1.8 : 1.2),
-          boxShadow: [BoxShadow(
-            color: item.isReadyToPlant
-                ? _C.green.withOpacity(0.14)
-                : Colors.black.withOpacity(0.06),
-            blurRadius: 8, offset: const Offset(0, 3),
-          )],
-        ),
-        child: Stack(children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 6),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                SizedBox(
-                  height: 58,
-                  child: Center(
-                    child: Opacity(
-                      opacity: item.isLocked ? 0.38 : 1.0,
-                      child: Image.asset(
-                        item.imagePath, width: 56, height: 56,
-                        fit: BoxFit.contain,
-                        errorBuilder: (_, __, ___) =>
-                            const Text('🌱', style: TextStyle(fontSize: 38)),
+    return AbsorbPointer(
+      absorbing: item.userHasHarvested,
+      child: GestureDetector(
+        onTap: () => _tap(context),
+        child: Opacity(
+          opacity: item.userHasHarvested ? 0.60 : 1.0,
+          child: Container(
+            decoration: BoxDecoration(
+              color: _bg,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: _border,
+                width: item.userHasHarvested ? 2.0
+                     : item.isReadyToPlant   ? 1.8
+                     : 1.2,
+              ),
+              boxShadow: item.userHasHarvested
+                  ? [BoxShadow(
+                      color: Colors.amber.withOpacity(0.15),
+                      blurRadius: 8, offset: const Offset(0, 2),
+                    )]
+                  : null,
+            ),
+            child: Stack(children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 6),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    SizedBox(
+                      height: 58,
+                      child: Center(
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            Opacity(
+                              opacity: item.isLocked ? 0.38 : 1.0,
+                              child: Image.asset(
+                                item.imagePath,
+                                width: 56, height: 56,
+                                fit: BoxFit.contain,
+                                errorBuilder: (_, __, ___) =>
+                                    const Text('🌱', style: TextStyle(fontSize: 38)),
+                              ),
+                            ),
+                            if (item.userHasHarvested)
+                              Positioned(
+                                bottom: 0, right: 0,
+                                child: Container(
+                                  width: 22, height: 22,
+                                  decoration: BoxDecoration(
+                                    color: _C.gold,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(color: Colors.white, width: 1.5),
+                                    boxShadow: [BoxShadow(
+                                      color: _C.goldDark.withOpacity(0.4),
+                                      blurRadius: 4,
+                                    )],
+                                  ),
+                                  child: const Center(
+                                    child: Text('👑', style: TextStyle(fontSize: 11)),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
+                    const SizedBox(height: 4),
+
+                    Text(
+                      item.name,
+                      style: TextStyle(
+                        fontSize: 10.5, fontWeight: FontWeight.w800, height: 1.2,
+                        color: item.isLocked        ? _C.textMuted
+                             : item.userHasHarvested ? _C.goldText
+                             : _C.textDark,
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 2, overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+
+                    if (item.userHasHarvested)
+                      _Chip(
+                        icon: '👑', label: 'Harvested',
+                        bg: const Color(0xFFFFF3CD),
+                        fg: _C.goldText,
+                        border: _C.gold,
+                      )
+                    else if (item.userHasPlanted)
+                      _Chip(
+                        icon: '🌳', label: 'Growing',
+                        bg: _C.greenLight, fg: _C.textGreen, border: _C.greenBdr,
+                      )
+                    else if (item.userHasSeed)
+                      _Chip(
+                        icon: '🌱', label: 'In tray',
+                        bg: const Color(0xFFFFF3E0),
+                        fg: const Color(0xFFE65100),
+                        border: const Color(0xFFFFCC80),
+                      )
+                    else if (!item.isLocked)
+                      _Chip(
+                        icon: '🌰', label: 'No seed',
+                        bg: _C.blueLight, fg: _C.textBlue,
+                      )
+                    else
+                      _Chip(
+                        icon: '🔒', label: 'Not received',
+                        bg: _C.purpleLight, fg: _C.purple,
+                      ),
+                  ],
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  item.name,
-                  style: TextStyle(
-                    fontSize: 10.5, fontWeight: FontWeight.w800, height: 1.2,
-                    color: item.isLocked ? _C.textMuted : _C.textDark,
-                  ),
-                  textAlign: TextAlign.center,
-                  maxLines: 2, overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-                if (item.isLocked)
-                  _Chip(icon: '📚',
-                    label: _cut(item.requiredSetTitle ?? 'Unlock', 10),
-                    bg: _C.purpleLight, fg: _C.purple)
-                else if (item.isReadyToPlant) ...[
-                  _Chip(icon: '🌱',
-                    label: _cut(item.linkedSeed!.title, 9),
-                    bg: _C.greenLight, fg: _C.textGreen, border: _C.greenBdr),
-                  // const SizedBox(height: 3),
-                  // Text('Tap to plant', style: TextStyle(
-                  //   fontSize: 9, fontWeight: FontWeight.w700,
-                  //   color: _C.green.withOpacity(0.85),
-                  // )),
-                ] else if (item.isUnlockedNoSeed)
-                  _Chip(icon: '📖', label: 'Study needed',
-                    bg: const Color(0xFFFFF3E0),
-                    fg: const Color(0xFFE65100),
-                    border: const Color(0xFFFFCC80))
-                else
-                  Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                    const Text('⭐', style: TextStyle(fontSize: 10)),
-                    const SizedBox(width: 2),
-                    Text('${item.price}', style: const TextStyle(
-                      fontSize: 12, fontWeight: FontWeight.w800, color: _C.goldText,
-                    )),
-                  ]),
-              ],
-            ),
+              ),
+
+              Positioned(top: 6, right: 6, child: _cornerBadge()),
+            ]),
           ),
-          // Corner badge
-          Positioned(top: 6, right: 6, child: _cornerBadge()),
-        ]),
+        ),
       ),
     );
   }
 
-  String _cut(String s, int n) => s.length > n ? '${s.substring(0, n)}…' : s;
-
   Widget _cornerBadge() {
+    if (item.userHasHarvested) {
+      return Container(
+        width: 20, height: 20,
+        decoration: BoxDecoration(
+          color: _C.goldDark,
+          shape: BoxShape.circle,
+          boxShadow: [BoxShadow(
+            color: _C.goldDark.withOpacity(0.4), blurRadius: 4,
+          )],
+        ),
+        child: const Center(
+          child: Text('👑', style: TextStyle(fontSize: 10)),
+        ),
+      );
+    }
+    if (item.userHasSeed) {
+      return Container(
+        width: 20, height: 20,
+        decoration: const BoxDecoration(
+          color: Color(0xFFFFA726), shape: BoxShape.circle,
+        ),
+        child: const Icon(Icons.inventory_2_rounded, size: 11, color: Colors.white),
+      );
+    }
     if (item.isLocked) {
       return Container(
         width: 20, height: 20,
-        decoration: const BoxDecoration(color: Color(0x99000000), shape: BoxShape.circle),
+        decoration: const BoxDecoration(
+          color: Color(0x99000000), shape: BoxShape.circle,
+        ),
         child: const Icon(Icons.lock_rounded, size: 11, color: Colors.white),
       );
     }
@@ -637,8 +725,8 @@ class _PlantCard extends StatelessWidget {
   }
 
   void _tap(BuildContext ctx) {
-    if (item.isLocked)            _lockedDialog(ctx);
-    else if (item.isReadyToPlant) _plantSheet(ctx);
+    if (item.isLocked)              _lockedDialog(ctx);
+    else if (item.isReadyToPlant)   _plantSheet(ctx);
     else if (item.isUnlockedNoSeed) _studyDialog(ctx);
   }
 
@@ -676,13 +764,15 @@ class _PlantCard extends StatelessWidget {
   }
 }
 
-// ─── Small chip ───────────────────────────────────────────────────────────────
 class _Chip extends StatelessWidget {
   final String icon, label;
   final Color bg, fg;
   final Color? border;
-  const _Chip({required this.icon, required this.label,
-    required this.bg, required this.fg, this.border});
+  const _Chip({
+    required this.icon, required this.label,
+    required this.bg,   required this.fg,
+    this.border,
+  });
 
   @override
   Widget build(BuildContext context) => Container(
@@ -702,32 +792,43 @@ class _Chip extends StatelessWidget {
   );
 }
 
-// ─── My Garden tab ────────────────────────────────────────────────────────────
 class _GardenTab extends StatelessWidget {
   final List<GardenPlot> plots;
   const _GardenTab({required this.plots});
 
   static const _stageNames  = ['Seed','Sprout','Seedling','Sapling','Flowering','Mature'];
   static const _stageAssets = [
-    'assets/game/tree/stage_0.png','assets/game/tree/stage_1.png',
-    'assets/game/tree/stage_2.png','assets/game/tree/stage_3.png',
-    'assets/game/tree/stage_4.png','assets/game/tree/stage_5.png',
+    'assets/game/tree/stage_0.png', 'assets/game/tree/stage_1.png',
+    'assets/game/tree/stage_2.png', 'assets/game/tree/stage_3.png',
+    'assets/game/tree/stage_4.png', 'assets/game/tree/stage_5.png',
   ];
-  static const _stageEmoji = ['🌰','🌱','🌿','🪴','🌸','🍎'];
+  static const _stageEmoji  = ['🌰','🌱','🌿','🪴','🌸','🍎'];
 
   @override
   Widget build(BuildContext context) {
     if (plots.isEmpty) return _emptyState();
-    return ListView.separated(
-      padding: const EdgeInsets.only(top: 8, bottom: 8),
-      itemCount: plots.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 10),
-      itemBuilder: (_, i) => _GardenCard(
-        plot: plots[i], index: i,
-        stageNames: _stageNames,
-        stageAssets: _stageAssets,
-        stageEmoji: _stageEmoji,
-      ),
+    return CustomScrollView(
+      slivers: [
+        SliverPadding(
+          padding: const EdgeInsets.only(top: 8, bottom: 8),
+          sliver: SliverList(
+            delegate: SliverChildBuilderDelegate(
+              (_, i) {
+                if (i.isOdd) return const SizedBox(height: 10);
+                final idx = i ~/ 2;
+                return _GardenCard(
+                  plot:        plots[idx],
+                  index:       idx,
+                  stageNames:  _stageNames,
+                  stageAssets: _stageAssets,
+                  stageEmoji:  _stageEmoji,
+                );
+              },
+              childCount: plots.length * 2 - 1,
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -750,7 +851,8 @@ class _GardenTab extends StatelessWidget {
       const SizedBox(height: 8),
       const Padding(
         padding: EdgeInsets.symmetric(horizontal: 32),
-        child: Text('Go to Shop and plant\nyour first flower! 🌱',
+        child: Text(
+          'Plant your first flower\nfrom the Shop tab! 🌱',
           textAlign: TextAlign.center,
           style: TextStyle(fontSize: 13, color: _C.textMid, height: 1.6),
         ),
@@ -759,25 +861,25 @@ class _GardenTab extends StatelessWidget {
   ));
 }
 
-// ─── Garden card ─────────────────────────────────────────────────────────────
 class _GardenCard extends StatelessWidget {
   final GardenPlot plot;
   final int index;
   final List<String> stageNames, stageAssets, stageEmoji;
 
   const _GardenCard({
-    required this.plot, required this.index,
+    required this.plot,  required this.index,
     required this.stageNames, required this.stageAssets, required this.stageEmoji,
   });
 
   @override
   Widget build(BuildContext context) {
-    final stage    = plot.growthStage.clamp(0, 5);
-    final isMaster = plot.status == PlotStatus.mastered;
-    final progress = stage / 5.0;
-    final stageColor = isMaster ? _C.goldDark
-        : stage >= 4 ? const Color(0xFF66BB6A)
-        : stage >= 2 ? _C.green : _C.greenBdr;
+    final stage      = plot.growthStage.clamp(0, 5);
+    final isMaster   = plot.status == PlotStatus.mastered;
+    final progress   = stage / 5.0;
+    final stageColor = isMaster             ? _C.goldDark
+                     : stage >= 4           ? const Color(0xFF66BB6A)
+                     : stage >= 2           ? _C.green
+                     : _C.greenBdr;
 
     return Container(
       decoration: BoxDecoration(
@@ -799,7 +901,6 @@ class _GardenCard extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Row(children: [
-          // Thumbnail
           Container(
             width: 62, height: 62,
             decoration: BoxDecoration(
@@ -810,33 +911,44 @@ class _GardenCard extends StatelessWidget {
               ),
             ),
             child: Stack(alignment: Alignment.center, children: [
-              Image.asset(stageAssets[stage], width: 42, height: 42,
+              Image.asset(
+                plot.imagePath ?? stageAssets[stage],
+                width: 42, height: 42,
                 fit: BoxFit.contain,
-                errorBuilder: (_, __, ___) =>
-                    Text(stageEmoji[stage], style: const TextStyle(fontSize: 30)),
+                errorBuilder: (_, __, ___) => Image.asset(
+                  stageAssets[stage],
+                  width: 42, height: 42,
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, __, ___) => Text(
+                    stageEmoji[stage],
+                    style: const TextStyle(fontSize: 30),
+                  ),
+                ),
               ),
               if (plot.needsWater)
-                Positioned(top: 3, right: 3,
+                Positioned(
+                  top: 3, right: 3,
                   child: Container(
                     width: 18, height: 18,
                     decoration: BoxDecoration(
                       color: _C.blue, shape: BoxShape.circle,
                       border: Border.all(color: Colors.white, width: 1.5),
                     ),
-                    child: const Center(child: Text('💧', style: TextStyle(fontSize: 8))),
+                    child: const Center(
+                      child: Text('💧', style: TextStyle(fontSize: 8)),
+                    ),
                   ),
                 ),
             ]),
           ),
           const SizedBox(width: 12),
 
-          // Info
           Expanded(child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(children: [
                 Expanded(child: Text(
-                  plot.setTitle ?? 'Plant #${index + 1}',
+                  plot.plantName ?? plot.setTitle ?? 'Plant #${index + 1}',
                   style: const TextStyle(
                     fontSize: 14, fontWeight: FontWeight.w900, color: _C.textDark,
                   ),
@@ -917,36 +1029,92 @@ class _GardenCard extends StatelessWidget {
   }
 }
 
-// ─── Action button ────────────────────────────────────────────────────────────
-class _ActionBtn extends StatelessWidget {
+class _ActionBtn extends StatefulWidget {
   final GardenPlot plot;
   const _ActionBtn({required this.plot});
 
   @override
-  Widget build(BuildContext context) {
-    if (plot.needsWater) return _MiniBtn(emoji: '💧', label: 'Water',
-      color: _C.blue, onTap: () => _snack(context, '💧 Watered!', _C.blue));
-    if (plot.status == PlotStatus.mastered) return _MiniBtn(
-      emoji: '🏆', label: 'Harvest', color: _C.goldDark, onTap: () {});
-    return _MiniBtn(emoji: '🔍', label: 'View', color: _C.green, onTap: () {});
+  State<_ActionBtn> createState() => _ActionBtnState();
+}
+
+class _ActionBtnState extends State<_ActionBtn> {
+  bool _harvesting = false;
+  final GardenService _gardenService = GardenService();
+
+  void _snack(String msg, Color c) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(msg, style: const TextStyle(fontWeight: FontWeight.w700)),
+      backgroundColor: c,
+      behavior: SnackBarBehavior.floating,
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      duration: const Duration(seconds: 2),
+    ));
   }
 
-  void _snack(BuildContext ctx, String msg, Color c) =>
-      ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
-        content: Text(msg, style: const TextStyle(fontWeight: FontWeight.w700)),
-        backgroundColor: c, behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        duration: const Duration(seconds: 2),
-      ));
+  Future<void> _doHarvest() async {
+    final plot = widget.plot;
+    final uid  = FirebaseAuth.instance.currentUser?.uid;
+    if (_harvesting || plot.treeId == null || uid == null) return;
+
+    setState(() => _harvesting = true);
+    try {
+      await _gardenService.harvestTree(
+        userId:    uid,
+        treeId:    plot.treeId!,
+        plantName: plot.plantName ?? plot.setTitle ?? 'Unknown',
+        imagePath: plot.imagePath ?? '',
+        setId:     plot.setId ?? '',          
+      );
+      if (mounted) _snack('👑 Harvested ${plot.plantName ?? "plant"}!', _C.goldDark);
+    } catch (e) {
+      if (mounted) _snack('❌ Harvest failed. Try again.', Colors.red);
+    } finally {
+      if (mounted) setState(() => _harvesting = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final plot = widget.plot;
+
+    if (plot.needsWater) {
+      return _MiniBtn(
+        imageAsset: 'assets/game/watering_can.png',
+        label: 'Water',
+        color: _C.blue,
+        onTap: () => _snack('💧 Watered!', _C.blue),
+      );
+    }
+
+    if (plot.status == PlotStatus.mastered) {
+      return _MiniBtn(
+        emoji: _harvesting ? '⏳' : '👑',
+        label: _harvesting ? '...' : 'Harvest',
+        color: _C.goldDark,
+        onTap: _harvesting ? () {} : _doHarvest,
+      );
+    }
+
+    return _MiniBtn(emoji: '🔍', label: 'View', color: _C.green, onTap: () {});
+  }
 }
 
 class _MiniBtn extends StatelessWidget {
-  final String emoji, label;
-  final Color color;
+  final String?   emoji;
+  final String?   imageAsset;
+  final String    label;
+  final Color     color;
   final VoidCallback onTap;
-  const _MiniBtn({required this.emoji, required this.label,
-    required this.color, required this.onTap});
+
+  const _MiniBtn({
+    this.emoji,
+    this.imageAsset,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) => GestureDetector(
@@ -960,88 +1128,15 @@ class _MiniBtn extends StatelessWidget {
         border: Border.all(color: color.withOpacity(0.40), width: 1.5),
       ),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
-        Text(emoji, style: const TextStyle(fontSize: 20)),
+        if (imageAsset != null)
+          Image.asset(imageAsset!, width: 24, height: 24, fit: BoxFit.contain)
+        else
+          Text(emoji ?? '', style: const TextStyle(fontSize: 20)),
         const SizedBox(height: 3),
         Text(label, style: TextStyle(
           fontSize: 10, fontWeight: FontWeight.w800, color: color,
         )),
       ]),
     ),
-  );
-}
-
-// ─── Shared dialog ────────────────────────────────────────────────────────────
-class _FlowerDialog extends StatelessWidget {
-  final String icon, title, body, setSub;
-  final String? setTitle;
-  final Color setBg, setBorder, setTitleColor, setSubColor;
-  final VoidCallback onStudy;
-
-  const _FlowerDialog({
-    required this.icon, required this.title, required this.body,
-    required this.setTitle, required this.setBg, required this.setBorder,
-    required this.setTitleColor, required this.setSub, required this.setSubColor,
-    required this.onStudy,
-  });
-
-  @override
-  Widget build(BuildContext context) => AlertDialog(
-    backgroundColor: const Color(0xFFFDF4EC),
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-    title: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Container(height: 4, margin: const EdgeInsets.only(bottom: 14),
-        decoration: BoxDecoration(color: _C.rose, borderRadius: BorderRadius.circular(4))),
-      Row(children: [
-        Text(icon, style: const TextStyle(fontSize: 20)),
-        const SizedBox(width: 8),
-        Expanded(child: Text(title, style: const TextStyle(
-          fontWeight: FontWeight.w900, fontSize: 16, color: _C.textDark,
-        ))),
-      ]),
-    ]),
-    content: Column(mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text(body, style: const TextStyle(color: _C.textMid, fontSize: 13, height: 1.5)),
-      const SizedBox(height: 14),
-      Container(
-        width: double.infinity, padding: const EdgeInsets.all(13),
-        decoration: BoxDecoration(
-          color: setBg, borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: setBorder, width: 1.2),
-        ),
-        child: Row(children: [
-          const Text('📚', style: TextStyle(fontSize: 22)),
-          const SizedBox(width: 10),
-          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(setTitle ?? 'Flashcard set', style: TextStyle(
-              fontSize: 13, fontWeight: FontWeight.w900, color: setTitleColor,
-            )),
-            const SizedBox(height: 2),
-            Text(setSub, style: TextStyle(fontSize: 11, color: setSubColor)),
-          ])),
-        ]),
-      ),
-    ]),
-    actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-    actions: [
-      TextButton(
-        onPressed: () => Navigator.pop(context),
-        child: const Text('Later', style: TextStyle(
-          color: _C.textMuted, fontWeight: FontWeight.w700,
-        )),
-      ),
-      ElevatedButton.icon(
-        onPressed: onStudy,
-        icon: const Icon(Icons.menu_book_rounded, size: 16, color: Colors.white),
-        label: const Text('Study Now', style: TextStyle(
-          color: Colors.white, fontWeight: FontWeight.w800,
-        )),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: _C.green, elevation: 0,
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ),
-      ),
-    ],
   );
 }

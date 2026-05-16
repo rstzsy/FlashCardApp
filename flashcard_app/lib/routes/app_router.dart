@@ -34,7 +34,7 @@ class AppRouter {
         return MaterialPageRoute(builder: (_) => const HomeGameScreen());
 
       case AppRoutes.shopGame:
-        return MaterialPageRoute(builder: (_) => ShopGameScreen(plots: const []));
+        return MaterialPageRoute(builder: (_) => ShopGameScreen(plots: const [], userSeeds: const [],));
       
       case AppRoutes.introGameScreen:
         return MaterialPageRoute(builder: (context) => IntroGameScreen(onBack: () => Navigator.pop(context)));
