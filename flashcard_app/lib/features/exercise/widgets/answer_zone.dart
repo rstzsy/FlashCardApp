@@ -25,7 +25,7 @@ class _AnswerZoneState extends State<AnswerZone> {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      height: double.infinity,
+      constraints: const BoxConstraints(minHeight: 120),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
         color: const Color(0xFFFFF0EF),
@@ -48,15 +48,21 @@ class _AnswerZoneState extends State<AnswerZone> {
                   ),
                 ),
               )
-              : Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: List.generate(widget.selectedWords.length, (i) {
-                  final isDragging = _draggingIndex == i;
-                  final isHover = _hoverIndex == i && _draggingIndex != i;
+              : Scrollbar(
+                thumbVisibility: true,
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: List.generate(widget.selectedWords.length, (i) {
+                      final isDragging = _draggingIndex == i;
+                      final isHover = _hoverIndex == i && _draggingIndex != i;
 
-                  return _buildDraggableChip(i, isDragging, isHover);
-                }),
+                      return _buildDraggableChip(i, isDragging, isHover);
+                    }),
+                  ),
+                ),
               ),
     );
   }

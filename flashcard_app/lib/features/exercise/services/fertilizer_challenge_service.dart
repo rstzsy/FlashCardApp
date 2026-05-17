@@ -8,10 +8,7 @@ class FertilizerService {
   // get title
   Future<String> getSetTitle(String setId) async {
     try {
-      final doc = await _firestore
-          .collection('FlashcardSets')
-          .doc(setId)
-          .get();
+      final doc = await _firestore.collection('FlashcardSets').doc(setId).get();
 
       if (!doc.exists) return '';
       final data = doc.data();
@@ -25,10 +22,11 @@ class FertilizerService {
   // get question
   Future<List<FillQuestionModel>> getFillQuestions(String setId) async {
     try {
-      final snapshot = await _firestore
-          .collection('Flashcards')
-          .where('SetId', isEqualTo: setId)
-          .get();
+      final snapshot =
+          await _firestore
+              .collection('Flashcards')
+              .where('SetId', isEqualTo: setId)
+              .get();
 
       List<FillQuestionModel> list = [];
 
@@ -40,27 +38,29 @@ class FertilizerService {
 
         if (example == null || word == null) continue;
 
+        final actualWord = _extractActualWord(example.trim(), word.trim());
+
         // replace correct word with blank
         final sentence = _replaceWordWithBlank(example.trim(), word.trim());
 
         // skip if sentence not found work to blank
         if (!sentence.contains('_____')) continue;
 
-        //create choice 
+        //create choice
         final distractors = [
           'make', 'do', 'take', 'get', 'have',
           'bring', 'keep', 'put', 'set', 'turn',
           'show', 'find', 'give', 'call', 'ask',
         ]..shuffle(Random());
 
-        final choices = [word, ...distractors.take(3)]..shuffle(Random());
+        final choices = [actualWord, ...distractors.take(3)]..shuffle(Random());
 
         list.add(
           FillQuestionModel(
             sentence: sentence,
-            correctAnswer: word,
+            correctAnswer: actualWord,
             choices: choices,
-            explanation: 'Correct answer is "$word"',
+            explanation: 'Correct answer is "$actualWord"',
           ),
         );
       }
@@ -70,6 +70,16 @@ class FertilizerService {
       print("Error fetching questions: $e");
       return [];
     }
+  }
+
+  // get correct word from sentence (preserve case)
+  String _extractActualWord(String sentence, String word) {
+    final pattern = RegExp(
+      r'(?<![a-zA-Z])' + RegExp.escape(word) + r'(?![a-zA-Z])',
+      caseSensitive: false,
+    );
+    final match = pattern.firstMatch(sentence);
+    return match != null ? match.group(0)! : word;
   }
 
   // change word to blank
@@ -91,7 +101,7 @@ class FertilizerService {
     return sentence; // not found -> return original
   }
 
-  // create session
+  //create session
   Future<String> createGameSession({
     required String userId,
     required String gameType,
@@ -142,28 +152,31 @@ class FertilizerService {
     }
   }
 
- // save result
+  // save result
   Future<void> saveGameResult({
-  required String userId,
-  required String gameType,
-  required String setId,
-  required String setTitle,
-  required int score,
-  required int total,
-  required int timeSpentSeconds,
-}) async {
-  try {
-    final doc = _firestore.collection('GameResults').doc();
-    final double accuracy = total == 0 ? 0 : (score / total) * 100;
+    required String userId,
+    required String gameType,
+    required String setId,
+    required String setTitle,
+    required int score,
+    required int total,
+    required int timeSpentSeconds,
+  }) async {
+    try {
+      final doc = _firestore.collection('GameResults').doc();
+      final double accuracy = total == 0 ? 0 : (score / total) * 100;
 
-    int starCount = 0;
-    if (score == total)            starCount = 3;
-    else if (score >= total * 0.6) starCount = 2;
-    else if (score > 0)            starCount = 1;
+      int starCount = 0;
+      if (score == total)
+        starCount = 3;
+      else if (score >= total * 0.6)
+        starCount = 2;
+      else if (score > 0)
+        starCount = 1;
 
-    int fertilizerReward = starCount >= 2 ? 1 : 0;
+      int fertilizerReward = starCount >= 2 ? 1 : 0;
 
-    await doc.set({
+      await doc.set({
       'ResultId':          doc.id,
       'UserId':            userId,
       'GameType':          gameType,
@@ -178,13 +191,13 @@ class FertilizerService {
       'CompletedAt':       FieldValue.serverTimestamp(),
     });
 
-    // ── Cộng vào users document ──────────────────────────
-    await _firestore.collection('users').doc(userId).update({
-      'fertilizerCount': FieldValue.increment(fertilizerReward),
-      'stars':           FieldValue.increment(starCount),
-    });
-  } catch (e) {
-    print("Error saving result: $e");
+      // ── Cộng vào users document ──────────────────────────
+      await _firestore.collection('users').doc(userId).update({
+        'fertilizerCount': FieldValue.increment(fertilizerReward),
+        'stars': FieldValue.increment(starCount),
+      });
+    } catch (e) {
+      print("Error saving result: $e");
+    }
   }
-}
 }
