@@ -157,8 +157,8 @@ class _FlashcardStudyCardState extends State<FlashcardStudyCard>
               mainAxisSize: MainAxisSize.min,
               children: [
                 SizedBox(
-                  width: 130,
-                  height: 130,
+                  width: 200,
+                  height: 200,
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(20),
                     child: _buildImage(f.imageUrl),
@@ -219,7 +219,6 @@ class _FlashcardStudyCardState extends State<FlashcardStudyCard>
 
     return Container(
       width: double.infinity,
-      height: double.infinity,
       margin: const EdgeInsets.only(top: 40),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -263,6 +262,8 @@ class _FlashcardStudyCardState extends State<FlashcardStudyCard>
                   children: [
                     Text(
                       f.word,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         fontSize: 30,
                         fontWeight: FontWeight.bold,
@@ -289,42 +290,52 @@ class _FlashcardStudyCardState extends State<FlashcardStudyCard>
               ),
             ],
           ),
+
           const SizedBox(height: 14),
 
-          // Divider
           const Divider(color: kDivider, thickness: 0.5, height: 1),
+
           const SizedBox(height: 14),
 
-          // Example box
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            decoration: BoxDecoration(
-              color: kExampleBg,
-              borderRadius: BorderRadius.circular(13),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'EXAMPLE',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                    color: kAccentMid,
-                    letterSpacing: 0.8,
+          // example
+          Expanded(
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: kExampleBg,
+                borderRadius: BorderRadius.circular(13),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'EXAMPLE',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: kAccentMid,
+                      letterSpacing: 0.8,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 5),
-                Text(
-                  f.example,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    color: kAccentDeep,
-                    height: 1.6,
+
+                  const SizedBox(height: 8),
+
+                  Expanded(
+                    child: SingleChildScrollView(
+                      physics: const BouncingScrollPhysics(),
+                      child: Text(
+                        f.example,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          color: kAccentDeep,
+                          height: 1.6,
+                        ),
+                      ),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ],
