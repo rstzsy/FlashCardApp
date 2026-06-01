@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../../core/themes/app_colors.dart';
 import '../widgets/account_header.dart';
 import '../widgets/overview_section.dart';
+import '../widgets/study_heatmap_section.dart';
 import '../widgets/month_badge.dart';
 import '../widgets/achievement_section.dart';
 import '../widgets/harvested_plants_section.dart';
@@ -55,6 +56,9 @@ class _ProfileContent extends StatelessWidget {
               const SizedBox(height: 10),
 
               OverviewSection(data: data),
+
+              const SizedBox(height: 25),
+              const StudyHeatmapSection(),
 
               const SizedBox(height: 25),
               const MonthlyBadgeSection(),

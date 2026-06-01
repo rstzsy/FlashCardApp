@@ -103,7 +103,7 @@ class _HomeGameScreenState extends State<HomeGameScreen> {
       _harvestingPlotIndex = null;
     });
 
-    _showToast('Thu hoạch "${plot.plantName}" thành công! 🌸', const Color(0xFFFFB300));
+    _showToast('Harvested "${plot.plantName}" successfully! 🌸', const Color(0xFFFFB300));
   }
 
   void _onSeedDropped(int i, SeedItem seed) {
@@ -119,7 +119,7 @@ class _HomeGameScreenState extends State<HomeGameScreen> {
     switch (tool) {
       case GardenTool.water:
         if (_waterCount <= 0) {
-          _showToast('Hết nước rồi! 💧', const Color(0xFF0288D1));
+          _showToast('No water left! 💧', const Color(0xFF0288D1));
           return;
         }
         setState(() {
@@ -127,26 +127,37 @@ class _HomeGameScreenState extends State<HomeGameScreen> {
           _plots[plotIndex] = _plots[plotIndex].copyWith(
             lastWatered:  DateTime.now(),
             canFertilize: true,
+            wateredAtCurrentStage: true,
           );
         });
         if (plot.treeId != null) _gardenService.waterTree(plot.treeId!);
         if (uid != null) _gardenService.deductResource(userId: uid, type: 'water');
-        _showToast('Đã tưới "${plot.plantName ?? plot.setTitle}" 💧', const Color(0xFF0288D1));
+        _showToast('Watered "${plot.plantName ?? plot.setTitle}" 💧', const Color(0xFF0288D1));
 
       case GardenTool.fertilizer:
         if (_fertilizerCount <= 0) {
-          _showToast('Hết phân bón rồi! 🌿', const Color(0xFF388E3C));
+          _showToast('No fertilizer left! 🌿', const Color(0xFF388E3C));
           return;
         }
+
+        if (!plot.wateredAtCurrentStage) {
+          _showToast(
+            'Water the plant before fertilizing! 💧',
+            const Color(0xFF0288D1),
+          );
+          return;
+        }
+
         final newStage = (_plots[plotIndex].growthStage + 1).clamp(0, 5);
         setState(() {
           _fertilizerCount--;
-          // ✅ copyWith → object mới → didUpdateWidget detect growthStage thay đổi
           _plots[plotIndex] = _plots[plotIndex].copyWith(
-            growthStage: newStage,
+            growthStage:           newStage,
+            wateredAtCurrentStage: false, 
             status: newStage >= 5 ? PlotStatus.mastered : PlotStatus.planted,
           );
         });
+
         if (plot.treeId != null) {
           _gardenService.updateGrowthStage(
             treeId: plot.treeId!,
@@ -154,7 +165,7 @@ class _HomeGameScreenState extends State<HomeGameScreen> {
           );
         }
         if (uid != null) _gardenService.deductResource(userId: uid, type: 'fertilizer');
-        _showToast('Đã bón phân "${plot.plantName ?? plot.setTitle}" 🌿', const Color(0xFF388E3C));
+        _showToast('Fertilized "${plot.plantName ?? plot.setTitle}" 🌿', const Color(0xFF388E3C));
     }
   }
 
@@ -188,7 +199,7 @@ class _HomeGameScreenState extends State<HomeGameScreen> {
       );
     }
 
-    _showToast('Đã trồng "${seed.title}" 🌱', const Color(0xFF558B2F));
+    _showToast('Planted "${seed.title}" 🌱', const Color(0xFF558B2F));
   }
 
   void _showToast(String message, Color color) {

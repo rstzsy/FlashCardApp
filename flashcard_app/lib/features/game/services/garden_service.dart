@@ -38,6 +38,7 @@ class GardenService {
           lastFertilized: (data['LastFertilized'] as Timestamp?)?.toDate(),
           isMastered:     isMastered,
           canFertilize:   data['LastWatered'] != null && growthStage >= 1,
+          wateredAtCurrentStage: (data['WateredAtCurrentStage'] as bool?) ?? false,
         );
       }
     } catch (e) {
@@ -119,6 +120,7 @@ class GardenService {
     try {
       await _db.collection('WordGardenTrees').doc(treeId).update({
         'LastWatered': FieldValue.serverTimestamp(),
+        'WateredAtCurrentStage': true, 
       });
     } catch (e) {
       print('Error watering tree: $e');
@@ -133,6 +135,7 @@ class GardenService {
       await _db.collection('WordGardenTrees').doc(treeId).update({
         'GrowthStage':    stage,
         'LastFertilized': FieldValue.serverTimestamp(),
+        'WateredAtCurrentStage': false, 
         if (stage >= 5) 'IsMastered': true,
       });
     } catch (e) {

@@ -1,10 +1,5 @@
-// ─── Cute Notification Dialog ─────────────────────────────────────────────────
-// Dùng ảnh assets/game/notification_frame.png làm nền
-// Đặt nội dung + 2 button đè lên bằng Stack + Positioned
-
 import 'package:flutter/material.dart';
 
-// ─── Palette (copy từ shop_game_screen.dart) ──────────────────────────────────
 class _C {
   static const rose        = Color(0xFFF4A8B0);
   static const roseDark    = Color(0xFFD4717A);
@@ -19,9 +14,6 @@ class _C {
   static const textGreen   = Color(0xFF388E3C);
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
-// MAIN WIDGET
-// ══════════════════════════════════════════════════════════════════════════════
 class CuteNotificationDialog extends StatelessWidget {
   final String icon;
   final String title;
@@ -90,31 +82,19 @@ class CuteNotificationDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Ảnh gốc ~471×530px → tỉ lệ w:h ≈ 0.889
-    // Dùng AspectRatio để ảnh luôn đúng tỉ lệ trên mọi màn hình
-    // dialogW được tính từ screen width trừ insetPadding
     final double screenW = MediaQuery.of(context).size.width;
-    final double dialogW = screenW - 48; // insetPadding horizontal: 24 mỗi bên
-    final double dialogH = dialogW / 0.889; // giữ đúng tỉ lệ ảnh 471:530
+    final double dialogW = screenW - 48; 
+    final double dialogH = dialogW / 0.889; 
 
-    // ── Phân tích ảnh notification_frame.png ──
-    // Con cừu + title bar "NOTIFICATION": 0% → ~32% chiều cao
-    // Vùng trắng kem (nội dung): ~32% → ~78% chiều cao
-    // Thanh 2 nút + hoa dưới: ~78% → 100%
-    //
-    // Nút X: nằm ~85% từ trái, ~17% từ trên, size ~9% chiều rộng
-    final double contentTop    = dialogH * 0.32;  // dưới title bar con cừu
-    final double contentBottom = dialogH * 0.24;  // chừa chỗ 2 nút + hoa dưới
-    final double contentSide   = dialogW * 0.08;  // padding 2 bên
+    final double contentTop    = dialogH * 0.32;  
+    final double contentBottom = dialogH * 0.24; 
+    final double contentSide   = dialogW * 0.08; 
 
-    // Nút X: góc phải, ~17% từ trên
     final double xBtnTop   = dialogH * 0.14;
     final double xBtnRight = dialogW * 0.02;
     final double xBtnSize  = dialogW * 0.12;
 
-    // 2 nút dưới
-    // Nhìn screenshot: 2 nút nằm ở ~82%→94% chiều cao, cách 2 bên ~8%
-    final double btnBottom = dialogH * 0.075;  // đẩy lên cao hơn
+    final double btnBottom = dialogH * 0.075;  
     final double btnHeight = dialogH * 0.115;
     final double btnSide   = dialogW * 0.08;
     final double btnGap    = dialogW * 0.05;
@@ -128,10 +108,9 @@ class CuteNotificationDialog extends StatelessWidget {
         width: dialogW,
         height: dialogH,
         child: Stack(
-          clipBehavior: Clip.none, // cho phép con cừu nhô ra trên
+          clipBehavior: Clip.none, 
           children: [
 
-            // ── 1. Ảnh khung thông báo làm nền ────────────────────────────────
             Positioned.fill(
               child: Image.asset(
                 'assets/game/notification_frame.png',
@@ -139,7 +118,6 @@ class CuteNotificationDialog extends StatelessWidget {
               ),
             ),
 
-            // ── 2. Nút X (vùng tap trong suốt đè lên nút X trong ảnh) ─────────
             Positioned(
               top: xBtnTop,
               right: xBtnRight,
@@ -152,7 +130,6 @@ class CuteNotificationDialog extends StatelessWidget {
               ),
             ),
 
-            // ── 3. Nội dung đè lên vùng trắng kem ────────────────────────────
             Positioned(
               top: contentTop,
               left: contentSide,
@@ -262,12 +239,10 @@ class CuteNotificationDialog extends StatelessWidget {
               ),
             ),
 
-            // ── 5. Nút "Study Now" – nút xanh phải ───────────────────────────
-            // Đo từ ảnh: left=53%, right=13%, top=84.5%, height=11%
             Positioned(
               top:   dialogH * 0.825,
               left:  dialogW * 0.37,
-              right: dialogW * 0.13,  // = 100% - 87% = 13% từ phải
+              right: dialogW * 0.13,  
               height: dialogH * 0.110,
               child: GestureDetector(
                 behavior: HitTestBehavior.opaque,
