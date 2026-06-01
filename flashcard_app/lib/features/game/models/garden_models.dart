@@ -20,6 +20,7 @@ class GardenPlot {
   DateTime? lastFertilized;
   bool isMastered;
   bool canFertilize;     // watered at least once and stage >= 1
+  bool wateredAtCurrentStage;
 
   GardenPlot({
     required this.plotIndex,
@@ -34,6 +35,7 @@ class GardenPlot {
     this.lastFertilized,
     this.isMastered = false,
     this.canFertilize = false,
+    this.wateredAtCurrentStage = false,
   });
 
   /// Does the tree need watering? (based on time elapsed since last watering)
@@ -62,6 +64,7 @@ class GardenPlot {
     DateTime? lastWatered,
     bool? isMastered,
     bool? canFertilize,
+    bool? wateredAtCurrentStage,
   }) => GardenPlot(
     plotIndex:    plotIndex,
     status:       status       ?? this.status,
@@ -74,6 +77,7 @@ class GardenPlot {
     lastWatered:  lastWatered  ?? this.lastWatered,
     isMastered:   isMastered   ?? this.isMastered,
     canFertilize: canFertilize ?? this.canFertilize,
+    wateredAtCurrentStage: wateredAtCurrentStage ?? this.wateredAtCurrentStage,
   );
 }
 

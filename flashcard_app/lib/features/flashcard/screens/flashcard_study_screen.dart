@@ -10,6 +10,7 @@ import '../widgets/flashcard_study_card.dart';
 import '../widgets/flashcard_study_control.dart';
 import '../widgets/flashcard_study_footer.dart';
 import '../widgets/flashcard_study_header.dart';
+import '../../auth/service/study_streak_service.dart';
 
 class FlashcardStudyScreen extends StatefulWidget {
   final String setId;
@@ -43,6 +44,13 @@ class _FlashcardStudyScreenState extends State<FlashcardStudyScreen> {
   void nextCard(int total) async {
     if (currentIndex < total - 1) {
       setState(() => currentIndex++);
+
+      // ── ghi 1 thẻ đã xem ──
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid != null) {
+        StudyStreakService.recordStudySession(userId: uid, wordsStudied: 1, setId: widget.setId);
+      }
+
       return;
     }
 
@@ -50,7 +58,9 @@ class _FlashcardStudyScreenState extends State<FlashcardStudyScreen> {
     Map<String, String>? receivedPlant;
 
     if (user != null) {
-      // Trong nextCard()
+      // ghi thẻ cuối cùng trước khi show popup
+      StudyStreakService.recordStudySession(userId: user.uid, wordsStudied: 1, setId: widget.setId);
+
       receivedPlant = await WordGardenService().createRandomSeed(
         userId: user.uid,
         setId:  widget.setId,
@@ -91,7 +101,7 @@ class _FlashcardStudyScreenState extends State<FlashcardStudyScreen> {
               height: 150,
             ),
       buttonText: "Again",
-      showConfetti: receivedPlant != null, // confetti chỉ khi nhận seed mới
+      showConfetti: receivedPlant != null,
       onPressed: () {
         setState(() => currentIndex = 0);
       },

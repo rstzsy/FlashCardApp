@@ -196,6 +196,7 @@ class FertilizerService {
         'fertilizerCount': FieldValue.increment(fertilizerReward),
         'stars': FieldValue.increment(starCount),
       });
+      
     } catch (e) {
       print("Error saving result: $e");
     }

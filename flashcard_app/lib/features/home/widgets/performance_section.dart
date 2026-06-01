@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'dart:math';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../../auth/service/study_streak_service.dart';
 
 class PerformanceSection extends StatefulWidget {
-  final int streakDays;
-  final List<String> completedDays;
-
-  const PerformanceSection(
-      {super.key, required this.streakDays, required this.completedDays});
+  const PerformanceSection({super.key});
 
   @override
   State<PerformanceSection> createState() => PerformanceSectionState();
@@ -20,6 +18,10 @@ class PerformanceSectionState extends State<PerformanceSection>
   late final List<_Particle> _particles =
       List.generate(40, (_) => _Particle(Random()));
 
+  int _streakDays = 0;
+  List<String> _completedDays = [];
+  bool _isLoading = true;
+
   static const List<String> _weekDays = [
     'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'
   ];
@@ -27,6 +29,11 @@ class PerformanceSectionState extends State<PerformanceSection>
   @override
   void initState() {
     super.initState();
+    _initAnimations();
+    _loadData();
+  }
+
+  void _initAnimations() {
     _particleController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 2500),
@@ -40,6 +47,31 @@ class PerformanceSectionState extends State<PerformanceSection>
     );
   }
 
+  Future<void> _loadData() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) {
+      if (mounted) setState(() => _isLoading = false);
+      return;
+    }
+
+    try {
+      final results = await Future.wait([
+        StudyStreakService.getStreak(uid),
+        StudyStreakService.getCompletedDaysThisWeek(uid),
+      ]);
+
+      if (mounted) {
+        setState(() {
+          _streakDays    = results[0] as int;
+          _completedDays = results[1] as List<String>;
+          _isLoading     = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
   @override
   void dispose() {
     _particleController.dispose();
@@ -49,6 +81,12 @@ class PerformanceSectionState extends State<PerformanceSection>
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const SizedBox(
+        height: 180,
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -58,7 +96,7 @@ class PerformanceSectionState extends State<PerformanceSection>
         ),
         const SizedBox(height: 12),
         ClipRRect(
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(20),
           child: Container(
             width: double.infinity,
             color: const Color(0xFFBDE8F5),
@@ -77,7 +115,7 @@ class PerformanceSectionState extends State<PerformanceSection>
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
+                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -88,19 +126,19 @@ class PerformanceSectionState extends State<PerformanceSection>
                           child: child,
                         ),
                         child: SizedBox(
-                          height: 110,
+                          height: 80,
                           child: Image.asset(
                             'assets/character/happy.png',
                             fit: BoxFit.contain,
                             errorBuilder: (_, __, ___) => const Icon(
                               Icons.emoji_emotions,
-                              size: 80,
+                              size: 64,
                               color: Colors.white70,
                             ),
                           ),
                         ),
                       ),
-                      const SizedBox(height: 14),
+                      const SizedBox(height: 10),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         crossAxisAlignment: CrossAxisAlignment.center,
@@ -108,21 +146,21 @@ class PerformanceSectionState extends State<PerformanceSection>
                           const Text(
                             "You're on a ",
                             style: TextStyle(
-                                fontSize: 18,
+                                fontSize: 16,
                                 fontWeight: FontWeight.w700,
                                 color: Colors.black87),
                           ),
                           Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 6),
+                                horizontal: 10, vertical: 5),
                             decoration: BoxDecoration(
                               color: const Color(0xFFF5A623),
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: Text(
-                              "${widget.streakDays}",
+                              "$_streakDays",
                               style: const TextStyle(
-                                  fontSize: 22,
+                                  fontSize: 20,
                                   fontWeight: FontWeight.w900,
                                   color: Colors.white),
                             ),
@@ -130,19 +168,19 @@ class PerformanceSectionState extends State<PerformanceSection>
                           const Text(
                             " day streak!",
                             style: TextStyle(
-                                fontSize: 18,
+                                fontSize: 16,
                                 fontWeight: FontWeight.w700,
                                 color: Colors.black87),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 18),
+                      const SizedBox(height: 14),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: _weekDays
                             .map((day) => _DayDot(
                                 day: day,
-                                completed: widget.completedDays.contains(day)))
+                                completed: _completedDays.contains(day)))
                             .toList(),
                       ),
                     ],
@@ -157,7 +195,7 @@ class PerformanceSectionState extends State<PerformanceSection>
   }
 }
 
-// ─── Day dot ──────────────────────────────────────────────────────────────────
+// ─── Day dot ─────────────────────────────────────────────────────────────────
 
 class _DayDot extends StatelessWidget {
   final String day;
@@ -257,13 +295,23 @@ class _ConfettiPainter extends CustomPainter {
       canvas.rotate(p.initAngle + t * p.rotSpeed * pi * 2);
       switch (p.shape) {
         case 0:
-          canvas.drawRect(Rect.fromCenter(center: Offset.zero, width: p.size * 1.4, height: p.size * 0.6), paint);
+          canvas.drawRect(
+              Rect.fromCenter(
+                  center: Offset.zero,
+                  width: p.size * 1.4,
+                  height: p.size * 0.6),
+              paint);
           break;
         case 1:
           canvas.drawCircle(Offset.zero, p.size * 0.45, paint);
           break;
         default:
-          canvas.drawRect(Rect.fromCenter(center: Offset.zero, width: p.size * 0.28, height: p.size * 1.6), paint);
+          canvas.drawRect(
+              Rect.fromCenter(
+                  center: Offset.zero,
+                  width: p.size * 0.28,
+                  height: p.size * 1.6),
+              paint);
       }
       canvas.restore();
     }

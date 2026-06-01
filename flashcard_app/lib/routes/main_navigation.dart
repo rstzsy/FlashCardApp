@@ -20,7 +20,6 @@ class _MainNavigationState extends State<MainNavigation> {
 
   @override
   Widget build(BuildContext context) {
-    // ✅ Khai báo trong build() để dùng được setState
     final List<Widget> pages = [
       const HomeScreen(),
       FlashcardManagerScreen(),
@@ -62,7 +61,7 @@ class _MainNavigationState extends State<MainNavigation> {
                     navItem(Icons.style, 1),
                     navItem(Icons.bar_chart_rounded, 2),
                     navItem(Icons.sports_esports, 3),
-                    navItem(Icons.person_outline, 4),
+                    // navItem(Icons.person_outline, 4),
                     navItem(Icons.group, 5),
                   ],
                 ),
