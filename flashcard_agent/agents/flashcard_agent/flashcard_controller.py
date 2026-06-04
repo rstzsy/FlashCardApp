@@ -152,6 +152,14 @@ class FlashcardController:
                 req.language
             )
 
+            request_id = await (
+                self.firestore
+                .save_flashcard_request(
+                    user_id=req.userId,
+                    set_id=set_id
+                )
+            )
+
             print(
                 f"Saved FlashcardSet: {set_id}"
             )
@@ -192,7 +200,15 @@ class FlashcardController:
 
                 "success": True,
 
+                "requestId": request_id,
+
                 "setId": set_id,
+
+                "topic": req.topic,
+
+                "difficulty": req.difficulty,
+
+                "language": req.language,
 
                 "totalCards": len(valid_cards),
 

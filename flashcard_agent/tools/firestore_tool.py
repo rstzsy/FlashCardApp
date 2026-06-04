@@ -141,3 +141,34 @@ class FirestoreTool:
             })
 
         return set_id
+    
+    async def save_flashcard_request(
+        self,
+        user_id: str,
+        set_id: str
+    ):
+
+        request_id = str(uuid4())
+
+        firestore_db.collection(
+            "FlashcardRequests"
+        ).document(
+            request_id
+        ).set({
+
+            "RequestId": request_id,
+
+            "UserId": user_id,
+
+            "SetId": set_id,
+
+            "Status": "completed",
+
+            "CreatedAt":
+            firestore.SERVER_TIMESTAMP,
+
+            "UpdatedAt":
+            firestore.SERVER_TIMESTAMP
+        })
+
+        return request_id
