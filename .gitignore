@@ -120,3 +120,5 @@ app.*.symbols
 flashcard_app/android/app/google-services.json
 flashcard_agent/.env
 flashcard_agent/firebase-service-account.json
+roadmap_agent/.env
+roadmap_agent/firebase-service-account.json
