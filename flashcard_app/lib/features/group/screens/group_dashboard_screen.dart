@@ -1,39 +1,40 @@
 import 'package:flutter/material.dart';
 import '../../../core/themes/app_colors.dart';
+import '../models/group_model.dart';
 import '../widgets/collection_list.dart';
 import '../widgets/header_section.dart';
 import '../widgets/member_list.dart';
 
 class GroupDashboard extends StatelessWidget {
-  const GroupDashboard({super.key});
+  final GroupModel group;
+
+  const GroupDashboard({super.key, required this.group});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.mainColor,
-      //bottomNavigationBar: const BottomBar(),
-      body: const SingleChildScrollView(
+      body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            HeaderSection(),
+            HeaderSection(group: group),
 
             Padding(
-              padding: EdgeInsets.all(20),
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
               child: Text(
-                "This is a group for learning vocabulary, sharing knowledge, and creating your own flashcard sets.",
-                style: TextStyle(height: 1.5),
+                group.description,
+                style: const TextStyle(height: 1.5),
               ),
             ),
 
-            MemberList(),
+            MemberList(group: group),
 
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
 
-            CollectionList(),
+            CollectionList(group: group),
 
-            SizedBox(height: 20),
-
+            const SizedBox(height: 20),
           ],
         ),
       ),

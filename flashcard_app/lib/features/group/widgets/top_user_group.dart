@@ -1,52 +1,79 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
-
-import 'header_leader_group.dart';
-
+import '../services/leaderboard_service.dart';
+import '../../../core/themes/app_colors.dart';
 
 class TopUserWidget extends StatelessWidget {
-  const TopUserWidget({super.key});
+  final LeaderboardEntry entry;
+  const TopUserWidget({super.key, required this.entry});
 
   @override
   Widget build(BuildContext context) {
     return Column(
-      children: const [
-        AvatarWithCrown(),
-        SizedBox(height: 10),
-        UserName(),
-        SizedBox(height: 6),
-        CompletedBadge(),
-        SizedBox(height: 20),
+      children: [
+        AvatarWithCrown(photoUrl: entry.photoUrl),
+        const SizedBox(height: 10),
+        Text(
+          entry.name,
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          "${entry.wordsStudied} words  •  ${entry.avgAccuracy.toStringAsFixed(0)}% accuracy",
+          style: const TextStyle(fontSize: 12, color: Colors.black54),
+        ),
+        const SizedBox(height: 6),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+          decoration: BoxDecoration(
+            color: const Color.fromARGB(255, 92, 233, 165),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text(
+            "${entry.score.toStringAsFixed(1)}% score",
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+            ),
+          ),
+        ),
+        const SizedBox(height: 20),
       ],
     );
   }
 }
 
-class UserName extends StatelessWidget {
-  const UserName({super.key});
+class AvatarWithCrown extends StatelessWidget {
+  final String? photoUrl;
+  const AvatarWithCrown({super.key, this.photoUrl});
 
   @override
   Widget build(BuildContext context) {
-    return const Text(
-      "Kameron Porter",
-      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-    );
-  }
-}
-
-class CompletedBadge extends StatelessWidget {
-  const CompletedBadge({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      decoration: BoxDecoration(
-        color: const Color.fromARGB(255, 92, 233, 165),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: const Text(
-        "100% completed",
-        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20),
+    return SizedBox(
+      width: 90,
+      height: 110,
+      child: Stack(
+        clipBehavior: Clip.none,
+        alignment: Alignment.center,
+        children: [
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: CircleAvatar(
+              radius: 45,
+              backgroundImage: (photoUrl != null && photoUrl!.isNotEmpty)
+                  ? NetworkImage(photoUrl!) as ImageProvider
+                  : const AssetImage('assets/character/bored.png'),
+            ),
+          ),
+          Positioned(
+            top: 0, left: 0,
+            child: Transform.rotate(
+              angle: -15 * pi / 180,
+              child: Image.asset('assets/component/crown.png', width: 45),
+            ),
+          ),
+        ],
       ),
     );
   }

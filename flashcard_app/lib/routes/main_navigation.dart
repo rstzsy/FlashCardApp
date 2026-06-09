@@ -6,6 +6,7 @@ import '../features/group/screens/group_list_screen.dart';
 import '../features/home/screens/home_screen.dart';
 import '../features/statistic/screens/statistic_screen.dart';
 import '../features/game/screens/intro_game_screen.dart';
+import '../features/blog/screens/blog_screen.dart'; 
 
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
@@ -21,14 +22,15 @@ class _MainNavigationState extends State<MainNavigation> {
   @override
   Widget build(BuildContext context) {
     final List<Widget> pages = [
-      const HomeScreen(),
-      FlashcardManagerScreen(),
-      const StatisticsScreen(),
-      IntroGameScreen(
+      const HomeScreen(),           // 0
+      FlashcardManagerScreen(),     // 1
+      const StatisticsScreen(),     // 2
+      IntroGameScreen(              // 3
         onBack: () => setState(() => currentIndex = 0),
       ),
-      const ProfilePage(),
-      GroupListPage(),
+      const ProfilePage(),          // 4
+      GroupListPage(),              // 5
+      const BlogScreen(),           // 6 ← thêm
     ];
 
     final bool isGameScreen = currentIndex == _gameTabIndex;
@@ -61,7 +63,7 @@ class _MainNavigationState extends State<MainNavigation> {
                     navItem(Icons.style, 1),
                     navItem(Icons.bar_chart_rounded, 2),
                     navItem(Icons.sports_esports, 3),
-                    // navItem(Icons.person_outline, 4),
+                    navItem(Icons.article_outlined, 6), // ← blog
                     navItem(Icons.group, 5),
                   ],
                 ),

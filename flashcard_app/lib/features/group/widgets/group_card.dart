@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/themes/app_colors.dart';
-import '../../../models/groupModel.dart';
+import '../models/group_model.dart';
 
 class GroupCard extends StatelessWidget {
   final GroupModel group;
