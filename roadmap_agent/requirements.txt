@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+firebase-admin
+google-genai
+langsmith
+tavily-python
+python-dotenv
+pydantic
+httpx
+requests
+openpyxl
