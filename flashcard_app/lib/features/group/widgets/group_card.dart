@@ -16,7 +16,7 @@ class GroupCard extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 14),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: group.bgColor ?? const Color(0xFFDFF2EB),
+            color: Color(group.bgColor ?? const Color(0xFFDFF2EB).value),
           borderRadius: BorderRadius.circular(20),
         ),
         child: Stack(

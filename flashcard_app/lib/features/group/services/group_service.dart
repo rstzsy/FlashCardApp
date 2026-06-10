@@ -57,24 +57,28 @@ class GroupService {
     if (uid == null) return const Stream.empty();
 
     return _db
-        .collectionGroup('members')
-        .where(FieldPath.documentId, isEqualTo: uid)
+        .collection('groups')
         .snapshots()
-        .asyncMap((memberSnap) async {
-          final groupIds = memberSnap.docs
-              .map((d) => d.reference.parent.parent!.id)
-              .toSet();
+        .asyncMap((groupSnap) async {
+          final List<GroupModel> result = [];
 
-          if (groupIds.isEmpty) return <GroupModel>[];
+          for (final groupDoc in groupSnap.docs) {
+            final memberDoc = await _db
+                .collection('groups')
+                .doc(groupDoc.id)
+                .collection('members')
+                .doc(uid)
+                .get();
 
-          final futures = groupIds.map((id) =>
-              _db.collection('groups').doc(id).get());
-          final docs = await Future.wait(futures);
+            if (memberDoc.exists) {
+              result.add(GroupModel.fromFirestore(
+                groupDoc.id,
+                groupDoc.data(),
+              ));
+            }
+          }
 
-          return docs
-              .where((d) => d.exists)
-              .map((d) => GroupModel.fromFirestore(d.id, d.data()!))
-              .toList();
+          return result;
         });
   }
 

@@ -47,11 +47,12 @@ class _AddGroupPageState extends State<AddGroupPage> {
 
     final newGroup = await controller.createGroup(
       GroupModel(
+        id: '',
         name: name,
         image: "assets/component/book_watermark.png",
         memberCount: 1,
         description: desc.isEmpty ? "No description." : desc,
-        bgColor: _selectedColor,
+        bgColor: _selectedColor.value,  
       ),
     );
 
