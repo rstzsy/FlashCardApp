@@ -9,6 +9,8 @@ import '../widgets/study_heatmap_section.dart';
 import '../widgets/month_badge.dart';
 import '../widgets/achievement_section.dart';
 import '../widgets/harvested_plants_section.dart';
+import '../widgets/saved_posts_section.dart';
+
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
@@ -54,6 +56,10 @@ class _ProfileContent extends StatelessWidget {
               ProfileHeader(data: data),
 
               const SizedBox(height: 10),
+              const SavedPostsSection(),  
+              // const SizedBox(height: 40),
+
+              const SizedBox(height: 10),
 
               OverviewSection(data: data),
 
@@ -69,6 +75,8 @@ class _ProfileContent extends StatelessWidget {
               const SizedBox(height: 40),
               const SizedBox(height: 25),
               const HarvestedPlantsSection(),
+
+
             ],
           ),
         ),

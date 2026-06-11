@@ -6,6 +6,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../screens/edit_blog_screen.dart';
 import '../../../core/widgets/app_popup.dart'; 
+import '../screens/blog_detail_screen.dart';
+
 
 class BlogPostCard extends StatefulWidget {
   final BlogPost  post;
@@ -435,203 +437,249 @@ class _BlogPostCardState extends State<BlogPostCard> {
     final canDelete =
         BlogService.canDelete(widget.myRole, _post.authorId);
 
-    return Container(
-      margin:  const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color:        Colors.white.withOpacity(0.55),
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color:      const Color(0xFF4DD9F5).withOpacity(0.15),
-            blurRadius: 16,
-            offset:     const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // ── Header ──
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              CircleAvatar(
-                radius:          22,
-                backgroundColor: const Color(0xFFDBEAFE),
-                backgroundImage: _post.authorAvatar.isNotEmpty
-                    ? NetworkImage(_post.authorAvatar)
-                    : null,
-                child: _post.authorAvatar.isEmpty
-                    ? Text(
-                        _post.authorName.isNotEmpty
-                            ? _post.authorName[0].toUpperCase()
-                            : '?',
-                        style: const TextStyle(
-                          fontSize:   18,
-                          fontWeight: FontWeight.bold,
-                          color:      Color(0xFF1D4ED8),
-                        ),
-                      )
-                    : null,
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _post.authorName,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize:   15,
-                        color:      Colors.black87,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      _post.timeAgo,
-                      style: const TextStyle(
-                          fontSize: 12, color: Colors.black45),
-                    ),
-                  ],
-                ),
-              ),
-              if (_post.authorId == FirebaseAuth.instance.currentUser?.uid || canDelete)
-                PopupMenuButton<String>(
-                  icon: const Icon(Icons.more_vert, color: Colors.black45),
-                  color: const Color.fromARGB(255, 232, 250, 252).withOpacity(0.95), 
-                  elevation: 8,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16)),
-                  onSelected: (val) {
-                    if (val == 'edit')   _openEdit();
-                    if (val == 'delete') _confirmDelete();
-                  },
-                  itemBuilder: (_) => [
-                    if (_post.authorId == FirebaseAuth.instance.currentUser?.uid)
-                      const PopupMenuItem(
-                        value: 'edit',
-                        child: Row(
-                          children: [
-                            Icon(Icons.edit_outlined,
-                                size: 18, color: Color(0xFF0277BD)),
-                            SizedBox(width: 10),
-                            Text('Edit post'),
-                          ],
-                        ),
-                      ),
-                    if (canDelete)
-                      const PopupMenuItem(
-                        value: 'delete',
-                        child: Row(
-                          children: [
-                            Icon(Icons.delete_outline_rounded,
-                                size: 18, color: Colors.redAccent),
-                            SizedBox(width: 10),
-                            Text('Delete post',
-                                style: TextStyle(color: Colors.redAccent)),
-                          ],
-                        ),
-                      ),
-                  ],
-                ),
-            ],
-          ),
+    return GestureDetector(
+      onTap: () async {
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => BlogDetailScreen(
+              post:    _post,
+              groupId: widget.groupId,
+              myRole:  widget.myRole,
+              onBookmarkChanged: () async {
+                final uid = FirebaseAuth.instance.currentUser?.uid;
+                if (uid == null) return;
 
-          const SizedBox(height: 14),
+                final db = FirebaseFirestore.instance;
+                final postRef = db
+                    .collection('groups')
+                    .doc(widget.groupId)
+                    .collection('posts')
+                    .doc(_post.id);
 
-          // ── Title ──
-          Text(
-            _post.title,
-            style: const TextStyle(
-              fontSize:   16,
-              fontWeight: FontWeight.w800,
-              color:      Colors.black87,
+                final results = await Future.wait([
+                  postRef.collection('bookmarks').doc(uid).get(),
+                  postRef.collection('likes').doc(uid).get(),
+                  postRef.get(),
+                ]);
+
+                final bmDoc    = results[0];
+                final likeDoc  = results[1];
+                final postDoc  = results[2];
+
+                if (!mounted) return;
+                setState(() {
+                  _post = BlogPost.fromFirestore(postDoc.id, postDoc.data() as Map<String, dynamic>)
+                      .copyWith(
+                        isBookmarked: bmDoc.exists,
+                        isLiked:      likeDoc.exists,
+                      );
+                });
+              },
             ),
           ),
-
-          const SizedBox(height: 6),
-
-          // ── Content ──
-          Text(
-            _post.content,
-            style: const TextStyle(
-              fontSize: 13,
-              color:    Colors.black54,
-              height:   1.5,
-            ),
-          ),
-
-          // ── Image ──
-          if (_post.imageUrl != null) ...[
-            const SizedBox(height: 14),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: Image.network(
-                _post.imageUrl!,
-                width:  double.infinity,
-                height: 200,
-                fit:    BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
-                  height: 200,
-                  decoration: BoxDecoration(
-                    color:        const Color(0xFFDBEAFE),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: const Icon(
-                    Icons.image_outlined,
-                    size: 48, color: Colors.black26,
-                  ),
-                ),
-              ),
+        );
+      },
+      child: Container(
+        margin:  const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color:        Colors.white.withOpacity(0.55),
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color:      const Color(0xFF4DD9F5).withOpacity(0.15),
+              blurRadius: 16,
+              offset:     const Offset(0, 4),
             ),
           ],
-
-          const SizedBox(height: 14),
-
-          // ── Action bar ──
-          Row(
-            children: [
-              GestureDetector(
-                onTap: _handleLike,
-                child: Icon(
-                  _post.isLiked ? Icons.favorite : Icons.favorite_border,
-                  size:  20,
-                  color: _post.isLiked ? Colors.redAccent : Colors.black54,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ── Header ──
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                CircleAvatar(
+                  radius:          22,
+                  backgroundColor: const Color(0xFFDBEAFE),
+                  backgroundImage: _post.authorAvatar.isNotEmpty
+                      ? NetworkImage(_post.authorAvatar)
+                      : null,
+                  child: _post.authorAvatar.isEmpty
+                      ? Text(
+                          _post.authorName.isNotEmpty
+                              ? _post.authorName[0].toUpperCase()
+                              : '?',
+                          style: const TextStyle(
+                            fontSize:   18,
+                            fontWeight: FontWeight.bold,
+                            color:      Color(0xFF1D4ED8),
+                          ),
+                        )
+                      : null,
                 ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _post.authorName,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize:   15,
+                          color:      Colors.black87,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        _post.timeAgo,
+                        style: const TextStyle(
+                            fontSize: 12, color: Colors.black45),
+                      ),
+                    ],
+                  ),
+                ),
+                if (_post.authorId == FirebaseAuth.instance.currentUser?.uid || canDelete)
+                  PopupMenuButton<String>(
+                    icon: const Icon(Icons.more_vert, color: Colors.black45),
+                    color: const Color.fromARGB(255, 232, 250, 252).withOpacity(0.95),
+                    elevation: 8,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16)),
+                    onSelected: (val) {
+                      if (val == 'edit')   _openEdit();
+                      if (val == 'delete') _confirmDelete();
+                    },
+                    itemBuilder: (_) => [
+                      if (_post.authorId == FirebaseAuth.instance.currentUser?.uid)
+                        const PopupMenuItem(
+                          value: 'edit',
+                          child: Row(
+                            children: [
+                              Icon(Icons.edit_outlined,
+                                  size: 18, color: Color(0xFF0277BD)),
+                              SizedBox(width: 10),
+                              Text('Edit post'),
+                            ],
+                          ),
+                        ),
+                      if (canDelete)
+                        const PopupMenuItem(
+                          value: 'delete',
+                          child: Row(
+                            children: [
+                              Icon(Icons.delete_outline_rounded,
+                                  size: 18, color: Colors.redAccent),
+                              SizedBox(width: 10),
+                              Text('Delete post',
+                                  style: TextStyle(color: Colors.redAccent)),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
+              ],
+            ),
+
+            const SizedBox(height: 14),
+
+            // ── Title ──
+            Text(
+              _post.title,
+              style: const TextStyle(
+                fontSize:   16,
+                fontWeight: FontWeight.w800,
+                color:      Colors.black87,
               ),
-              const SizedBox(width: 4),
-              GestureDetector(
-                onTap: _showLikers,   
-                child: Text(
-                  _fmt(_post.likes),
-                  style: const TextStyle(
-                    fontSize:   12,
-                    fontWeight: FontWeight.w600,
-                    color:      Colors.black54,
+            ),
+
+            const SizedBox(height: 6),
+
+            // ── Content ──
+            Text(
+              _post.content,
+              maxLines:  2,
+              overflow:  TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 13,
+                color:    Colors.black54,
+                height:   1.5,
+              ),
+            ),
+
+            // ── Image ──
+            if (_post.imageUrl != null) ...[
+              const SizedBox(height: 14),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: Image.network(
+                  _post.imageUrl!,
+                  width:  double.infinity,
+                  height: 200,
+                  fit:    BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    height: 200,
+                    decoration: BoxDecoration(
+                      color:        const Color(0xFFDBEAFE),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: const Icon(
+                      Icons.image_outlined,
+                      size: 48, color: Colors.black26,
+                    ),
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
-              _Pill(
-                icon:      Icons.chat_bubble_outline_rounded,
-                label:     _fmt(_post.comments),
-                iconColor: Colors.black54,
-                onTap:     _showComments,
-              ),
-              const SizedBox(width: 8),
-              _Pill(
-                icon: _post.isBookmarked
-                    ? Icons.bookmark : Icons.bookmark_border,
-                label:     _fmt(_post.bookmarks),
-                iconColor: _post.isBookmarked
-                    ? const Color(0xFF3B82F6) : Colors.black54,
-                onTap: _handleBookmark,
-              ),
             ],
-          ),
-        ],
+
+            const SizedBox(height: 14),
+
+            // ── Action bar ──
+            Row(
+              children: [
+                GestureDetector(
+                  onTap: _handleLike,
+                  child: Icon(
+                    _post.isLiked ? Icons.favorite : Icons.favorite_border,
+                    size:  20,
+                    color: _post.isLiked ? Colors.redAccent : Colors.black54,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                GestureDetector(
+                  onTap: _showLikers,
+                  child: Text(
+                    _fmt(_post.likes),
+                    style: const TextStyle(
+                      fontSize:   12,
+                      fontWeight: FontWeight.w600,
+                      color:      Colors.black54,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                _Pill(
+                  icon:      Icons.chat_bubble_outline_rounded,
+                  label:     _fmt(_post.comments),
+                  iconColor: Colors.black54,
+                  onTap:     _showComments,
+                ),
+                const SizedBox(width: 8),
+                _Pill(
+                  icon: _post.isBookmarked
+                      ? Icons.bookmark : Icons.bookmark_border,
+                  label:     _fmt(_post.bookmarks),
+                  iconColor: _post.isBookmarked
+                      ? const Color(0xFF3B82F6) : Colors.black54,
+                  onTap: _handleBookmark,
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

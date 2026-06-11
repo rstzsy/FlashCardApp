@@ -1,9 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../../core/themes/app_colors.dart';
 import '../models/group_model.dart';
 import '../screens/group_leader_board_screen.dart';
+import '../services/group_service.dart';
 import 'copy_link.dart';
 import 'info_tag.dart';
 import '../screens/add_member_screen.dart';
@@ -14,6 +16,9 @@ class HeaderSection extends StatelessWidget {
   const HeaderSection({super.key, required this.group});
 
   String get groupLink => "https://flashcard.app/group/${group.id ?? 'unknown'}";
+
+  bool get _isOwner =>
+      FirebaseAuth.instance.currentUser?.uid == group.createdBy;
 
   Stream<List<int>> _countsStream(String groupId) {
     if (groupId.isEmpty) return Stream.value([0, 0]);
@@ -33,16 +38,50 @@ class HeaderSection extends StatelessWidget {
         .collection('collections')
         .snapshots()
         .map((s) => s.docs.length);
+    return membersStream.asyncExpand((memberCount) =>
+        collectionsStream.map((collectionCount) =>
+            [memberCount, collectionCount]));
+  }
 
-    // Combine 2 streams: mỗi khi members thay đổi, fetch lại collections
-    return membersStream.asyncMap((memberCount) async {
-      final colSnap = await db
-          .collection('groups')
-          .doc(groupId)
-          .collection('collections')
-          .get();
-      return [memberCount, colSnap.docs.length];
-    });
+  void _confirmLeave(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: AppColors.mainColor,
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text(
+          'Leave group?',
+          style: TextStyle(
+            color: AppColors.highlightColor,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: Text(
+          'You will no longer have access to "${group.name}" and its collections.',
+          style: TextStyle(color: Colors.grey.shade400),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancel',
+                style: TextStyle(color: Colors.grey.shade500)),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await GroupService.leaveGroup(group.id ?? '');
+              if (context.mounted) Navigator.pop(context);
+            },
+            child: const Text(
+              'Leave',
+              style: TextStyle(
+                  color: Colors.red, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -89,6 +128,15 @@ class HeaderSection extends StatelessWidget {
                         Icons.link,
                         onPressed: () => _showGroupLink(context),
                       ),
+                      // Nút Leave — chỉ member/moderator
+                      if (!_isOwner) ...[
+                        const SizedBox(width: 10),
+                        _circleButton(
+                          Icons.logout_rounded,
+                          color: Colors.red.shade300,
+                          onPressed: () => _confirmLeave(context),
+                        ),
+                      ],
                     ],
                   );
                 },
@@ -106,7 +154,7 @@ class HeaderSection extends StatelessWidget {
             ),
           ),
 
-          // Invite + leaderboard buttons
+          // Invite + leaderboard
           Positioned(
             right: 16,
             top: 40,
@@ -130,7 +178,8 @@ class HeaderSection extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => LeaderboardScreen(groupId: group.id ?? ''),
+                        builder: (_) =>
+                            LeaderboardScreen(groupId: group.id ?? ''),
                       ),
                     );
                   },
@@ -149,14 +198,23 @@ class HeaderSection extends StatelessWidget {
     );
   }
 
-  Widget _circleButton(IconData icon, {required VoidCallback onPressed}) {
+  Widget _circleButton(
+    IconData icon, {
+    required VoidCallback onPressed,
+    Color? color,
+  }) {
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: Colors.white,
+        color: color != null
+            ? color.withOpacity(0.15)
+            : Colors.white,
       ),
       child: IconButton(
-        icon: Icon(icon, color: AppColors.highlightColor),
+        icon: Icon(
+          icon,
+          color: color ?? AppColors.highlightColor,
+        ),
         onPressed: onPressed,
       ),
     );
@@ -183,7 +241,8 @@ class HeaderSection extends StatelessWidget {
                 ),
                 child: Column(
                   children: [
-                    Image.asset("assets/character/happy.png", height: 120),
+                    Image.asset("assets/character/happy.png",
+                        height: 120),
                     const SizedBox(height: 10),
                     Text(
                       group.name,
@@ -215,8 +274,10 @@ class HeaderSection extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  _shareIcon("assets/component/instagram.png", "Instagram"),
-                  _shareIcon("assets/component/facebook.png", "Facebook"),
+                  _shareIcon(
+                      "assets/component/instagram.png", "Instagram"),
+                  _shareIcon(
+                      "assets/component/facebook.png", "Facebook"),
                   _shareIcon(
                       "assets/component/communication.png", "Messenger"),
                 ],

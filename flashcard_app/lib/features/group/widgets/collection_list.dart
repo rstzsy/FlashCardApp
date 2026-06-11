@@ -38,7 +38,7 @@ IconData _parseIcon(dynamic raw) {
   return IconData(code, fontFamily: 'MaterialIcons');
 }
 
-// ── Folder widget dùng chung ──────────────────────────────────────────────────
+// ── Folder widget ─────────────────────────────────────────────────────────────
 
 class _FolderWidget extends StatelessWidget {
   final Color baseColor;
@@ -148,13 +148,28 @@ class _FolderWidget extends StatelessWidget {
 
 // ── CollectionList ────────────────────────────────────────────────────────────
 
-class CollectionList extends StatelessWidget {
+class CollectionList extends StatefulWidget {
   final GroupModel group;
 
   const CollectionList({super.key, required this.group});
 
-  // Chỉ admin mới thấy nút Share
-  bool get _isAdmin => GroupService.isAdmin(group);
+  @override
+  State<CollectionList> createState() => _CollectionListState();
+}
+
+class _CollectionListState extends State<CollectionList> {
+  bool _isAdmin = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRole();
+  }
+
+  Future<void> _loadRole() async {
+    final result = await GroupService.isAdminByRole(widget.group.id ?? '');
+    if (mounted) setState(() => _isAdmin = result);
+  }
 
   void _showShareSheet(BuildContext context) async {
     final sets = await GroupService.getMyFlashcardSets();
@@ -168,7 +183,7 @@ class CollectionList extends StatelessWidget {
       return;
     }
 
-    final sharedIds = await GroupService.getSharedSetIds(group.id ?? '');
+    final sharedIds = await GroupService.getSharedSetIds(widget.group.id ?? '');
 
     if (!context.mounted) return;
 
@@ -180,7 +195,7 @@ class CollectionList extends StatelessWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (_) => _ShareSheet(
-        group: group,
+        group: widget.group,
         sets: sets,
         sharedSetIds: sharedIds,
       ),
@@ -205,13 +220,12 @@ class CollectionList extends StatelessWidget {
                   color: AppColors.highlightColor,
                 ),
               ),
-              // Chỉ admin thấy nút Share
               if (_isAdmin)
                 GestureDetector(
                   onTap: () => _showShareSheet(context),
                   child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
                       color: AppColors.highlightColor,
                       borderRadius: BorderRadius.circular(20),
@@ -237,7 +251,7 @@ class CollectionList extends StatelessWidget {
           const SizedBox(height: 12),
 
           StreamBuilder<List<Map<String, dynamic>>>(
-            stream: GroupService.getGroupCollections(group.id ?? ''),
+            stream: GroupService.getGroupCollections(widget.group.id ?? ''),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Center(child: CircularProgressIndicator());
@@ -270,7 +284,7 @@ class CollectionList extends StatelessWidget {
                           padding: const EdgeInsets.only(bottom: 12),
                           child: _CollectionCard(
                             data: c,
-                            groupId: group.id ?? '',
+                            groupId: widget.group.id ?? '',
                             isAdmin: _isAdmin,
                           ),
                         ))
@@ -495,7 +509,7 @@ class _ShareSheetState extends State<_ShareSheet> {
   }
 }
 
-// ── Collection Card trong group ───────────────────────────────────────────────
+// ── Collection Card ───────────────────────────────────────────────────────────
 
 class _CollectionCard extends StatelessWidget {
   final Map<String, dynamic> data;
@@ -509,13 +523,13 @@ class _CollectionCard extends StatelessWidget {
   });
 
   void _confirmDelete(BuildContext context) {
-    final Color baseColor = _parseColor(data['color']);
     final String title = data['title'] ?? 'Untitled';
 
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text(
           "Remove collection?",
           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
@@ -543,7 +557,8 @@ class _CollectionCard extends StatelessWidget {
             },
             child: const Text("Remove",
                 style: TextStyle(
-                    color: Colors.redAccent, fontWeight: FontWeight.bold)),
+                    color: Colors.redAccent,
+                    fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -556,117 +571,96 @@ class _CollectionCard extends StatelessWidget {
     final IconData iconData = _parseIcon(data['iconCode']);
     final String setId = (data['setId'] ?? '').toString();
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: baseColor.withOpacity(0.3),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        children: [
-          _FolderWidget(
-            baseColor: baseColor,
-            icon: iconData,
-            width: 64,
-            height: 54,
-            tabW: 26,
-            tabH: 12,
-            iconSize: 22,
-            bodyRadius: 8,
-            tabRadius: 5,
-            showStar: true,
-          ),
-
-          const SizedBox(width: 14),
-
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  data['title'] ?? 'Untitled',
-                  style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  "by ${data['sharedByName'] ?? 'Unknown'}",
-                  style: TextStyle(
-                      fontSize: 12, color: Colors.black.withOpacity(0.5)),
-                ),
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    const Icon(Icons.style_rounded,
-                        size: 13, color: Colors.black45),
-                    const SizedBox(width: 4),
-                    Text(
-                      "${data['totalCards'] ?? 0} cards",
-                      style: const TextStyle(
-                          fontSize: 12, color: Colors.black54),
-                    ),
-                  ],
-                ),
-              ],
+    return GestureDetector(
+      onLongPress: isAdmin ? () => _confirmDelete(context) : null,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: baseColor.withOpacity(0.3),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          children: [
+            _FolderWidget(
+              baseColor: baseColor,
+              icon: iconData,
+              width: 64,
+              height: 54,
+              tabW: 26,
+              tabH: 12,
+              iconSize: 22,
+              bodyRadius: 8,
+              tabRadius: 5,
+              showStar: true,
             ),
-          ),
 
-          // Nếu là admin: hiện nút xoá + nút Study
-          // Nếu là member: chỉ hiện nút Study
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (isAdmin)
-                GestureDetector(
-                  onTap: () => _confirmDelete(context),
-                  child: Container(
-                    margin: const EdgeInsets.only(right: 8),
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.red.shade50,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(
-                      Icons.delete_outline_rounded,
-                      size: 18,
-                      color: Colors.red.shade400,
-                    ),
-                  ),
-                ),
+            const SizedBox(width: 14),
 
-              GestureDetector(
-                onTap: setId.isNotEmpty
-                    ? () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) =>
-                                FlashcardStudyScreen(setId: setId),
-                          ),
-                        )
-                    : null,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: setId.isNotEmpty
-                        ? AppColors.highlightColor
-                        : Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(20),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    data['title'] ?? 'Untitled',
+                    style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87),
                   ),
-                  child: const Text(
-                    'Study',
+                  const SizedBox(height: 3),
+                  Text(
+                    "by ${data['sharedByName'] ?? 'Unknown'}",
                     style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w900,
-                        color: Colors.white),
+                        fontSize: 12,
+                        color: Colors.black.withOpacity(0.5)),
                   ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      const Icon(Icons.style_rounded,
+                          size: 13, color: Colors.black45),
+                      const SizedBox(width: 4),
+                      Text(
+                        "${data['totalCards'] ?? 0} cards",
+                        style: const TextStyle(
+                            fontSize: 12, color: Colors.black54),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            // Study button
+            GestureDetector(
+              onTap: setId.isNotEmpty
+                  ? () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => FlashcardStudyScreen(setId: setId),
+                        ),
+                      )
+                  : null,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: setId.isNotEmpty
+                      ? AppColors.highlightColor
+                      : Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Text(
+                  'Study',
+                  style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.white),
                 ),
               ),
-            ],
-          ),
-        ],
+            ),
+          ],
+        ),
       ),
     );
   }

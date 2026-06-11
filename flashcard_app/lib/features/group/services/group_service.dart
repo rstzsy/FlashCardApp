@@ -209,13 +209,13 @@ class GroupService {
 
   static Future<Set<String>> getExistingMemberIds(String groupId) async {
     if (groupId.isEmpty) return {};
-    
+
     final snap = await _db
         .collection('groups')
         .doc(groupId)
         .collection('members')
         .get();
-        
+
     return snap.docs.map((d) => d.id).toSet();
   }
 
@@ -230,5 +230,88 @@ class GroupService {
         .map((d) => (d.data()['toUid'] ?? '').toString())
         .where((id) => id.isNotEmpty)
         .toSet();
+  }
+
+
+  static Future<void> deleteGroup(String groupId) async {
+    final uid = _uid;
+    if (uid == null) return;
+
+    final groupRef = _db.collection('groups').doc(groupId);
+
+    final membersSnap = await groupRef.collection('members').get();
+    for (final doc in membersSnap.docs) {
+      await doc.reference.delete();
+    }
+
+    final collectionsSnap = await groupRef.collection('collections').get();
+    for (final doc in collectionsSnap.docs) {
+      await doc.reference.delete();
+    }
+
+    final invitesSnap = await _db
+        .collection('invitations')
+        .where('groupId', isEqualTo: groupId)
+        .get();
+    for (final doc in invitesSnap.docs) {
+      await doc.reference.delete();
+    }
+
+    await groupRef.delete();
+  }
+
+  static Future<void> promoteMember({
+    required String groupId,
+    required String uid,
+  }) async {
+    await _db
+        .collection('groups')
+        .doc(groupId)
+        .collection('members')
+        .doc(uid)
+        .update({'role': 'moderator'}); 
+  }
+
+  static Future<void> demoteMember({
+    required String groupId,
+    required String uid,
+  }) async {
+    await _db
+        .collection('groups')
+        .doc(groupId)
+        .collection('members')
+        .doc(uid)
+        .update({'role': 'member'});
+  }
+
+  static Future<bool> isAdminByRole(String groupId) async {
+    final uid = _uid;
+    if (uid == null) return false;
+
+    final doc = await _db
+        .collection('groups')
+        .doc(groupId)
+        .collection('members')
+        .doc(uid)
+        .get();
+
+    final role = doc.data()?['role'] ?? 'member';
+    return role == 'admin' || role == 'moderator';
+  }
+
+  static Future<void> leaveGroup(String groupId) async {
+    final uid = _uid;
+    if (uid == null) return;
+
+    final groupRef = _db.collection('groups').doc(groupId);
+
+    await groupRef.collection('members').doc(uid).delete();
+
+    await groupRef.update({
+      'memberCount': FieldValue.increment(-1),
+    });
+
+    final inviteId = '${groupId}_$uid';
+    await _db.collection('invitations').doc(inviteId).delete();
   }
 }

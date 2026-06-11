@@ -9,8 +9,6 @@ import '../services/group_service.dart';
 import '../widgets/group_card.dart';
 import 'add_group_screen.dart';
 import 'group_dashboard_screen.dart';
-import '../models/group_model.dart';
-import 'group_dashboard_screen.dart';
 
 class GroupListPage extends StatefulWidget {
   const GroupListPage({super.key});
@@ -21,16 +19,15 @@ class GroupListPage extends StatefulWidget {
 
 class _GroupListPageState extends State<GroupListPage> {
   bool _initialized = false;
-  
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (!_initialized) {       
+    if (!_initialized) {
       _initialized = true;
       context.read<GroupController>().listenToGroups();
     }
   }
-
 
   void _goToAddGroup() async {
     await Navigator.push<GroupModel>(
@@ -48,6 +45,49 @@ class _GroupListPageState extends State<GroupListPage> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (_) => const _InvitationSheet(),
+    );
+  }
+
+  void _confirmDeleteGroup(BuildContext context, GroupModel group) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: AppColors.mainColor,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text(
+          'Delete group?',
+          style: TextStyle(
+            color: AppColors.highlightColor,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: Text(
+          'Group "${group.name}" and all its content will be permanently deleted.',
+          style: TextStyle(color: Colors.grey.shade400),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: Colors.grey.shade500),
+            ),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await GroupService.deleteGroup(group.id);
+            },
+            child: const Text(
+              'Delete',
+              style: TextStyle(
+                color: Colors.red,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -70,7 +110,6 @@ class _GroupListPageState extends State<GroupListPage> {
           ),
         ),
         actions: [
-          // Icon chuông với badge
           if (uid != null)
             StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
@@ -129,7 +168,8 @@ class _GroupListPageState extends State<GroupListPage> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.group_off, size: 56, color: Colors.grey.shade300),
+                      Icon(Icons.group_off,
+                          size: 56, color: Colors.grey.shade300),
                       const SizedBox(height: 12),
                       Text(
                         "No groups yet",
@@ -142,20 +182,24 @@ class _GroupListPageState extends State<GroupListPage> {
                   padding: const EdgeInsets.all(20),
                   itemCount: controller.groups.length,
                   itemBuilder: (context, index) {
+                    final group = controller.groups[index];
+                    final isAdmin = GroupService.isAdmin(group);
+
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 12),
                       child: GroupCard(
-                        group: controller.groups[index],
+                        group: group,
                         onTap: () {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) => GroupDashboard(
-                                group: controller.groups[index],
-                              ),
+                              builder: (_) => GroupDashboard(group: group),
                             ),
                           );
                         },
+                        onLongPress: isAdmin
+                            ? () => _confirmDeleteGroup(context, group)
+                            : null,
                       ),
                     );
                   },
@@ -169,7 +213,6 @@ class _GroupListPageState extends State<GroupListPage> {
 class _InvitationSheet extends StatelessWidget {
   const _InvitationSheet();
 
-  // màu theo index
   Color _cardColor(int index) {
     const colors = [
       Color(0xFFDFF2EB),
@@ -196,7 +239,6 @@ class _InvitationSheet extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // drag handle
               Center(
                 child: Container(
                   width: 40,
@@ -268,7 +310,6 @@ class _InvitationSheet extends StatelessWidget {
                           ),
                           child: Stack(
                             children: [
-                              // watermark
                               Positioned(
                                 right: -2,
                                 top: 0,
@@ -289,7 +330,6 @@ class _InvitationSheet extends StatelessWidget {
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  // tên group
                                   Text(
                                     data['groupName'] ?? 'Unknown Group',
                                     style: const TextStyle(
@@ -300,7 +340,6 @@ class _InvitationSheet extends StatelessWidget {
                                   ),
                                   const SizedBox(height: 6),
 
-                                  // invited by
                                   Text(
                                     "Invited by ${data['fromName'] ?? 'Unknown'}",
                                     style: TextStyle(
@@ -327,14 +366,15 @@ class _InvitationSheet extends StatelessWidget {
 
                                       const Spacer(),
 
-                                      // Decline
                                       GestureDetector(
-                                        onTap: () => _declineInvite(inviteId),
+                                        onTap: () =>
+                                            _declineInvite(inviteId),
                                         child: Container(
                                           padding: const EdgeInsets.symmetric(
                                               horizontal: 14, vertical: 8),
                                           decoration: BoxDecoration(
-                                            color: Colors.white.withOpacity(0.7),
+                                            color:
+                                                Colors.white.withOpacity(0.7),
                                             borderRadius:
                                                 BorderRadius.circular(20),
                                           ),
@@ -351,7 +391,6 @@ class _InvitationSheet extends StatelessWidget {
 
                                       const SizedBox(width: 8),
 
-                                      // Accept
                                       GestureDetector(
                                         onTap: () => _acceptInvite(
                                           context,
@@ -425,13 +464,12 @@ class _InvitationSheet extends StatelessWidget {
 
     if (!context.mounted) return;
 
-    // Load group document rồi navigate
     final groupDoc = await db.collection('groups').doc(groupId).get();
     if (!context.mounted) return;
 
     if (groupDoc.exists) {
       final group = GroupModel.fromFirestore(groupDoc.id, groupDoc.data()!);
-      Navigator.pop(context); // đóng bottom sheet
+      Navigator.pop(context);
       Navigator.push(
         context,
         MaterialPageRoute(

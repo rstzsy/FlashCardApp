@@ -5,12 +5,14 @@ class MemberCard extends StatelessWidget {
   final String name;
   final String? avatar;
   final bool isOwner;
+  final bool isModerator;
 
   const MemberCard({
     super.key,
     required this.name,
     this.avatar,
     this.isOwner = false,
+    this.isModerator = false,
   });
 
   @override
@@ -20,9 +22,9 @@ class MemberCard extends StatelessWidget {
       margin: const EdgeInsets.only(right: 14),
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: AppColors.mainColor,                          
+        color: AppColors.mainColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.transparent, width: 2), 
+        border: Border.all(color: Colors.transparent, width: 2),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -33,7 +35,7 @@ class MemberCard extends StatelessWidget {
             children: [
               CircleAvatar(
                 radius: 35,
-                backgroundColor: Colors.white,            
+                backgroundColor: Colors.white,
                 backgroundImage: avatar != null
                     ? (avatar!.startsWith('http')
                         ? NetworkImage(avatar!) as ImageProvider
@@ -43,7 +45,11 @@ class MemberCard extends StatelessWidget {
                     ? Icon(
                         Icons.person,
                         size: 35,
-                        color: isOwner ? AppColors.highlightColor : Colors.grey,
+                        color: isOwner
+                            ? AppColors.highlightColor
+                            : isModerator
+                                ? Colors.orange
+                                : Colors.grey,
                       )
                     : null,
               ),
@@ -63,6 +69,23 @@ class MemberCard extends StatelessWidget {
                       color: Colors.white,
                     ),
                   ),
+                )
+              else if (isModerator)
+                Positioned(
+                  top: 0,
+                  right: 0,
+                  child: Container(
+                    padding: const EdgeInsets.all(3),
+                    decoration: const BoxDecoration(
+                      color: Colors.orange,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.shield_rounded,
+                      size: 12,
+                      color: Colors.white,
+                    ),
+                  ),
                 ),
             ],
           ),
@@ -78,26 +101,29 @@ class MemberCard extends StatelessWidget {
               fontWeight: FontWeight.bold,
               color: isOwner
                   ? AppColors.highlightColor
-                  : const Color.fromARGB(225, 19, 64, 122),
+                  : isModerator
+                      ? Colors.orange.shade700
+                      : const Color.fromARGB(225, 19, 64, 122),
             ),
           ),
 
           const SizedBox(height: 4),
 
           Visibility(
-            visible: isOwner,
+            visible: isOwner || isModerator,
             maintainSize: true,
             maintainAnimation: true,
             maintainState: true,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
-                color: AppColors.highlightColor,
+                color: isOwner ? AppColors.highlightColor : Colors.orange,
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Text(
-                'Owner',
-                style: TextStyle(
+              child: Text(
+                isOwner ? 'Owner' : 'Mod',
+                style: const TextStyle(
                   fontSize: 9,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,

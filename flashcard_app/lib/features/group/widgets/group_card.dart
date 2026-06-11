@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../../../core/themes/app_colors.dart';
 import '../models/group_model.dart';
@@ -5,18 +6,35 @@ import '../models/group_model.dart';
 class GroupCard extends StatelessWidget {
   final GroupModel group;
   final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
 
-  const GroupCard({super.key, required this.group, this.onTap});
+  const GroupCard({
+    super.key,
+    required this.group,
+    this.onTap,
+    this.onLongPress,
+  });
+
+  Stream<int> _memberCountStream(String groupId) {
+    if (groupId.isEmpty) return Stream.value(0);
+    return FirebaseFirestore.instance
+        .collection('groups')
+        .doc(groupId)
+        .collection('members')
+        .snapshots()
+        .map((snap) => snap.docs.length);
+  }
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
+      onLongPress: onLongPress,
       child: Container(
         margin: const EdgeInsets.only(bottom: 14),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-            color: Color(group.bgColor ?? const Color(0xFFDFF2EB).value),
+          color: Color(group.bgColor ?? const Color(0xFFDFF2EB).value),
           borderRadius: BorderRadius.circular(20),
         ),
         child: Stack(
@@ -43,7 +61,6 @@ class GroupCard extends StatelessWidget {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Tên nhóm
                 Text(
                   group.name,
                   style: const TextStyle(
@@ -54,7 +71,6 @@ class GroupCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 6),
 
-                // Mô tả (nếu có)
                 Text(
                   group.description ?? 'Nhóm học tập cùng nhau',
                   maxLines: 2,
@@ -67,25 +83,30 @@ class GroupCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 14),
 
-                // Row bottom: số thành viên + nút
                 Row(
                   children: [
-                    // Số thành viên
                     const Icon(Icons.group_rounded,
                         size: 16, color: Colors.black45),
                     const SizedBox(width: 4),
-                    Text(
-                      '${group.memberCount} members',
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: Colors.black54,
-                        fontWeight: FontWeight.w600,
-                      ),
+
+                    // ── Stream member count thực tế ──
+                    StreamBuilder<int>(
+                      stream: _memberCountStream(group.id ?? ''),
+                      builder: (context, snapshot) {
+                        final count = snapshot.data ?? group.memberCount;
+                        return Text(
+                          '$count members',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: Colors.black54,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        );
+                      },
                     ),
 
                     const Spacer(),
 
-                    // Nút Join / View
                     GestureDetector(
                       onTap: onTap,
                       child: Container(

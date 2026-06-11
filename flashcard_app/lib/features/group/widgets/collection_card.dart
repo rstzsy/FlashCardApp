@@ -449,7 +449,6 @@ class _CollectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Thử nhiều key có thể có trong Firestore document
     final Color baseColor = _parseColor(
       data['color'] ?? data['ColorHex'] ?? data['colorHex'],
     );
