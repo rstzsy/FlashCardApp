@@ -46,6 +46,7 @@ dependencies:
   cloud_firestore: ^5.6.12
   provider: ^6.1.5+1
   flame: ^1.37.0
+  flutter_svg: ^2.2.0
 
 dev_dependencies:
   flutter_test:
@@ -77,3 +78,4 @@ flutter:
     - assets/game/tree/
     - assets/game/fertilizer.png
     - assets/game/frames/
+    - assets/icon/

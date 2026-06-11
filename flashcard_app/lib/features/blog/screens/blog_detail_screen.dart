@@ -5,6 +5,7 @@ import '../services/blog_service.dart';
 import '../widgets/comment_sheet.dart';
 import '../../group/models/group_model.dart';
 import 'edit_blog_screen.dart';
+import 'dart:math' show cos, sin, pi, pow;
 
 class BlogDetailScreen extends StatefulWidget {
   final BlogPost  post;
@@ -87,6 +88,15 @@ class _BlogDetailScreenState extends State<BlogDetailScreen> {
         ),
       ),
     );
+
+    if (!mounted) return;
+    final updated = await BlogService.getPost(
+      groupId: widget.groupId,
+      postId: _post.id,
+    );
+    if (updated != null && mounted) {
+      setState(() => _post = updated);
+    }
   }
 
   Future<void> _confirmDelete() async {
@@ -207,13 +217,21 @@ class _BlogDetailScreenState extends State<BlogDetailScreen> {
           children: [
             Image.asset('assets/component/logo.png', height: 36),
             const SizedBox(width: 6),
-            const Text(
-              'MOFU',
-              style: TextStyle(
-                fontSize:      20,
-                fontWeight:    FontWeight.w900,
-                color:         Color(0xFF0277BD),
-                letterSpacing: 1.5,
+            ShaderMask(
+              shaderCallback: (bounds) => const LinearGradient(
+                colors: [
+                  Color(0xFF29B6F6),
+                  Color(0xFF0288D1),
+                ],
+              ).createShader(bounds),
+              child: const Text(
+                'MOFU',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w900,
+                  color: Colors.white,
+                  letterSpacing: 2,
+                ),
               ),
             ),
           ],
@@ -272,15 +290,11 @@ class _BlogDetailScreenState extends State<BlogDetailScreen> {
                 height: 64,
                 child: Row(
                   children: [
-                    _ActionBtn(
-                      icon:  _post.isLiked
-                          ? Icons.favorite
-                          : Icons.favorite_border_rounded,
-                      label: _fmt(_post.likes),
-                      color: _post.isLiked
-                          ? Colors.redAccent
-                          : Colors.black45,
-                      onTap: _handleLike,
+                    _DetailLikeButton(
+                      isLiked: _post.isLiked,
+                      count: _post.likes,
+                      onLike: _handleLike,
+                      fmt: _fmt,
                     ),
                     const SizedBox(width: 4),
                     _ActionBtn(
@@ -498,5 +512,194 @@ class _ActionBtn extends StatelessWidget {
       ),
     );
   }
+}
+
+// ── Like Button với hiệu ứng ─────────────────────────────────────────────────
+
+class _DetailLikeButton extends StatefulWidget {
+  final bool isLiked;
+  final int count;
+  final VoidCallback onLike;
+  final String Function(int) fmt;
+
+  const _DetailLikeButton({
+    required this.isLiked,
+    required this.count,
+    required this.onLike,
+    required this.fmt,
+  });
+
+  @override
+  State<_DetailLikeButton> createState() => _DetailLikeButtonState();
+}
+
+class _DetailLikeButtonState extends State<_DetailLikeButton>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  late Animation<double> _scale;
+  late Animation<double> _particle;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 700),
+    );
+
+    _scale = TweenSequence([
+      TweenSequenceItem(
+          tween: Tween(begin: 1.0, end: 1.6)
+              .chain(CurveTween(curve: Curves.easeOut)),
+          weight: 35),
+      TweenSequenceItem(
+          tween: Tween(begin: 1.6, end: 0.9)
+              .chain(CurveTween(curve: Curves.easeIn)),
+          weight: 25),
+      TweenSequenceItem(
+          tween: Tween(begin: 0.9, end: 1.0)
+              .chain(CurveTween(curve: Curves.elasticOut)),
+          weight: 40),
+    ]).animate(_ctrl);
+
+    _particle =
+        CurvedAnimation(parent: _ctrl, curve: Curves.easeOut);
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  void _onTap() {
+    widget.onLike();
+    _ctrl.forward(from: 0);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: _onTap,
+      child: AnimatedBuilder(
+        animation: _ctrl,
+        builder: (_, __) => CustomPaint(
+          painter: _HeartParticlePainter(
+            progress: _particle.value,
+            isLiked: widget.isLiked,
+            isAnimating: _ctrl.isAnimating,
+          ),
+          child: SizedBox(
+            width: 64,
+            height: 64,
+            child: Center(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Transform.scale(
+                    scale: _scale.value,
+                    child: Icon(
+                      widget.isLiked
+                          ? Icons.favorite
+                          : Icons.favorite_border_rounded,
+                      size: 22,
+                      color: widget.isLiked
+                          ? Colors.redAccent
+                          : Colors.black45,
+                    ),
+                  ),
+                  const SizedBox(width: 5),
+                  Text(
+                    widget.fmt(widget.count),
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: widget.isLiked
+                          ? Colors.redAccent
+                          : Colors.black45,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HeartParticlePainter extends CustomPainter {
+  final double progress;
+  final bool isLiked;
+  final bool isAnimating;
+
+  _HeartParticlePainter({
+    required this.progress,
+    required this.isLiked,
+    required this.isAnimating,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (!isAnimating || progress == 0) return;
+
+    final cx = size.width / 2;
+    final cy = size.height / 2;
+
+    final opacity = (progress < 0.5
+            ? progress * 2
+            : (1.0 - progress) * 2)
+        .clamp(0.0, 1.0);
+
+    final easedProgress =
+        1.0 - pow(1.0 - progress, 2).toDouble();
+
+    const count = 8;
+    for (int i = 0; i < count; i++) {
+      final angle = (2 * pi * i / count) - pi / 2;
+      final isLarge = i % 2 == 0;
+      final maxDist = isLarge ? 26.0 : 20.0;
+      final radius  = isLarge ? 3.5   : 2.2;
+
+      final dist = maxDist * easedProgress;
+      final x = cx + dist * cos(angle);
+      final y = cy + dist * sin(angle);
+
+      final color = isLiked
+          ? (isLarge ? Colors.redAccent : Colors.pinkAccent)
+          : (isLarge
+              ? Colors.pink.shade200
+              : Colors.pink.shade100);
+
+      canvas.drawCircle(
+        Offset(x, y),
+        radius * (1.0 - progress * 0.3),
+        Paint()
+          ..color = color.withOpacity(opacity)
+          ..style = PaintingStyle.fill,
+      );
+    }
+
+    // Ring
+    if (progress < 0.6) {
+      final ringR   = 20.0 * (progress / 0.6);
+      final ringOpa = (1.0 - progress / 0.6).clamp(0.0, 1.0);
+      canvas.drawCircle(
+        Offset(cx, cy),
+        ringR,
+        Paint()
+          ..color =
+              Colors.redAccent.withOpacity(ringOpa * 0.3)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2.0,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(_HeartParticlePainter old) =>
+      old.progress != progress ||
+      old.isAnimating != isAnimating;
 }
 

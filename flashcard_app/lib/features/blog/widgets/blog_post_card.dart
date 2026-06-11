@@ -7,6 +7,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../screens/edit_blog_screen.dart';
 import '../../../core/widgets/app_popup.dart'; 
 import '../screens/blog_detail_screen.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import '../widgets/like_button.dart';
 
 
 class BlogPostCard extends StatefulWidget {
@@ -286,10 +288,14 @@ class _BlogPostCardState extends State<BlogPostCard> {
                         color: Colors.red.shade50,
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(
-                        Icons.favorite,
-                        color: Colors.redAccent,
-                        size: 22,
+                      child: SvgPicture.asset(
+                        'assets/icons/heart.svg',
+                        width: 22,
+                        height: 22,
+                        colorFilter: const ColorFilter.mode(
+                          Colors.redAccent,
+                          BlendMode.srcIn,
+                        ),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -308,13 +314,28 @@ class _BlogPostCardState extends State<BlogPostCard> {
 
               Expanded(
                 child: users.isEmpty
-                    ? const Center(
-                        child: Text(
-                          'No likes yet ❤️',
-                          style: TextStyle(
-                            color: Colors.black45,
-                            fontSize: 15,
-                          ),
+                    ? Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            SvgPicture.asset(
+                              'assets/icon/heart.svg',
+                              width: 32,
+                              height: 32,
+                              colorFilter: const ColorFilter.mode(
+                                Color(0xFFFF4D6D),
+                                BlendMode.srcIn,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            const Text(
+                              'No likes yet',
+                              style: TextStyle(
+                                color: Colors.black45,
+                                fontSize: 15,
+                              ),
+                            ),
+                          ],
                         ),
                       )
                     : ListView.separated(
@@ -379,43 +400,38 @@ class _BlogPostCardState extends State<BlogPostCard> {
                                 ),
 
                                 Container(
-                                  padding:
-                                      const EdgeInsets.symmetric(
+                                  padding: const EdgeInsets.symmetric(
                                     horizontal: 10,
-                                    vertical: 5,
+                                    vertical: 6,
                                   ),
                                   decoration: BoxDecoration(
-                                    color:
-                                        Colors.red.shade50,
-                                    borderRadius:
-                                        BorderRadius
-                                            .circular(20),
+                                    color: const Color(0xFFFFEEF2),
+                                    borderRadius: BorderRadius.circular(999),
                                   ),
-                                  child: const Row(
-                                    mainAxisSize:
-                                        MainAxisSize.min,
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      Icon(
-                                        Icons.favorite,
-                                        color:
-                                            Colors.redAccent,
-                                        size: 14,
+                                      SvgPicture.asset(
+                                        'assets/icon/heart.svg',
+                                        width: 12,
+                                        height: 12,
+                                        colorFilter: const ColorFilter.mode(
+                                          Color(0xFFFF4D6D),
+                                          BlendMode.srcIn,
+                                        ),
                                       ),
-                                      SizedBox(width: 4),
-                                      Text(
+                                      const SizedBox(width: 5),
+                                      const Text(
                                         'Liked',
                                         style: TextStyle(
-                                          color: Colors
-                                              .redAccent,
-                                          fontWeight:
-                                              FontWeight
-                                                  .w600,
+                                          color: Color(0xFFFF4D6D),
+                                          fontWeight: FontWeight.w700,
                                           fontSize: 12,
                                         ),
                                       ),
                                     ],
                                   ),
-                                ),
+                                )
                               ],
                             ),
                           );
@@ -640,27 +656,14 @@ class _BlogPostCardState extends State<BlogPostCard> {
             // ── Action bar ──
             Row(
               children: [
-                GestureDetector(
-                  onTap: _handleLike,
-                  child: Icon(
-                    _post.isLiked ? Icons.favorite : Icons.favorite_border,
-                    size:  20,
-                    color: _post.isLiked ? Colors.redAccent : Colors.black54,
-                  ),
+                LikeButton(
+                  isLiked: _post.isLiked,
+                  count: _post.likes,
+                  onLike: _handleLike,
+                  onCountTap: _showLikers,
+                  fmt: _fmt,
                 ),
-                const SizedBox(width: 4),
-                GestureDetector(
-                  onTap: _showLikers,
-                  child: Text(
-                    _fmt(_post.likes),
-                    style: const TextStyle(
-                      fontSize:   12,
-                      fontWeight: FontWeight.w600,
-                      color:      Colors.black54,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
+                // bỏ SizedBox ở đây
                 _Pill(
                   icon:      Icons.chat_bubble_outline_rounded,
                   label:     _fmt(_post.comments),
@@ -730,3 +733,6 @@ class _Pill extends StatelessWidget {
     );
   }
 }
+
+
+
