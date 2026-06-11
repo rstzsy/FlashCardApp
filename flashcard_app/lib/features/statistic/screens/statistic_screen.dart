@@ -1,173 +1,184 @@
 import 'package:flutter/material.dart';
-import '../../../core/themes/app_colors.dart';
-import '../widgets/chibi_stat_card.dart';
-import '../widgets/weekly_process_chart.dart';
+import '../../../models/statisticModel.dart';
+import '../controllers/statistic_controller.dart';
+import '../widgets/hero_card.dart';
+import '../widgets/memory_rate_card.dart';
+import '../widgets/palette.dart';
+import '../widgets/weekly_segment_card.dart';
 
-class StatisticsScreen extends StatelessWidget {
+class StatisticsScreen extends StatefulWidget {
   const StatisticsScreen({super.key});
 
-  final int learnedWords = 120;
-  final double memoryRate = 70;
+  @override
+  State<StatisticsScreen> createState() => _StatisticsScreenState();
+}
+
+class _StatisticsScreenState extends State<StatisticsScreen>
+    with SingleTickerProviderStateMixin {
+  final StatisticsController _controller = StatisticsController();
+
+  StatisticsModel? statistics;
+  bool isLoading = true;
+  late AnimationController _animCtrl;
+  late Animation<double> _fadeAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _animCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 700),
+    );
+    _fadeAnim = CurvedAnimation(parent: _animCtrl, curve: Curves.easeOut);
+    _loadStatistics();
+  }
+
+  @override
+  void dispose() {
+    _animCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadStatistics() async {
+    final result = await _controller.getStatistics(context);
+    if (!mounted) return;
+    setState(() {
+      statistics = result;
+      isLoading = false;
+    });
+    _animCtrl.forward(from: 0);
+    debugPrint('weeklyProgress: ${result?.weeklyProgress}');
+    debugPrint('today: ${DateTime.now()}'); // date and time
+    debugPrint('weekday: ${DateTime.now().weekday}');
+
+    // cal first day of week
+    final now = DateTime.now();
+    final monday = now.subtract(Duration(days: now.weekday - 1));
+    debugPrint('monday of this week: $monday');
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (isLoading) {
+      return const Scaffold(
+        backgroundColor: P.bg,
+        body: Center(child: CircularProgressIndicator(color: P.green)),
+      );
+    }
+
+    final learnedWords = statistics?.learnedWords ?? 0;
+    final memoryRate = statistics?.memoryRate ?? 0.0;
+    final weekly = statistics?.weeklyProgress ?? <int>[];
     final isHappy = memoryRate >= 50;
-    final sprite = isHappy
-        ? "assets/character/happy.png"
-        : "assets/character/worry.png";
 
     return Scaffold(
-      backgroundColor: AppColors.mainColor,
+      backgroundColor: P.bg,
       appBar: AppBar(
-        backgroundColor: AppColors.mainColor,
+        backgroundColor: P.bg,
         elevation: 0,
         centerTitle: true,
         title: const Text(
-          "My Stats",
+          'My Stats',
           style: TextStyle(
             fontSize: 22,
             fontWeight: FontWeight.w900,
-            color: Color(0xFF2D2D2D),
+            color: P.text,
+            letterSpacing: -0.5,
           ),
         ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: Column(
-          children: [
-
-            // card pr
-            Container(
-              width: double.infinity,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(36),
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: isHappy
-                      ? [Colors.white, const Color(0xFFFFD6E7)]
-                      : [Colors.white, AppColors.primary],
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: (isHappy
-                            ? const Color(0xFFFFD6E7)
-                            : AppColors.mainColor)
-                        .withOpacity(0.25),
-                    blurRadius: 24,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Positioned(
-                    top: -10,
-                    right: 20,
-                    child: _Blob(size: 70, color: Colors.white.withOpacity(0.25)),
-                  ),
-                  Positioned(
-                    bottom: 10,
-                    left: 10,
-                    child: _Blob(size: 45, color: Colors.white.withOpacity(0.18)),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 20,
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        // animation switch image
-                        AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 500),
-                          switchInCurve: Curves.easeOutBack,
-                          transitionBuilder: (child, anim) =>
-                              ScaleTransition(scale: anim, child: child),
-                          child: Image.asset(
-                            sprite,
-                            key: ValueKey(sprite),
-                            height: 120,
-                            fit: BoxFit.contain,
-                            errorBuilder: (_, __, ___) => const Icon(
-                              Icons.broken_image,
-                              size: 60,
-                              color: Colors.red,
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(width: 16),
-
-                        Expanded(
-                          child: Text(
-                            isHappy
-                                ? "Yay! You're amazing!"
-                                : "Let's study more today!",
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w800,
-                              color: Color(0xFF2D2D2D),
-                              height: 1.4,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            // stat card 
-            Row(
+      body: FadeTransition(
+        opacity: _fadeAnim,
+        child: RefreshIndicator(
+          onRefresh: _loadStatistics,
+          color: P.greenDark,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(20, 4, 20, 100),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: ChibiStatCard(
-                    iconPath: "assets/component/book.png",
-                    value: "$learnedWords",
-                    label: "Words Learned",
-                    color: const Color.fromARGB(255, 52, 91, 109),
-                    bgGradient: const [Colors.white, AppColors.primary],
-                  ),
+                HeroCard(isHappy: isHappy, memoryRate: memoryRate),
+                const SizedBox(height: 20),
+
+                _sectionLabel('Overview'),
+                const SizedBox(height: 12),
+                MemoryRateCard(
+                  learnedWords: learnedWords,
+                  memoryRate: memoryRate,
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ChibiStatCard(
-                    iconPath: "assets/component/brain.png",
-                    value: "${memoryRate.toInt()}%",
-                    label: "Memory Rate",
-                    color: isHappy
-                        ? const Color(0xFF3EC97C)
-                        : const Color(0xFFFF6B6B),
-                    bgGradient: isHappy
-                        ? const [Colors.white, Color(0xFFC8F5DC)]
-                        : const [Colors.white, Color(0xFFFFEEEE)],
-                  ),
+                const SizedBox(height: 20),
+
+                _sectionLabel('Weekly Progress'),
+                const SizedBox(height: 12),
+                WeeklySegmentCard(
+                  values: weekly,
+                  totalLearned: learnedWords,
+                  today: DateTime.now().weekday, 
+                ),
+                const SizedBox(height: 24),
+
+                ExportButton(
+                  onPressed: () async => _controller.exportPdf(context),
                 ),
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
 
-            const SizedBox(height: 20),
+  Widget _sectionLabel(String text) => Text(
+    text,
+    style: const TextStyle(
+      fontSize: 13,
+      fontWeight: FontWeight.w700,
+      color: P.textSub,
+      letterSpacing: 0.8,
+    ),
+  );
+}
 
-            // bar chart
-            const WeeklyProgressChart(),
-            const SizedBox(height: 30),
-          ],
+// export button
+class ExportButton extends StatelessWidget {
+  final VoidCallback onPressed;
+  const ExportButton({required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      height: 58,
+      child: ElevatedButton.icon(
+        onPressed: onPressed,
+        icon: const Icon(Icons.download_rounded, size: 22, color: P.pinkDark),
+        label: const Text(
+          'Export Data',
+          style: TextStyle(
+            color: P.pinkDark,
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.3,
+          ),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: P.pink.withOpacity(0.30),
+          elevation: 0,
+          shadowColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(30),
+          ),
         ),
       ),
     );
   }
 }
 
-class _Blob extends StatelessWidget {
+class Blob extends StatelessWidget {
   final double size;
   final Color color;
-  const _Blob({required this.size, required this.color});
+  const Blob({required this.size, required this.color});
 
   @override
   Widget build(BuildContext context) {
