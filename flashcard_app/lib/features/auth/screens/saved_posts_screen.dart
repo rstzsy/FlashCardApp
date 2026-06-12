@@ -5,6 +5,7 @@ import '../../../core/themes/app_colors.dart';
 import '../../blog/models/blog_post_model.dart';
 import '../../blog/services/blog_service.dart';
 import '../../blog/screens/blog_detail_screen.dart';
+import '../../blog/widgets/like_button.dart';
 
 class SavedPostsScreen extends StatefulWidget {
   const SavedPostsScreen({super.key});
@@ -404,26 +405,11 @@ class _SavedPostCardState extends State<_SavedPostCard> {
                   // ── Action bar ──
                   Row(
                     children: [
-                      GestureDetector(
-                        onTap: _handleLike,
-                        child: Icon(
-                          _post.isLiked
-                              ? Icons.favorite
-                              : Icons.favorite_border,
-                          size: 20,
-                          color: _post.isLiked
-                              ? Colors.redAccent
-                              : Colors.black54,
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        _fmt(_post.likes),
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black54,
-                        ),
+                      LikeButton(
+                        isLiked: _post.isLiked,
+                        count: _post.likes,
+                        onLike: _handleLike,
+                        fmt: _fmt,
                       ),
                       const SizedBox(width: 12),
                       const Icon(Icons.chat_bubble_outline_rounded,

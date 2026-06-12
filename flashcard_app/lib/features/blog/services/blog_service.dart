@@ -449,4 +449,32 @@ class BlogService {
     batch.update(postRef, {'comments': FieldValue.increment(-1)});
     await batch.commit();
   }
+
+  static Future<BlogPost?> getPost({
+    required String groupId,
+    required String postId,
+  }) async {
+    final uid = _uid;
+    final doc = await _db
+        .collection('groups')
+        .doc(groupId)
+        .collection('posts')
+        .doc(postId)
+        .get();
+
+    if (!doc.exists) return null;
+
+    final post = BlogPost.fromFirestore(doc.id, doc.data()!);
+    if (uid == null) return post;
+
+    final results = await Future.wait([
+      doc.reference.collection('likes').doc(uid).get(),
+      doc.reference.collection('bookmarks').doc(uid).get(),
+    ]);
+
+    return post.copyWith(
+      isLiked:      results[0].exists,
+      isBookmarked: results[1].exists,
+    );
+  }
 }

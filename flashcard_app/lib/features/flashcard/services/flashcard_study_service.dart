@@ -24,6 +24,7 @@ class FlashcardStudyService {
         final data = doc.data();
 
         return {
+          "id": doc.id,  
           "word": data["Word"] ?? data["word"] ?? "",
           "meaning": data["Meaning"] ?? data["meaning"] ?? "",
           "phonetic": data["Phonetic"] ?? data["phonetic"] ?? "",
@@ -31,9 +32,9 @@ class FlashcardStudyService {
           "imageUrl": data["imageUrl"] ?? data["ImageUrl"] ?? data["image"] ?? "",
         };
       }).toList();
-    } catch (e) {
-      print("Service Error: $e");
-      return [];
-    }
+      } catch (e) {
+        print("Service Error: $e");
+        return [];
+      }
   }
 }
