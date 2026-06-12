@@ -13,6 +13,7 @@ import '../widgets/fsrs_rating_buttons.dart';
 import '../../auth/service/study_streak_service.dart';
 import '../services/fsrs_service.dart';
 import '../models/flashcard_fsrs_data.dart';
+import 'dart:async';
 
 class FlashcardStudyScreen extends StatefulWidget {
   final String setId;
@@ -24,7 +25,7 @@ class FlashcardStudyScreen extends StatefulWidget {
 }
 
 class _FlashcardStudyScreenState extends State<FlashcardStudyScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   final FlashcardStudyController controller = FlashcardStudyController();
 
   TabController? _tabController;
@@ -38,17 +39,39 @@ class _FlashcardStudyScreenState extends State<FlashcardStudyScreen>
   bool _dueShowRating = false;
   bool _allShowRating = false;
   bool _isRating = false;
+  Timer? _dueRefreshTimer;
 
   @override
   void initState() {
     super.initState();
+
     _tabController = TabController(length: 2, vsync: this);
-    _tabController!.addListener(() => setState(() {}));
+    _tabController!.addListener(() {
+      // Chỉ xử lý khi tab đã settle xong (không còn đang animate)
+      if (!_tabController!.indexIsChanging) {
+        if (_tabController!.index == 0) {
+          // Quay về Due tab → refresh ngay và reset state
+          _refreshDueCards();
+          setState(() => _dueShowRating = false);
+        }
+        setState(() {});
+      }
+    });
+
+    WidgetsBinding.instance.addObserver(this);
+
     _loadData();
+
+    _dueRefreshTimer = Timer.periodic(
+      const Duration(minutes: 1),
+      (_) => _refreshDueCards(),
+    );
   }
 
   @override
   void dispose() {
+    _dueRefreshTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
     _tabController?.dispose();
     super.dispose();
   }
@@ -70,6 +93,30 @@ class _FlashcardStudyScreenState extends State<FlashcardStudyScreen>
         return cards;
       });
     });
+  }
+
+  void _refreshDueCards() {
+    if (!mounted) return;
+    final now = DateTime.now();
+
+    setState(() {
+      _dueCards = _allCards.where((c) {
+        final fsrs = c.fsrsData;
+        if (fsrs == null || fsrs.state == 'new') return true;
+        return fsrs.due?.isBefore(now) ?? true;
+      }).toList();
+
+      // Reset về 0 thay vì chỉ clamp — tránh index lệch khi list thay đổi
+      _dueIndex = 0;
+      _dueShowRating = false;
+    });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _refreshDueCards();
+    }
   }
 
   // ─── Helpers ─────────────────────────────────────────────────────────────
@@ -124,6 +171,7 @@ class _FlashcardStudyScreenState extends State<FlashcardStudyScreen>
         final allIdx = _allCards.indexWhere((c) => c.id == card.id);
         if (allIdx != -1) _allCards[allIdx] = updatedCard;
 
+        // Rebuild _dueCards sau mỗi lần rate (dù đang ở tab nào)
         final now = DateTime.now();
         _dueCards = _allCards.where((c) {
           final fsrs = c.fsrsData;
@@ -141,7 +189,9 @@ class _FlashcardStudyScreenState extends State<FlashcardStudyScreen>
 
     setState(() {
       _isRating = false;
-      _showRating = false;
+      _dueShowRating = false;
+      _allShowRating = false;
+      // Giữ _dueIndex hợp lệ sau khi list rebuild
       if (_dueIndex >= _dueCards.length) {
         _dueIndex = (_dueCards.length - 1).clamp(0, 99999);
       }
@@ -252,8 +302,6 @@ class _FlashcardStudyScreenState extends State<FlashcardStudyScreen>
                     children: [
                       _buildTabBar(),
                       Expanded(
-                        // ✅ IndexedStack thay TabBarView
-                        // build cả 2 tab cùng lúc → setState là cả 2 cập nhật ngay
                         child: IndexedStack(
                           index: _tabController?.index ?? 0,
                           children: [
