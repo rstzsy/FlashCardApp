@@ -9,36 +9,33 @@ def _now() -> datetime:
 
 
 def _to_datetime(val) -> datetime | None:
+    """Convert any Firestore due value to timezone-aware datetime."""
     if val is None:
         return None
-
     if isinstance(val, datetime):
-        return val.replace(tzinfo=timezone.utc) if val.tzinfo is None else val
-
-    # Firestore Timestamp object
-    if hasattr(val, "seconds"):
-        return datetime.fromtimestamp(val.seconds, tz=timezone.utc)
-
-    # Unix timestamp (seconds or milliseconds)
+        return val if val.tzinfo else val.replace(tzinfo=timezone.utc)
+    if hasattr(val, 'seconds'):                          # Firestore Timestamp object
+        try:
+            return datetime.fromtimestamp(val.seconds, tz=timezone.utc)
+        except (OSError, OverflowError, ValueError):
+            return None
     if isinstance(val, (int, float)):
-        if val > 1e11:          # milliseconds → seconds
-            val /= 1000
-        return datetime.fromtimestamp(val, tz=timezone.utc)
-
+        ts = val
+        # Detect milliseconds (would exceed year 3000 if treated as seconds)
+        if ts > 32503680000:
+            ts = ts / 1000
+        try:
+            return datetime.fromtimestamp(ts, tz=timezone.utc)
+        except (OSError, OverflowError, ValueError):
+            return None
     return None
 
 
-# ── Component scores ──────────────────────────────────────────────────────────
-
 def srs_score(fsrs: dict) -> tuple[float, str, int | None]:
-    """
-    Returns (score, tag, due_days_ago).
-    due_days_ago is None when the card is not yet due.
-    """
-    state   = fsrs.get("state", "new")
+    state = fsrs.get("state", "new")
     due_raw = fsrs.get("due")
-    due     = _to_datetime(due_raw)
-    today   = _now()
+    due = _to_datetime(due_raw)
+    today = _now()
 
     if state == "new" or due is None:
         return 0.50, "new_word", None
@@ -54,13 +51,7 @@ def srs_score(fsrs: dict) -> tuple[float, str, int | None]:
     else:
         score = 0.10
 
-    if days_overdue > 0:
-        tag = "overdue"
-    elif days_overdue == 0:
-        tag = "due_today"
-    else:
-        tag = "review"
-
+    tag = "overdue" if days_overdue > 0 else "due_today" if days_overdue == 0 else "review"
     due_days_ago = days_overdue if days_overdue >= 0 else None
     return score, tag, due_days_ago
 
@@ -82,19 +73,13 @@ def difficulty_score(fsrs: dict) -> float:
     return (d - 1) / 9
 
 
-def topic_score(
-    set_id: str,
-    favourite_set_ids: list[str],
-    in_progress_set_ids: list[str],
-) -> float:
+def topic_score(set_id: str, favourite_set_ids: list[str], in_progress_set_ids: list[str]) -> float:
     if set_id in favourite_set_ids:
         return 1.0
     if set_id in in_progress_set_ids:
         return 0.7
     return 0.1
 
-
-# ── Main entry point ──────────────────────────────────────────────────────────
 
 def compute_priority(
     fsrs: dict,
@@ -103,27 +88,16 @@ def compute_priority(
     in_progress_set_ids: list[str],
     streak_at_risk: bool = False,
 ) -> tuple[float, str, int | None]:
-    """
-    Returns (priority_score, tag, due_days_ago).
-    """
     s, tag, due_days_ago = srs_score(fsrs)
     l = lapse_score(fsrs)
     d = difficulty_score(fsrs)
     t = topic_score(set_id, favourite_set_ids, in_progress_set_ids)
 
-    # Boost favourite-set topic score when streak is at risk
-    # → surfaces familiar, easier words to help user keep their streak
     if streak_at_risk and set_id in favourite_set_ids:
         t = min(1.0, t + 0.2)
 
-    # Promote difficult cards that aren't already flagged as overdue/due
     if float(fsrs.get("difficulty", 0)) >= 7.0 and tag not in ("overdue", "due_today"):
         tag = "difficult"
 
-    score = (
-        (WEIGHT_SRS        * s)
-        + (WEIGHT_LAPSE    * l)
-        + (WEIGHT_DIFFICULTY * d)
-        + (WEIGHT_TOPIC    * t)
-    )
+    score = (WEIGHT_SRS * s) + (WEIGHT_LAPSE * l) + (WEIGHT_DIFFICULTY * d) + (WEIGHT_TOPIC * t)
     return round(score, 4), tag, due_days_ago

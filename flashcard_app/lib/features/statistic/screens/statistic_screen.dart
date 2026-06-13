@@ -5,6 +5,7 @@ import '../widgets/hero_card.dart';
 import '../widgets/memory_rate_card.dart';
 import '../widgets/palette.dart';
 import '../widgets/weekly_segment_card.dart';
+import '../../../core/themes/app_colors.dart';
 
 class StatisticsScreen extends StatefulWidget {
   const StatisticsScreen({super.key});
@@ -61,7 +62,7 @@ class _StatisticsScreenState extends State<StatisticsScreen>
   Widget build(BuildContext context) {
     if (isLoading) {
       return const Scaffold(
-        backgroundColor: P.bg,
+        backgroundColor: AppColors.mainColor,
         body: Center(child: CircularProgressIndicator(color: P.green)),
       );
     }
@@ -72,9 +73,9 @@ class _StatisticsScreenState extends State<StatisticsScreen>
     final isHappy = memoryRate >= 50;
 
     return Scaffold(
-      backgroundColor: P.bg,
+      backgroundColor: AppColors.mainColor,
       appBar: AppBar(
-        backgroundColor: P.bg,
+        backgroundColor: AppColors.mainColor,
         elevation: 0,
         centerTitle: true,
         title: const Text(

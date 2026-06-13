@@ -86,16 +86,16 @@ class RecentStudyCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 16),
                     // Views / learned
-                    Row(
-                      children: [
-                        Icon(Icons.remove_red_eye_outlined, size: 16, color: Colors.black45),
-                        const SizedBox(width: 4),
-                        Text(
-                          "$learnedCards",
-                          style: const TextStyle(fontSize: 13, color: Colors.black54, fontWeight: FontWeight.w600),
-                        ),
-                      ],
-                    ),
+                    // Row(
+                    //   children: [
+                    //     Icon(Icons.remove_red_eye_outlined, size: 16, color: Colors.black45),
+                    //     const SizedBox(width: 4),
+                    //     Text(
+                    //       "$learnedCards",
+                    //       style: const TextStyle(fontSize: 13, color: Colors.black54, fontWeight: FontWeight.w600),
+                    //     ),
+                    //   ],
+                    // ),
                     const Spacer(),
                     // Button
                     GestureDetector(
