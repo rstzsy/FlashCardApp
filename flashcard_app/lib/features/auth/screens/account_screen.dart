@@ -11,7 +11,6 @@ import '../widgets/achievement_section.dart';
 import '../widgets/harvested_plants_section.dart';
 import '../widgets/saved_posts_section.dart';
 
-
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
 
@@ -20,10 +19,8 @@ class ProfilePage extends StatelessWidget {
     final uid = FirebaseAuth.instance.currentUser!.uid;
 
     return StreamBuilder<DocumentSnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('users')
-          .doc(uid)
-          .snapshots(),
+      stream:
+          FirebaseFirestore.instance.collection('users').doc(uid).snapshots(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
           return const Scaffold(
@@ -31,8 +28,7 @@ class ProfilePage extends StatelessWidget {
           );
         }
 
-        final data =
-            snapshot.data!.data() as Map<String, dynamic>;
+        final data = snapshot.data!.data() as Map<String, dynamic>;
 
         return _ProfileContent(data: data);
       },
@@ -56,9 +52,9 @@ class _ProfileContent extends StatelessWidget {
               ProfileHeader(data: data),
 
               const SizedBox(height: 10),
-              const SavedPostsSection(),  
-              // const SizedBox(height: 40),
+              const SavedPostsSection(),
 
+              // const SizedBox(height: 40),
               const SizedBox(height: 10),
 
               OverviewSection(data: data),
@@ -70,13 +66,11 @@ class _ProfileContent extends StatelessWidget {
               const MonthlyBadgeSection(),
 
               const SizedBox(height: 25),
-              const AchievementSection(),
+              AchievementSection(streak: data['streak'] ?? 0),
 
               const SizedBox(height: 40),
               const SizedBox(height: 25),
               const HarvestedPlantsSection(),
-
-
             ],
           ),
         ),

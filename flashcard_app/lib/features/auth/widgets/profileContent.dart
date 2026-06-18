@@ -28,7 +28,7 @@ class _ProfileContent extends StatelessWidget {
               const MonthlyBadgeSection(),
 
               const SizedBox(height: 25),
-              const AchievementSection(),
+              AchievementSection(streak: data['streak'] ?? 0),
 
               const SizedBox(height: 40),
             ],
