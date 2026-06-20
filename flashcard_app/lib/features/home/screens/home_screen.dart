@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/themes/app_colors.dart';
+import '../../auth/service/achievement_service.dart';
+import '../service/achievement_popup.dart';
 import '../widgets/feature_item.dart';
 import '../widgets/recent_study_card.dart';
 import '../../../core/widgets/collection_card.dart';
@@ -12,8 +14,57 @@ import '../service/recent_study_service.dart';
 import '../../../features/flashcard/screens/flashcard_study_screen.dart'; 
 import '../../../features/flashcard/services/flashcard_manage_service.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+
+  @override
+  void initState() {
+    super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkAchievement();
+    });
+  }
+
+  Future<void> _checkAchievement() async {
+    try {
+      final uid = FirebaseAuth.instance.currentUser!.uid;
+
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .get();
+
+      if (!userDoc.exists) return;
+
+      final data = userDoc.data()!;
+
+      final streak = (data['streak'] ?? 0) as int;
+
+      final badge = await AchievementService.checkNewAchievement(
+        uid,
+        streak,
+      );
+
+      if (!mounted || badge == null) return;
+
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => AchievementDialog(
+          milestone: badge,
+        ),
+      );
+    } catch (e) {
+      debugPrint("Achievement Error: $e");
+    }
+  }
 
   Color _hexToColor(String hex) {
     final h = hex.replaceAll('#', '');
