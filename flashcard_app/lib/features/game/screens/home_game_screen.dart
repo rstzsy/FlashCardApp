@@ -8,6 +8,8 @@ import 'package:flashcard_app/features/game/widgets/planting_tray.dart';
 import 'package:flashcard_app/features/game/widgets/player_game.dart';
 import 'package:flashcard_app/features/game/screens/shop_game_screen.dart';
 import 'package:flashcard_app/features/game/widgets/garden_tool_tray.dart';
+import 'package:flashcard_app/features/game/models/harvest_achievement_models.dart';
+import 'package:flashcard_app/core/widgets/app_popup.dart'; 
 import 'package:flutter/material.dart';
 import 'dart:math';
 
@@ -85,25 +87,65 @@ class _HomeGameScreenState extends State<HomeGameScreen> {
     final plot = _plots[i];
     final uid  = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null || plot.treeId == null) return;
-
+  
     setState(() => _harvestingPlotIndex = i);
-
+  
     await Future.delayed(const Duration(milliseconds: 1200));
-
-    await _gardenService.harvestTree(
+  
+    final newAchievement = await _gardenService.harvestTree(
       userId:    uid,
       treeId:    plot.treeId!,
       plantName: plot.plantName ?? plot.setTitle ?? '',
       imagePath: plot.imagePath ?? '',
       setId:     plot.setId ?? '',
     );
-
+  
+    final harvestedName = plot.plantName ?? plot.setTitle ?? '';
+  
     if (mounted) setState(() {
       _plots[i]            = GardenPlot(plotIndex: i);
       _harvestingPlotIndex = null;
     });
+  
+    if (!mounted) return;
+  
+    if (newAchievement != null) {
+      _showHarvestAchievementPopup(newAchievement, harvestedName);
+    } else {
+      _showToast('Harvested "$harvestedName" successfully! 🌸', const Color(0xFFFFB300));
+    }
+  }
 
-    _showToast('Harvested "${plot.plantName}" successfully! 🌸', const Color(0xFFFFB300));
+  void _showHarvestAchievementPopup(
+    HarvestAchievement achievement,
+    String harvestedPlantName,
+  ) {
+    AppPopup.show(
+      context: context,
+      title: "New Badge! 🎉",
+      message:
+          "You harvested \"$harvestedPlantName\" and just unlocked\n"
+          "the \"${achievement.title}\" badge for ${achievement.threshold} harvests!",
+      iconWidget: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Image.asset(achievement.imagePath, width: 120, height: 120),
+          const SizedBox(height: 8),
+          Text(
+            achievement.title,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF7A3333),
+            ),
+          ),
+        ],
+      ),
+      buttonText: "Awesome!",
+      showConfetti: true,
+      onPressed: () {
+      },
+    );
   }
 
   void _onSeedDropped(int i, SeedItem seed) {

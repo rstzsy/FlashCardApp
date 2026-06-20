@@ -10,6 +10,7 @@ import '../widgets/month_badge.dart';
 import '../widgets/achievement_section.dart';
 import '../widgets/harvested_plants_section.dart';
 import '../widgets/saved_posts_section.dart';
+import '../../game/widgets/harvest_achievement_section.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
@@ -66,7 +67,13 @@ class _ProfileContent extends StatelessWidget {
               const MonthlyBadgeSection(),
 
               const SizedBox(height: 25),
+              HarvestAchievementSection(
+                totalHarvests: data['totalHarvests'] as int?,
+              ),
+
+              const SizedBox(height: 25),
               AchievementSection(streak: data['streak'] ?? 0),
+
 
               const SizedBox(height: 40),
               const SizedBox(height: 25),

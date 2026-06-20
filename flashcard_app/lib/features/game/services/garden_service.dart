@@ -1,8 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/garden_models.dart';
+import '../models/harvest_achievement_models.dart';
+import 'harvest_achievement_service.dart';
 
 class GardenService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final HarvestAchievementService _achievementService =
+      HarvestAchievementService();
   static const int kMaxPlots = 9;
 
   Future<List<GardenPlot>> loadGardenPlots(String userId) async {
@@ -28,7 +32,7 @@ class GardenService {
         plots[plotIndex] = GardenPlot(
           plotIndex:      plotIndex,
           status:         isMastered ? PlotStatus.mastered : PlotStatus.planted,
-          treeId:         doc.id,                           // ← dùng doc.id làm treeId
+          treeId:         doc.id,                          
           setId:          data['SetId']     as String?,
           setTitle:       data['SetTitle']  as String?,
           plantName:      data['PlantName'] as String?,
@@ -214,13 +218,15 @@ class GardenService {
     }
   }
 
-  Future<void> harvestTree({
+  Future<HarvestAchievement?> harvestTree({
     required String userId,
     required String treeId,
     required String plantName,
     required String imagePath,
     required String setId,  
   }) async {
+    HarvestAchievement? newAchievement;
+
     try {
       final batch = _db.batch();
 
@@ -238,9 +244,14 @@ class GardenService {
 
       await batch.commit();
       print('Harvested $plantName');
+
+      newAchievement =
+          await _achievementService.checkAndUnlockNewAchievement(userId);
     } catch (e) {
       print('harvestTree error: $e');
     }
+
+    return newAchievement;
   }
 
   Future<Set<String>> loadHarvestedPlantNames(String userId) async {
