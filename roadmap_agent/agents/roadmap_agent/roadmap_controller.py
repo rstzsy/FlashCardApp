@@ -1,8 +1,9 @@
 from datetime import datetime
 
-from agents.roadmap_parser import RoadmapParser
-from agents.roadmap_prompt import ROADMAP_PROMPT
+from agents.roadmap_agent.roadmap_parser import RoadmapParser
+from agents.roadmap_agent.roadmap_prompt import ROADMAP_PROMPT
 
+from integrations.flashcard_item_service import FlashcardItemService
 from integrations.flashcard_service import FlashcardService
 from integrations.game_result_service import GameResultService
 from integrations.profile_service import ProfileService
@@ -47,6 +48,11 @@ class RoadmapAgent:
                 .get_sets(user_id)
             )
 
+            flashcard_items = await (
+                FlashcardItemService()
+                .get_by_user(user_id)
+            )
+
             sessions = await (
                 StudySessionService()
                 .get_sessions(user_id)
@@ -59,15 +65,12 @@ class RoadmapAgent:
 
             # analyze
 
-            metrics = (
-                AnalyticsTool()
-                .build_metrics(
-                    user,
-                    profile,
-                    flashcards,
-                    sessions,
-                    games
-                )
+            metrics = AnalyticsTool().build_metrics(
+                user,
+                profile,
+                flashcard_items,
+                sessions,
+                games
             )
 
             # search context
@@ -173,7 +176,14 @@ class RoadmapAgent:
                 "roadmapId": roadmap_id,
                 "excelUrl": excel_url,
                 "excelPath": excel_path,
-                "roadmap": roadmap
+                "roadmap": roadmap,
+
+                # NEW FIELDS
+                "overdue_cards": getattr(metrics, "overdue_cards", 0),
+                "forgotten_cards": getattr(metrics, "forgotten_cards", 0),
+                "difficult_cards": getattr(metrics, "difficult_cards", []),
+                "favorite_sets": getattr(metrics, "favorite_sets", 0),
+                "recommended_topics": getattr(metrics, "recommended_topics", [])
             }
 
         except Exception as ex:

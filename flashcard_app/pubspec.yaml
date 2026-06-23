@@ -45,6 +45,7 @@ dependencies:
   open_filex: ^4.5.0
   fsrs: ^2.0.0
   http: ^1.2.1
+  url_launcher: ^6.3.0
 
 
   # The following adds the Cupertino Icons font to your application.

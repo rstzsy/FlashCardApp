@@ -1,5 +1,8 @@
+import 'package:flashcard_app/features/chatbot/widgets/vocabulary_suggestion_card.dart';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
+import '../controllers/chatbot_controller.dart';
 import '../widgets/chatbot_history.dart';
 import '../widgets/chatbot_menu_option.dart';
 
@@ -11,55 +14,48 @@ class ChatbotScreen extends StatefulWidget {
 }
 
 class _ChatbotScreenState extends State<ChatbotScreen> {
+  late ChatbotController controller;
+
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
-  final List<Map<String, dynamic>> messages = [
-    {
-      "isBot": true,
-      "message":
-          "Hi there! I'm your Mofu Assistant!\nWhat would you like to do today?",
-      "options": [
-        "Create flashcards",
-        "Suggest vocabulary",
-        "Study plan",
-        "Grammar practice",
-      ],
-    },
-  ];
+  @override
+  void initState() {
+    super.initState();
 
-  void sendMessage(String text) {
-    if (text.trim().isEmpty) return;
+    controller = ChatbotController();
 
-    setState(() {
-      messages.add({"isBot": false, "message": text});
+    controller.addListener(() {
+      if (!mounted) return;
 
-      messages.add({
-        "isBot": true,
-        "message":
-            "That sounds great \nI'm preparing something helpful for you!",
+      setState(() {});
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _scrollToBottom();
       });
     });
+  }
 
-    _controller.clear();
-
-    Future.delayed(const Duration(milliseconds: 200), () {
-      _scrollToBottom();
-    });
+  @override
+  void dispose() {
+    controller.dispose();
+    _controller.dispose();
+    _scrollController.dispose();
+    super.dispose();
   }
 
   void _scrollToBottom() {
-    if (_scrollController.hasClients) {
-      _scrollController.animateTo(
-        _scrollController.position.maxScrollExtent + 200,
-        duration: const Duration(milliseconds: 400),
-        curve: Curves.easeOut,
-      );
-    }
+    if (!_scrollController.hasClients) return;
+
+    _scrollController.animateTo(
+      _scrollController.position.maxScrollExtent + 300,
+      duration: const Duration(milliseconds: 400),
+      curve: Curves.easeOut,
+    );
   }
 
-  Widget buildMessage(Map<String, dynamic> msg) {
-    final bool isBot = msg["isBot"];
+  Widget buildMessage(msg) {
+    final bool isBot = msg.isBot;
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
@@ -69,10 +65,10 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
             isBot ? MainAxisAlignment.start : MainAxisAlignment.end,
         children: [
           if (isBot) ...[
-            CircleAvatar(
+            const CircleAvatar(
               radius: 22,
               backgroundColor: Colors.white,
-              backgroundImage: const AssetImage('assets/component/chatbot.png'),
+              backgroundImage: AssetImage('assets/component/chatbot.png'),
             ),
             const SizedBox(width: 10),
           ],
@@ -82,6 +78,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
               crossAxisAlignment:
                   isBot ? CrossAxisAlignment.start : CrossAxisAlignment.end,
               children: [
+                // ----- message -----
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,
@@ -100,7 +97,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                     ),
                   ),
                   child: Text(
-                    msg["message"],
+                    msg.message ?? "",
                     style: const TextStyle(
                       fontSize: 15,
                       height: 1.5,
@@ -109,41 +106,199 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                   ),
                 ),
 
-                // options
-                if (msg["options"] != null) ...[
+                // ------ options ------
+                if (msg.options != null) ...[
                   const SizedBox(height: 10),
-
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
-                    children: List.generate((msg["options"] as List).length, (
-                      index,
-                    ) {
-                      final option = msg["options"][index];
+                    children:
+                        msg.options!.map<Widget>((option) {
+                          return GestureDetector(
+                            onTap: () {
+                              controller.selectAgent(option);
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 10,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(30),
+                                border: Border.all(
+                                  color: const Color(0xFFFFC9D7),
+                                ),
+                              ),
+                              child: Text(
+                                option,
+                                style: const TextStyle(
+                                  color: Color(0xFFB85C7A),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                  ),
+                ],
 
-                      return GestureDetector(
-                        onTap: () => sendMessage(option),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 10,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(30),
-                            border: Border.all(color: const Color(0xFFFFC9D7)),
-                          ),
-                          child: Text(
-                            option,
-                            style: const TextStyle(
-                              color: Color(0xFFB85C7A),
-                              fontWeight: FontWeight.w600,
+                // ------ file download ------
+                if (msg.fileUrl != null) ...[
+                  const SizedBox(height: 10),
+                  GestureDetector(
+                    onTap: () async {
+                      final url = Uri.parse(msg.fileUrl!);
+                      await launchUrl(
+                        url,
+                        mode: LaunchMode.externalApplication,
+                      );
+                    },
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        border: Border.all(color: const Color(0xFFA5D6A7)),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      clipBehavior: Clip.antiAlias,
+                      child: Column(
+                        children: [
+                          // ---- header ----
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 12,
+                            ),
+                            decoration: const BoxDecoration(
+                              color: Color(0xFFEAF3DE),
+                              border: Border(
+                                bottom: BorderSide(
+                                  color: Color(0xFFA5D6A7),
+                                  width: 0.5,
+                                ),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 40,
+                                  height: 40,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF3B6D11),
+                                    borderRadius: BorderRadius.circular(9),
+                                  ),
+                                  child: const Icon(
+                                    Icons.table_chart_outlined,
+                                    color: Color(0xFFEAF3DE),
+                                    size: 20,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                const Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Roadmap Plan.xlsx',
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w500,
+                                          color: Color(0xFF27500A),
+                                        ),
+                                      ),
+                                      SizedBox(height: 2),
+                                      Text(
+                                        'Excel spreadsheet',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          color: Color(0xFF3B6D11),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                        ),
-                      );
-                    }),
+
+                          // ---- footer ----
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 10,
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Row(
+                                  children: const [
+                                    Icon(
+                                      Icons.insert_drive_file_outlined,
+                                      size: 14,
+                                      color: Color(0xFF888780),
+                                    ),
+                                    SizedBox(width: 5),
+                                    Text(
+                                      '248 KB',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Color(0xFF888780),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 14,
+                                    vertical: 7,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF3B6D11),
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: const Row(
+                                    children: [
+                                      Icon(
+                                        Icons.download_rounded,
+                                        color: Color(0xFFEAF3DE),
+                                        size: 14,
+                                      ),
+                                      SizedBox(width: 6),
+                                      Text(
+                                        'Download',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w500,
+                                          color: Color(0xFFEAF3DE),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
+                ],
+
+                if (msg.suggestions != null) ...[
+                  const SizedBox(height: 10),
+
+                  ...msg.suggestions!.map<Widget>((item) {
+                    return VocabularySuggestionCard(
+                      word: item["word"] ?? "",
+                      meaning: item["meaning"] ?? "",
+                      phonetic: item["phonetic"] ?? "",
+                      priorityScore: (item["priority_score"] ?? 0).toDouble(),
+                      reason: item["reason"] ?? "",
+                      tag: item["tag"] ?? "",
+                      dueDaysAgo: item["due_days_ago"] ?? 0,
+                    );
+                  }).toList(),
                 ],
               ],
             ),
@@ -153,11 +308,20 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
     );
   }
 
+  Future<void> _sendMessage() async {
+    final text = _controller.text.trim();
+
+    if (text.isEmpty) return;
+
+    _controller.clear();
+    await controller.sendMessage(text);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFFFFAFC),
-      // header
+
       appBar: AppBar(
         elevation: 0,
         backgroundColor: const Color(0xFFFFDCE6),
@@ -177,7 +341,6 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
             ),
           ],
         ),
-
         actions: [
           ChatbotOptionMenu(
             onHistoryTap: () {
@@ -192,19 +355,38 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
         ],
       ),
 
-      // chatbot body
       body: Column(
         children: [
           Expanded(
             child: ListView.builder(
               controller: _scrollController,
               padding: const EdgeInsets.all(16),
-              itemCount: messages.length,
-              itemBuilder: (context, index) {
-                return buildMessage(messages[index]);
+              itemCount: controller.messages.length,
+              itemBuilder: (_, index) {
+                final msg = controller.messages[index];
+                return buildMessage(msg);
               },
             ),
           ),
+
+          if (controller.isLoading)
+            const Padding(
+              padding: EdgeInsets.only(left: 16, right: 16, bottom: 12),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 18,
+                    backgroundImage: AssetImage('assets/component/chatbot.png'),
+                  ),
+                  SizedBox(width: 12),
+                  SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(),
+                  ),
+                ],
+              ),
+            ),
 
           Container(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
@@ -235,6 +417,8 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                       controller: _controller,
                       minLines: 1,
                       maxLines: 4,
+                      textInputAction: TextInputAction.send,
+                      onSubmitted: (_) => _sendMessage(),
                       decoration: const InputDecoration(
                         border: InputBorder.none,
                         hintText: "Type your message...",
@@ -247,7 +431,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                 const SizedBox(width: 10),
 
                 GestureDetector(
-                  onTap: () => sendMessage(_controller.text),
+                  onTap: _sendMessage,
                   child: Container(
                     width: 54,
                     height: 54,
