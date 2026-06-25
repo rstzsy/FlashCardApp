@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flashcard_app/features/chatbot/controllers/chat_history_controller.dart';
 import 'package:flashcard_app/features/chatbot/controllers/roadmap_agent_executor.dart';
 import 'package:flashcard_app/features/chatbot/controllers/suggestion_agent_controller.dart';
 import 'package:flashcard_app/features/chatbot/controllers/suggestion_agent_executor.dart';
@@ -15,7 +16,7 @@ import 'roadmap_agent_controller.dart';
 
 class ChatbotController extends ChangeNotifier {
   final ChatbotService _chatbotService = ChatbotService();
-
+  final ChatHistoryController historyController = ChatHistoryController();
   final List<ChatMessage> messages = [];
 
   final FlashcardAgent flashcardAgent = FlashcardAgent();
@@ -60,38 +61,59 @@ class ChatbotController extends ChangeNotifier {
     );
   }
 
-  void _showFirstMenu() {
+  Future<void> _showFirstMenu() async {
+    const text =
+        "Hi there! I'm your Mofu Assistant!\nWhat would you like to do today?";
+
     messages.add(
       ChatMessage(
         isBot: true,
-        message:
-            "Hi there! I'm your Mofu Assistant!\nWhat would you like to do today?",
+        message: text,
         options: ["Create flashcards", "Suggest vocabulary", "Study plan"],
       ),
     );
+
+    await historyController.addBotMessage(text);
 
     notifyListeners();
   }
 
-  void _showMainMenu() {
+  Future<void> _showMainMenu() async {
+    const text = "Task complete successfully! What would you like to do next?";
+
     messages.add(
       ChatMessage(
         isBot: true,
-        message: "Task complete successfully! What would you like to do next?",
+        message: text,
         options: ["Create flashcards", "Suggest vocabulary", "Study plan"],
       ),
     );
 
-    currentAgent = ChatAgentType.flashcard;
+    await historyController.addBotMessage(text);
+
+    notifyListeners();
   }
 
-  void selectAgent(String option) {
+  Future<void> restoreConversation(String conversationId) async {
+    final msgs = await historyController.loadConversation(conversationId);
+
+    messages.clear();
+    messages.addAll(msgs);
+
+    historyController.currentConversationId = conversationId;
+
+    notifyListeners();
+  }
+
+  void selectAgent(String option) async {
     if (isProcessing) return;
 
     switch (option) {
       case "Create flashcards":
         currentAgent = ChatAgentType.flashcard;
-        flashcardAgent.start(messages);
+
+        await flashcardAgent.start(messages, saveChatMessage);
+
         break;
 
       case "Suggest vocabulary":
@@ -110,17 +132,38 @@ class ChatbotController extends ChangeNotifier {
   }
 
   Future<void> sendMessage(String text) async {
+    // history
+
     if (text.trim().isEmpty) return;
 
-    if (isProcessing) return; // avoid agents running at the same time
+    final user = FirebaseAuth.instance.currentUser;
 
+    if (user == null) return;
+
+    if (isProcessing) return;
+
+    // add message 
     messages.add(ChatMessage(message: text, isBot: false));
+
     notifyListeners();
+
+    // save history
+
+    if (historyController.currentConversationId == null) {
+      await historyController.startConversation(
+        userId: user.uid,
+        firstMessage: text,
+      );
+    } else {
+      await historyController.addUserMessage(text);
+    }
+
+    if (isProcessing) return; // avoid agents running at the same time
 
     // ------ flashcard agent -----
     if (currentAgent == ChatAgentType.flashcard &&
         flashcardAgent.isCollecting) {
-      flashcardAgent.processMessage(text, messages);
+      await flashcardAgent.processMessage(text, messages, saveChatMessage);
       notifyListeners();
 
       if (flashcardAgent.isCompleted) {
@@ -141,15 +184,23 @@ class ChatbotController extends ChangeNotifier {
             );
 
             messages.addAll(responses);
+
+            for (final msg in responses) {
+              await historyController.addMessage(msg);
+            }
           }
 
           flashcardAgent.reset();
 
           _showMainMenu();
         } catch (e) {
-          messages.add(
-            ChatMessage(isBot: true, message: "Flashcard failed: $e"),
-          );
+          final botMessage = "Flashcard failed: $e";
+
+          messages.add(ChatMessage(isBot: true, message: botMessage));
+
+          await historyController.addBotMessage(botMessage);
+
+          notifyListeners();
         }
 
         isProcessing = false;
@@ -185,15 +236,21 @@ class ChatbotController extends ChangeNotifier {
             );
 
             messages.add(result);
+
+            await historyController.addMessage(result);
           }
 
           flashcardAgent.reset();
 
           _showMainMenu();
         } catch (e) {
-          messages.add(
-            ChatMessage(isBot: true, message: "Suggestion failed: $e"),
-          );
+          final botMessage = "Suggestion failed: $e";
+
+          messages.add(ChatMessage(isBot: true, message: botMessage));
+
+          await historyController.addBotMessage(botMessage);
+
+          notifyListeners();
         }
 
         isProcessing = false;
@@ -211,14 +268,17 @@ class ChatbotController extends ChangeNotifier {
     }
 
     // ------ unsupported ------
+    const botMessage = "I'm so sorry\nI currently support only:";
+
     messages.add(
       ChatMessage(
         isBot: true,
-        message:
-            "I'm so sorry\nI currently support only:",
+        message: botMessage,
         options: ["Create flashcards", "Suggest vocabulary", "Study plan"],
       ),
     );
+
+    await historyController.addBotMessage(botMessage);
 
     notifyListeners();
   }
@@ -241,15 +301,27 @@ class ChatbotController extends ChangeNotifier {
       print("FILE URL: ${result.fileUrl}");
 
       messages.add(result);
+
+      await historyController.addMessage(result);
+
       _showMainMenu();
     } catch (e) {
-      messages.add(
-        ChatMessage(isBot: true, message: "Roadmap failed: ${e.toString()}"),
-      );
+      final botMessage = "Road map failed: $e";
+
+      messages.add(ChatMessage(isBot: true, message: botMessage));
+
+      await historyController.addBotMessage(botMessage);
+
+      notifyListeners();
     }
 
     isProcessing = false;
     isLoading = false;
     notifyListeners();
+  }
+
+  // helper
+  Future<void> saveChatMessage(ChatMessage message) async {
+    await historyController.addMessage(message);
   }
 }

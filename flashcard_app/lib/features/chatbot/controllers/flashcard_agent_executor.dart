@@ -14,18 +14,24 @@ class FlashcardExecutor {
     required String difficulty,
   }) async {
     try {
+      final result = await service.generateFlashcards(
+        userId: userId,
+        topic: topic,
+        totalCards: totalCards,
+        language: language,
+        difficulty: difficulty,
+      );
+
       return [
         ChatMessage(
           isBot: true,
-          message: "Flashcards generated successfully. Now you can view them in your flashcard collection.",
+          message:
+              "Flashcards generated successfully. Now you can view them in your flashcard collection.",
         ),
       ];
     } catch (e) {
       return [
-        ChatMessage(
-          isBot: true,
-          message: "Failed to generate flashcards: ${e.toString()}",
-        ),
+        ChatMessage(isBot: true, message: "Failed to generate flashcards: $e"),
       ];
     }
   }

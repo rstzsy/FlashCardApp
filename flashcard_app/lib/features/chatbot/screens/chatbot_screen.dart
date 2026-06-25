@@ -1,7 +1,9 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flashcard_app/features/chatbot/widgets/vocabulary_suggestion_card.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../controllers/chat_history_controller.dart';
 import '../controllers/chatbot_controller.dart';
 import '../widgets/chatbot_history.dart';
 import '../widgets/chatbot_menu_option.dart';
@@ -18,6 +20,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
 
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  final ChatHistoryController historyController = ChatHistoryController();
 
   @override
   void initState() {
@@ -343,12 +346,27 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
         ),
         actions: [
           ChatbotOptionMenu(
-            onHistoryTap: () {
+            onHistoryTap: () async {
+              final user = FirebaseAuth.instance.currentUser;
+
+              if (user != null) {
+                await controller.historyController.loadHistories(user.uid);
+              }
+
+              if (!context.mounted) return;
+
               showModalBottomSheet(
                 context: context,
-                backgroundColor: Colors.transparent,
                 isScrollControlled: true,
-                builder: (_) => const ChatHistory(),
+                backgroundColor: Colors.transparent,
+                builder:
+                    (_) => ChatHistory(
+                      controller: controller.historyController,
+
+                      onSelectConversation: (conversationId) async {
+                        await controller.restoreConversation(conversationId);
+                      },
+                    ),
               );
             },
           ),

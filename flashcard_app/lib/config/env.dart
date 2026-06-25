@@ -1,7 +1,7 @@
 import 'dart:io';
 
 class Env {
-  static const String _realDeviceIp = "192.168.1.13";
+  static const String _realDeviceIp = "192.168.1.52";
 
   const Env._();
 

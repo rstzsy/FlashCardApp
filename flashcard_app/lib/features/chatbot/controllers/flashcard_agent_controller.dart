@@ -10,15 +10,20 @@ class FlashcardAgent {
   String language = "English";
   String? difficulty;
 
-  void start(List<ChatMessage> messages) {
+  Future<void> start(
+    List<ChatMessage> messages,
+    Future<void> Function(ChatMessage) saveMessage,
+  ) async {
     step = FlashcardStep.topic;
 
-    messages.add(
-      ChatMessage(
-        isBot: true,
-        message: "What topic would you like to create flashcards for?",
-      ),
+    final msg = ChatMessage(
+      isBot: true,
+      message: "What topic would you like to create flashcards for?",
     );
+
+    messages.add(msg);
+
+    await saveMessage(msg);
   }
 
   bool get isCollecting => step != FlashcardStep.none;
@@ -33,20 +38,25 @@ class FlashcardAgent {
     difficulty = null;
   }
 
-  void processMessage(String text, List<ChatMessage> messages) {
+  Future<void> processMessage(
+    String text,
+    List<ChatMessage> messages,
+    Future<void> Function(ChatMessage) saveMessage,
+  ) async {
     switch (step) {
       case FlashcardStep.topic:
         topic = text;
 
         step = FlashcardStep.totalCards;
 
-        messages.add(
-          ChatMessage(
-            isBot: true,
-            message:
-                "Ok! How many flashcards do you want? (Just send a number)",
-          ),
+        final msg = ChatMessage(
+          isBot: true,
+          message: "Ok! How many flashcards do you want? (Just send a number)",
         );
+
+        messages.add(msg);
+
+        await saveMessage(msg);
         break;
 
       case FlashcardStep.totalCards:
@@ -54,12 +64,14 @@ class FlashcardAgent {
 
         step = FlashcardStep.difficulty;
 
-        messages.add(
-          ChatMessage(
-            isBot: true,
-            message: "Difficulty? (Easy / Medium / Hard)",
-          ),
+        final msg = ChatMessage(
+          isBot: true,
+          message: "Difficulty? (Easy / Medium / Hard)",
         );
+
+        messages.add(msg);
+
+        await saveMessage(msg);
         break;
 
       case FlashcardStep.difficulty:
