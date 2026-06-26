@@ -1,17 +1,73 @@
+import 'package:flashcard_app/features/chatbot/widgets/chatbot_item_history.dart';
+import 'package:flashcard_app/features/chatbot/widgets/delete_conversation_dialog.dart';
 import 'package:flutter/material.dart';
+import '../controllers/chat_history_controller.dart';
 
-class ChatHistory extends StatelessWidget {
-  const ChatHistory({super.key});
+class ChatHistory extends StatefulWidget {
+  final ChatHistoryController controller;
+  final Function(String conversationId)? onSelectConversation;
+
+  const ChatHistory({
+    super.key,
+    required this.controller,
+    this.onSelectConversation,
+  });
+
+  @override
+  State<ChatHistory> createState() => _ChatHistoryState();
+}
+
+class _ChatHistoryState extends State<ChatHistory> {
+  @override
+  void initState() {
+    super.initState();
+
+    widget.controller.addListener(_refresh);
+  }
+
+  @override
+  void dispose() {
+    widget.controller.removeListener(_refresh);
+    super.dispose();
+  }
+
+  void _refresh() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  String formatTime(DateTime date) {
+    final diff = DateTime.now().difference(date);
+
+    if (diff.inMinutes < 1) {
+      return "Just now";
+    }
+
+    if (diff.inMinutes < 60) {
+      return "${diff.inMinutes} mins ago";
+    }
+
+    if (diff.inHours < 24) {
+      return "${diff.inHours} hours ago";
+    }
+
+    if (diff.inDays == 1) {
+      return "Yesterday";
+    }
+
+    return "${diff.inDays} days ago";
+  }
 
   @override
   Widget build(BuildContext context) {
+    final histories = widget.controller.histories;
+
     return Container(
       height: MediaQuery.of(context).size.height * 0.7,
       decoration: const BoxDecoration(
         color: Color(0xFFFFFAFC),
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(28),
-        ),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       child: Column(
         children: [
@@ -40,116 +96,62 @@ class ChatHistory extends StatelessWidget {
           const SizedBox(height: 20),
 
           Expanded(
-            child: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              children: const [
-                ChatHistoryItem(
-                  title: "Travel Vocabulary",
-                  subtitle: "Create flashcards about airport words",
-                  time: "2 mins ago",
-                ),
+            child:
+                histories.isEmpty
+                    ? const Center(child: Text("No chat history yet"))
+                    : ListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      itemCount: histories.length,
+                      itemBuilder: (context, index) {
+                        final item = histories[index];
 
-                ChatHistoryItem(
-                  title: "Study Plan",
-                  subtitle: "Prepare for IELTS speaking practice",
-                  time: "Yesterday",
-                ),
+                        return Dismissible(
+                          key: Key(item.id),
 
-                ChatHistoryItem(
-                  title: "Grammar Practice",
-                  subtitle: "Explain present perfect tense",
-                  time: "2 days ago",
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
+                          direction: DismissDirection.endToStart,
 
-class ChatHistoryItem extends StatelessWidget {
-  final String title;
-  final String subtitle;
-  final String time;
+                          background: Container(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            alignment: Alignment.centerRight,
+                            decoration: BoxDecoration(
+                              color: Colors.red.shade400,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: const Icon(
+                              Icons.delete_rounded,
+                              color: Colors.white,
+                              size: 28,
+                            ),
+                          ),
 
-  const ChatHistoryItem({
-    super.key,
-    required this.title,
-    required this.subtitle,
-    required this.time,
-  });
+                          confirmDismiss: (direction) async {
+                            return await DeleteConversationDialog.show(
+                              context,
+                              title: item.title,
+                              subtitle: item.lastMessage,
+                            );
+                          },
 
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: const Color(0xFFFFEEF3),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: const Icon(
-              Icons.chat_bubble_outline_rounded,
-              color: Color(0xFFB85C7A),
-            ),
-          ),
+                          onDismissed: (_) async {
+                            await widget.controller.deleteHistory(item.id);
+                          },
 
-          const SizedBox(width: 12),
+                          child: GestureDetector(
+                            onTap: () {
+                              widget.onSelectConversation?.call(item.id);
 
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 15,
-                    color: Color(0xFF444444),
-                  ),
-                ),
-
-                const SizedBox(height: 4),
-
-                Text(
-                  subtitle,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.grey,
-                    fontSize: 13,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(width: 10),
-
-          Text(
-            time,
-            style: const TextStyle(
-              fontSize: 12,
-              color: Colors.grey,
-            ),
+                              Navigator.pop(context);
+                            },
+                            child: ChatHistoryItem(
+                              title: item.title,
+                              subtitle: item.lastMessage,
+                              time: formatTime(item.updatedAt),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
           ),
         ],
       ),

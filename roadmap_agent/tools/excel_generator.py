@@ -77,6 +77,9 @@ class ExcelGenerator:
         self._create_tracking_sheet(wb, roadmap)
 
         wb.save(file_path)
+        print("---- roadmap -----")
+        print(roadmap)
+        print("------------------")
         return file_path
 
     # overview sheet
@@ -162,15 +165,34 @@ class ExcelGenerator:
 
         row = 2
         for title, items, bg_color, text_color in sections:
+
+            # Normalize AI response
+            if isinstance(items, str):
+                items = [items]
+            elif items is None:
+                items = []
+            elif not isinstance(items, list):
+                items = [str(items)]
+
             # Header group
             cell = ws.cell(row=row, column=2, value=f"  {title}")
-            ws.merge_cells(start_row=row, start_column=2, end_row=row, end_column=6)
-            
-            cell.font = Font(name=self.FONT_FAMILY, bold=True, color=text_color, size=11)
+            ws.merge_cells(
+                start_row=row,
+                start_column=2,
+                end_row=row,
+                end_column=6
+            )
+
+            cell.font = Font(
+                name=self.FONT_FAMILY,
+                bold=True,
+                color=text_color,
+                size=11
+            )
             cell.fill = PatternFill("solid", fgColor=bg_color)
             cell.alignment = Alignment(vertical="center")
-            ws.row_dimensions[row].height = 28  # default height
-            
+            ws.row_dimensions[row].height = 28
+
             for col in range(2, 7):
                 ws.cell(row=row, column=col).border = self.BORDER_CELL
 
@@ -178,36 +200,78 @@ class ExcelGenerator:
 
             # list item
             if not items:
-                no_item_cell = ws.cell(row=row, column=2, value="   • No data available")
+                no_item_cell = ws.cell(
+                    row=row,
+                    column=2,
+                    value="   • No data available"
+                )
                 no_item_cell.font = self.ITALIC_FONT
-                ws.merge_cells(start_row=row, start_column=2, end_row=row, end_column=6)
+
+                ws.merge_cells(
+                    start_row=row,
+                    start_column=2,
+                    end_row=row,
+                    end_column=6
+                )
+
                 ws.row_dimensions[row].height = 22
-                
+
                 for col in range(2, 7):
-                    ws.cell(row=row, column=col).border = Border(bottom=Side(style="thin", color="F0F0F0"))
+                    ws.cell(
+                        row=row,
+                        column=col
+                    ).border = Border(
+                        bottom=Side(style="thin", color="F0F0F0")
+                    )
+
                 row += 1
+
             else:
                 for item in items:
                     item_text = f"   • {item}"
-                    val_cell = ws.cell(row=row, column=2, value=item_text)
+
+                    val_cell = ws.cell(
+                        row=row,
+                        column=2,
+                        value=item_text
+                    )
+
                     val_cell.font = self.TEXT_FONT
-                    ws.merge_cells(start_row=row, start_column=2, end_row=row, end_column=6)
-                    
-                    # common style for item cells
-                    val_cell.alignment = Alignment(vertical="center", horizontal="left", wrap_text=True)
-                    
-                    # calculation for row height based on content length
-                    lines_count = max(len(item_text) // 65, item_text.count('\n')) + 1
-                    
-                    # 18x10 for each line
-                    ws.row_dimensions[row].height = max(lines_count * 18 + 10, 26)
-                    
-                    # border for item cells
+
+                    ws.merge_cells(
+                        start_row=row,
+                        start_column=2,
+                        end_row=row,
+                        end_column=6
+                    )
+
+                    val_cell.alignment = Alignment(
+                        vertical="center",
+                        horizontal="left",
+                        wrap_text=True
+                    )
+
+                    lines_count = max(
+                        len(item_text) // 65,
+                        item_text.count("\n")
+                    ) + 1
+
+                    ws.row_dimensions[row].height = max(
+                        lines_count * 18 + 10,
+                        26
+                    )
+
                     for col in range(2, 7):
-                        ws.cell(row=row, column=col).border = Border(bottom=Side(style="thin", color="E8E8E8"))
+                        ws.cell(
+                            row=row,
+                            column=col
+                        ).border = Border(
+                            bottom=Side(style="thin", color="E8E8E8")
+                        )
+
                     row += 1
-            
-            row += 1 # empty for separation
+
+            row += 1
 
         self._auto_width(ws)
 

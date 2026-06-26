@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from agents.roadmap_controller import RoadmapAgent
+from agents.roadmap_agent.roadmap_controller import RoadmapAgent
 
 
 router = APIRouter(
@@ -10,12 +10,6 @@ router = APIRouter(
 
 agent = RoadmapAgent()
 
-@router.post(
-    "/generate/{user_id}"
-)
-async def generate(
-    UserId: str
-):
-    return await agent.generate(
-        UserId
-    )
+@router.post("/generate")
+async def generate(user_id: str):
+    return await agent.generate(user_id)
