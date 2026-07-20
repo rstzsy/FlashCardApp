@@ -19,7 +19,6 @@ class FertilizerService {
     }
   }
 
-  // get question
   Future<List<FillQuestionModel>> getFillQuestions(String setId) async {
     try {
       final snapshot =
@@ -30,6 +29,27 @@ class FertilizerService {
 
       List<FillQuestionModel> list = [];
 
+      // word list in flashcard set
+      final vocabulary =
+          snapshot.docs
+              .map(
+                (e) => (e.data()['Word'] ?? '').toString().trim().toLowerCase(),
+              )
+              .where((e) => e.isNotEmpty)
+              .toSet()
+              .toList();
+
+      const backupWords = [
+        'apple',
+        'orange',
+        'school',
+        'teacher',
+        'student',
+        'computer',
+        'window',
+        'garden',
+      ];
+
       for (var doc in snapshot.docs) {
         final data = doc.data();
 
@@ -38,7 +58,8 @@ class FertilizerService {
 
         if (example == null || word == null) continue;
 
-        final actualWord = _extractActualWord(example.trim(), word.trim());
+        final actualWord =
+            _extractActualWord(example.trim(), word.trim()).toLowerCase();
 
         // replace correct word with blank
         final sentence = _replaceWordWithBlank(example.trim(), word.trim());
@@ -46,14 +67,30 @@ class FertilizerService {
         // skip if sentence not found work to blank
         if (!sentence.contains('_____')) continue;
 
-        //create choice
-        final distractors = [
-          'make', 'do', 'take', 'get', 'have',
-          'bring', 'keep', 'put', 'set', 'turn',
-          'show', 'find', 'give', 'call', 'ask',
-        ]..shuffle(Random());
+        // another answers
+        final distractors =
+            vocabulary
+                .where((e) => e.toLowerCase() != actualWord.toLowerCase())
+                .toList();
 
-        final choices = [actualWord, ...distractors.take(3)]..shuffle(Random());
+        distractors.shuffle(Random());
+
+        // if do not have 3 answer, use backup words
+        for (final word in backupWords) {
+          if (distractors.length >= 3) break;
+
+          if (word.toLowerCase() != actualWord.toLowerCase() &&
+              !distractors.contains(word)) {
+            distractors.add(word);
+          }
+        }
+
+        final choices =
+            [
+                actualWord,
+                ...distractors.take(3),
+              ].map((e) => e.toLowerCase()).toList()
+              ..shuffle(Random());
 
         list.add(
           FillQuestionModel(
@@ -177,26 +214,25 @@ class FertilizerService {
       int fertilizerReward = starCount >= 2 ? 1 : 0;
 
       await doc.set({
-      'ResultId':          doc.id,
-      'UserId':            userId,
-      'GameType':          gameType,
-      'SetId':             setId,
-      'SetTitle':          setTitle,
-      'Score':             score,
-      'Total':             total,
-      'StarCount':         starCount,
-      'FertilizerReward':  fertilizerReward,
-      'Accuracy':          accuracy,
-      'TimeSpentSeconds':  timeSpentSeconds,
-      'CompletedAt':       FieldValue.serverTimestamp(),
-    });
+        'ResultId': doc.id,
+        'UserId': userId,
+        'GameType': gameType,
+        'SetId': setId,
+        'SetTitle': setTitle,
+        'Score': score,
+        'Total': total,
+        'StarCount': starCount,
+        'FertilizerReward': fertilizerReward,
+        'Accuracy': accuracy,
+        'TimeSpentSeconds': timeSpentSeconds,
+        'CompletedAt': FieldValue.serverTimestamp(),
+      });
 
       // ── Cộng vào users document ──────────────────────────
       await _firestore.collection('users').doc(userId).update({
         'fertilizerCount': FieldValue.increment(fertilizerReward),
         'stars': FieldValue.increment(starCount),
       });
-      
     } catch (e) {
       print("Error saving result: $e");
     }
