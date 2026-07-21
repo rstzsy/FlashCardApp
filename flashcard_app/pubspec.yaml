@@ -46,6 +46,8 @@ dependencies:
   fsrs: ^2.0.0
   http: ^1.2.1
   url_launcher: ^6.3.0
+  tutorial_coach_mark: ^1.3.1
+  shared_preferences: ^2.5.3
 
 
   # The following adds the Cupertino Icons font to your application.
