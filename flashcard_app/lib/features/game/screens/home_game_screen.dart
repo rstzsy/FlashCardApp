@@ -397,12 +397,7 @@ class _HomeGameScreenState extends State<HomeGameScreen> {
                   fit: BoxFit.contain),
             ),
             SizedBox(width: size.width * 0.06),
-            GestureDetector(
-              onTap: () {},
-              child: Image.asset('assets/game/btn_mail.png',
-                  width: size.width * 0.25, height: size.width * 0.25,
-                  fit: BoxFit.contain),
-            ),
+            
           ]),
         ),
       ]),

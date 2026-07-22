@@ -18,17 +18,14 @@ class SuggestionAgent {
     messages.add(
       ChatMessage(
         isBot: true,
-        message:
-            "How many minutes do you usually study in one session?",
+        message: "How many minutes do you usually study in one session?",
       ),
     );
   }
 
   bool get isCollecting => step != SuggestionStep.none;
 
-  bool get isCompleted =>
-      sessionDuration != null &&
-      topN != null;
+  bool get isCompleted => sessionDuration != null && topN != null;
 
   void reset() {
     step = SuggestionStep.none;
@@ -36,33 +33,49 @@ class SuggestionAgent {
     topN = null;
   }
 
-  void processMessage(
+  /// Returns null if valid, otherwise a (title, message) error.
+  ({String title, String message})? processMessage(
     String text,
     List<ChatMessage> messages,
   ) {
+    final input = text.trim();
+
     switch (step) {
       case SuggestionStep.sessionDuration:
-        sessionDuration = int.tryParse(text) ?? 10;
+        final n = int.tryParse(input);
+        if (n == null || n <= 0 || n > 300) {
+          return (
+            title: "Invalid duration",
+            message: "Please enter a valid number of minutes, between 1 and 300.\nExample: 30",
+          );
+        }
 
+        sessionDuration = n;
         step = SuggestionStep.topN;
 
         messages.add(
           ChatMessage(
             isBot: true,
-            message:
-                "How many vocabulary suggestions do you want?",
+            message: "How many vocabulary suggestions do you want?",
           ),
         );
-        break;
+        return null;
 
       case SuggestionStep.topN:
-        topN = int.tryParse(text) ?? 10;
+        final n = int.tryParse(input);
+        if (n == null || n <= 0 || n > 50) {
+          return (
+            title: "Invalid number",
+            message: "Please enter a whole number between 1 and 50.\nExample: 10",
+          );
+        }
 
+        topN = n;
         step = SuggestionStep.none;
-        break;
+        return null;
 
       case SuggestionStep.none:
-        break;
+        return null;
     }
   }
 }

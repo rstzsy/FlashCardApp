@@ -37,6 +37,11 @@ class ChatbotController extends ChangeNotifier {
 
   bool isLoading = false;
   bool isProcessing = false;
+
+  /// The chat screen (View) sets this to show a validation-error popup
+  /// whenever the user's input doesn't match what an agent expects.
+  void Function(String title, String message)? onValidationError;
+
   bool _isGreeting(String text) {
     final msg = text.trim().toLowerCase();
 
@@ -142,7 +147,7 @@ class ChatbotController extends ChangeNotifier {
 
     if (isProcessing) return;
 
-    // add message 
+    // add message
     messages.add(ChatMessage(message: text, isBot: false));
 
     notifyListeners();
@@ -163,7 +168,20 @@ class ChatbotController extends ChangeNotifier {
     // ------ flashcard agent -----
     if (currentAgent == ChatAgentType.flashcard &&
         flashcardAgent.isCollecting) {
-      await flashcardAgent.processMessage(text, messages, saveChatMessage);
+      final error = await flashcardAgent.processMessage(
+        text,
+        messages,
+        saveChatMessage,
+      );
+
+      if (error != null) {
+        // Invalid input: notify the view to show a popup, keep the current
+        // step so the bot doesn't advance to the next question.
+        onValidationError?.call(error.title, error.message);
+        notifyListeners();
+        return;
+      }
+
       notifyListeners();
 
       if (flashcardAgent.isCompleted) {
@@ -213,7 +231,16 @@ class ChatbotController extends ChangeNotifier {
     // ------ suggestion agent -----
     if (currentAgent == ChatAgentType.vocabulary &&
         suggestionAgent.isCollecting) {
-      suggestionAgent.processMessage(text, messages);
+      final error = suggestionAgent.processMessage(text, messages);
+
+      if (error != null) {
+        // Invalid input: notify the view to show a popup, keep the current
+        // step so the bot doesn't advance to the next question.
+        onValidationError?.call(error.title, error.message);
+        notifyListeners();
+        return;
+      }
+
       notifyListeners();
 
       if (suggestionAgent.isCompleted) {

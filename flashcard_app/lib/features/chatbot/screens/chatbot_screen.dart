@@ -7,6 +7,7 @@ import '../controllers/chat_history_controller.dart';
 import '../controllers/chatbot_controller.dart';
 import '../widgets/chatbot_history.dart';
 import '../widgets/chatbot_menu_option.dart';
+import '../../../core/widgets/app_popup.dart';
 
 class ChatbotScreen extends StatefulWidget {
   const ChatbotScreen({super.key});
@@ -27,6 +28,20 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
     super.initState();
 
     controller = ChatbotController();
+
+    // Show a popup whenever an agent detects invalid user input.
+    controller.onValidationError = (title, message) {
+      if (!mounted) return;
+
+      AppPopup.show(
+        context: context,
+        title: title,
+        message: message,
+        icon: Icons.error_outline,
+        iconColor: Colors.redAccent,
+        buttonText: "Try again",
+      );
+    };
 
     controller.addListener(() {
       if (!mounted) return;
