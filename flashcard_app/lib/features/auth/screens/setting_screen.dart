@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/themes/app_colors.dart';
+import '../../flashcard/screens/flashcard_manager_screen.dart';
 import '../widgets/language_bottom.dart';
 import '../widgets/logout_dialog.dart';
 import '../widgets/switch_component.dart';
@@ -8,6 +10,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../../routes/app_routes.dart';
 import 'edit_account_screen.dart';
 import '../../../core/widgets/app_popup.dart';
+import '../../../routes/main_navigation.dart'; // import mainNavKey
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -30,13 +33,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _loadTwoFactorStatus();
   }
 
+  Future<void> _replayTutorial() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('has_seen_flashcard_tutorial');
+
+    if (!mounted) return;
+
+    // return to main navigation screen (pop all routes)
+    Navigator.of(context).popUntil((route) => route.isFirst);
+
+    // change to flashcard tab 
+    mainNavKey.currentState?.switchToTab(1);
+  }
+
   Future<void> _loadTwoFactorStatus() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
-    final doc = await FirebaseFirestore.instance
-        .collection('users')
-        .doc(uid)
-        .get();
+    final doc =
+        await FirebaseFirestore.instance.collection('users').doc(uid).get();
     if (mounted) {
       setState(() {
         twoFactor = doc.data()?['twoFactorEnabled'] == true;
@@ -101,7 +115,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
               iconColor: const Color(0xFF0F6E56),
               title: "Languages",
               trailing: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: const Color.fromARGB(255, 245, 231, 234),
                   borderRadius: BorderRadius.circular(20),
@@ -127,10 +144,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
               iconColor: const Color(0xFF534AB7),
               title: "Edit Account",
               subtitle: "Change your name and photo",
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const EditAccountScreen()),
-              ),
+              onTap:
+                  () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const EditAccountScreen(),
+                    ),
+                  ),
+            ),
+            _divider(),
+            _navTile(
+              icon: Icons.school_rounded,
+              iconBg: const Color(0xFFFFF3E0),
+              iconColor: const Color(0xFFE65100),
+              title: "Replay Tutorial",
+              subtitle: "View the app tutorial again",
+              onTap: _replayTutorial,
             ),
             _divider(),
             _navTile(
@@ -156,7 +185,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         AppPopup.show(
           context: context,
           title: "Confirm enabling 2FA",
-          message: "From the next login, you will need to authenticate using biometrics. We have sent a confirmation email to ${FirebaseAuth.instance.currentUser?.email}.",
+          message:
+              "From the next login, you will need to authenticate using biometrics. We have sent a confirmation email to ${FirebaseAuth.instance.currentUser?.email}.",
           iconWidget: Image.asset(
             'assets/component/mail2FA.png',
             width: 150,
@@ -174,62 +204,61 @@ class _SettingsScreenState extends State<SettingsScreen> {
         );
       }
     } else {
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(uid)
-          .update({'twoFactorEnabled': false});
+      await FirebaseFirestore.instance.collection('users').doc(uid).update({
+        'twoFactorEnabled': false,
+      });
       if (mounted) setState(() => twoFactor = false);
     }
   }
 
   // ── Widgets helpers (giữ nguyên) ───────────────────────────────────────────
   Widget _sectionLabel(String text) => Padding(
-        padding: const EdgeInsets.fromLTRB(22, 4, 22, 8),
-        child: Row(
-          children: [
-            const SizedBox(width: 8),
-            Text(
-              text.toUpperCase(),
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 0.6,
-                color: AppColors.highlightColor,
-              ),
-            ),
-          ],
+    padding: const EdgeInsets.fromLTRB(22, 4, 22, 8),
+    child: Row(
+      children: [
+        const SizedBox(width: 8),
+        Text(
+          text.toUpperCase(),
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 0.6,
+            color: AppColors.highlightColor,
+          ),
         ),
-      );
+      ],
+    ),
+  );
 
   Widget _card(List<Widget> children) => Container(
-        margin: const EdgeInsets.symmetric(horizontal: 14),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: const Color(0xFFE8E4FF), width: 1.5),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF534AB7).withOpacity(0.07),
-              blurRadius: 12,
-              offset: const Offset(0, 2),
-            ),
-          ],
+    margin: const EdgeInsets.symmetric(horizontal: 14),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(20),
+      border: Border.all(color: const Color(0xFFE8E4FF), width: 1.5),
+      boxShadow: [
+        BoxShadow(
+          color: const Color(0xFF534AB7).withOpacity(0.07),
+          blurRadius: 12,
+          offset: const Offset(0, 2),
         ),
-        child: Column(children: children),
-      );
+      ],
+    ),
+    child: Column(children: children),
+  );
 
   Widget _divider() =>
       const Divider(height: 1, indent: 64, color: Color(0xFFF3F0FF));
 
   Widget _iconWrap(IconData icon, Color bg, Color color) => Container(
-        width: 40,
-        height: 40,
-        decoration: BoxDecoration(
-          color: bg,
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: Icon(icon, color: color, size: 20),
-      );
+    width: 40,
+    height: 40,
+    decoration: BoxDecoration(
+      color: bg,
+      borderRadius: BorderRadius.circular(14),
+    ),
+    child: Icon(icon, color: color, size: 20),
+  );
 
   Widget _navTile({
     required IconData icon,
@@ -240,45 +269,49 @@ class _SettingsScreenState extends State<SettingsScreen> {
     String? subtitle,
     Widget? trailing,
     required VoidCallback onTap,
-  }) =>
-      InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
-          child: Row(
-            children: [
-              _iconWrap(icon, iconBg, iconColor),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w500,
-                        color: titleColor ?? Colors.black87,
-                      ),
-                    ),
-                    if (subtitle != null)
-                      Text(
-                        subtitle,
-                        style: const TextStyle(
-                            fontSize: 12, color: Color(0xFF888888)),
-                      ),
-                  ],
+  }) => InkWell(
+    onTap: onTap,
+    borderRadius: BorderRadius.circular(20),
+    child: Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+      child: Row(
+        children: [
+          _iconWrap(icon, iconBg, iconColor),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                    color: titleColor ?? Colors.black87,
+                  ),
                 ),
-              ),
-              if (trailing != null) trailing,
-              if (trailing != null) const SizedBox(width: 6),
-              Icon(Icons.chevron_right_rounded,
-                  size: 20, color: const Color(0xFFC5BFFF)),
-            ],
+                if (subtitle != null)
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Color(0xFF888888),
+                    ),
+                  ),
+              ],
+            ),
           ),
-        ),
-      );
+          if (trailing != null) trailing,
+          if (trailing != null) const SizedBox(width: 6),
+          Icon(
+            Icons.chevron_right_rounded,
+            size: 20,
+            color: const Color(0xFFC5BFFF),
+          ),
+        ],
+      ),
+    ),
+  );
 
   void showLanguageDialog() {
     LanguageBottomSheet.show(

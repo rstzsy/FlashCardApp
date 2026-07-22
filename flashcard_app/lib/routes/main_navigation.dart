@@ -6,8 +6,10 @@ import '../features/group/screens/group_list_screen.dart';
 import '../features/home/screens/home_screen.dart';
 import '../features/statistic/screens/statistic_screen.dart';
 import '../features/game/screens/intro_game_screen.dart';
-import '../features/blog/screens/blog_screen.dart'; 
+import '../features/blog/screens/blog_screen.dart';
 
+final GlobalKey<_MainNavigationState> mainNavKey =
+    GlobalKey<_MainNavigationState>();
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
 
@@ -19,18 +21,23 @@ class _MainNavigationState extends State<MainNavigation> {
   int currentIndex = 0;
   static const int _gameTabIndex = 3;
 
+  void switchToTab(int index) {
+    setState(() => currentIndex = index);
+  }
+
   @override
   Widget build(BuildContext context) {
     final List<Widget> pages = [
-      const HomeScreen(),           // 0
-      FlashcardManagerScreen(),     // 1
-      const StatisticsScreen(),     // 2
-      IntroGameScreen(              // 3
+      const HomeScreen(), // 0
+      FlashcardManagerScreen(), // 1
+      const StatisticsScreen(), // 2
+      IntroGameScreen(
+        // 3
         onBack: () => setState(() => currentIndex = 0),
       ),
-      const ProfilePage(),          // 4
-      GroupListPage(),              // 5
-      const BlogScreen(),           // 6 ← thêm
+      const ProfilePage(), // 4
+      GroupListPage(), // 5
+      const BlogScreen(), // 6 ← thêm
     ];
 
     final bool isGameScreen = currentIndex == _gameTabIndex;
@@ -38,37 +45,42 @@ class _MainNavigationState extends State<MainNavigation> {
     return Scaffold(
       extendBody: true,
       body: pages[currentIndex],
-      bottomNavigationBar: isGameScreen
-          ? null
-          : Padding(
-              padding: const EdgeInsets.only(
-                  left: 24, right: 24, bottom: 20, top: 10),
-              child: Container(
-                height: 65,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(40),
-                  color: AppColors.primary,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.15),
-                      blurRadius: 20,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
+      bottomNavigationBar:
+          isGameScreen
+              ? null
+              : Padding(
+                padding: const EdgeInsets.only(
+                  left: 24,
+                  right: 24,
+                  bottom: 20,
+                  top: 10,
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    navItem(Icons.home_outlined, 0),
-                    navItem(Icons.style, 1),
-                    navItem(Icons.bar_chart_rounded, 2),
-                    navItem(Icons.sports_esports, 3),
-                    navItem(Icons.article_outlined, 6), // ← blog
-                    navItem(Icons.group, 5),
-                  ],
+                child: Container(
+                  height: 65,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(40),
+                    color: AppColors.primary,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.15),
+                        blurRadius: 20,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      navItem(Icons.home_outlined, 0),
+                      navItem(Icons.style, 1),
+                      navItem(Icons.bar_chart_rounded, 2),
+                      navItem(Icons.sports_esports, 3),
+                      navItem(Icons.article_outlined, 6), // ← blog
+                      navItem(Icons.group, 5),
+                    ],
+                  ),
                 ),
               ),
-            ),
     );
   }
 
@@ -83,9 +95,8 @@ class _MainNavigationState extends State<MainNavigation> {
         child: Icon(
           icon,
           size: 26,
-          color: isActive
-              ? Colors.white
-              : const Color.fromARGB(255, 84, 144, 172),
+          color:
+              isActive ? Colors.white : const Color.fromARGB(255, 84, 144, 172),
         ),
       ),
     );

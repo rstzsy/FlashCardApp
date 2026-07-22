@@ -1,5 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart' show FirebaseAuth;
 import 'package:flutter/material.dart';
+import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flashcard_app/core/themes/app_colors.dart';
 
 import '../../../core/widgets/collection_card.dart';
@@ -18,6 +20,9 @@ class FlashcardManagerScreen extends StatefulWidget {
 class _FlashcardManagerScreenState extends State<FlashcardManagerScreen>
     with SingleTickerProviderStateMixin {
   final controller = FlashcardManagerController();
+  final GlobalKey _chatbotKey = GlobalKey();
+  final GlobalKey _createKey = GlobalKey();
+  final GlobalKey _flashcardKey = GlobalKey();
 
   late Future<List<dynamic>> futureSets;
 
@@ -38,6 +43,133 @@ class _FlashcardManagerScreenState extends State<FlashcardManagerScreen>
     );
 
     _loadData();
+
+    _showTutorialIfNeeded();
+  }
+
+  Future<void> _showTutorialIfNeeded() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    final hasSeenTutorial =
+        prefs.getBool('has_seen_flashcard_tutorial') ?? false;
+
+    if (!hasSeenTutorial) {
+      await prefs.setBool('has_seen_flashcard_tutorial', true);
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _showTutorial();
+      });
+    }
+  }
+
+  void _showTutorial() {
+    final targets = <TargetFocus>[
+      TargetFocus(
+        identify: "chatbot",
+        keyTarget: _chatbotKey,
+        contents: [
+          TargetContent(
+            align: ContentAlign.top,
+            child: SizedBox(
+              width: MediaQuery.of(context).size.width * 0.85,
+              child: const Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "AI Chatbot",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    "This is an AI chatbot that can help you learn English.",
+                    style: TextStyle(color: Colors.white, fontSize: 16),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+
+      TargetFocus(
+        identify: "create",
+        keyTarget: _createKey,
+        contents: [
+          TargetContent(
+            align: ContentAlign.top,
+            child: const Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "Create Flashcard",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  "Press this button to create a new set of flashcards.",
+                  style: TextStyle(color: Colors.white, fontSize: 16),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+
+      TargetFocus(
+        identify: "flashcard",
+        keyTarget: _flashcardKey,
+        contents: [
+          TargetContent(
+            align: ContentAlign.bottom,
+            child: const Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "Your Flashcard Sets",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  "Tap on a flashcard set to view and start learning.",
+                  style: TextStyle(color: Colors.white, fontSize: 16),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    ];
+
+    TutorialCoachMark(
+      targets: targets,
+      colorShadow: Colors.black,
+      opacityShadow: 0.8,
+
+      textSkip: "SKIP",
+
+      paddingFocus: 10,
+
+      onFinish: () {
+        debugPrint("Tutorial finished");
+      },
+
+      onSkip: () {
+        debugPrint("Tutorial skipped");
+        return true;
+      },
+    ).show(context: context);
   }
 
   @override
@@ -76,6 +208,7 @@ class _FlashcardManagerScreenState extends State<FlashcardManagerScreen>
               },
 
               child: SizedBox(
+                key: _chatbotKey,
                 width: 60,
                 height: 60,
                 child: FloatingActionButton(
@@ -108,6 +241,7 @@ class _FlashcardManagerScreenState extends State<FlashcardManagerScreen>
 
             // create button
             FloatingActionButton(
+              key: _createKey,
               heroTag: "create_btn",
               backgroundColor: AppColors.highlightColor,
               onPressed: () async {
@@ -182,6 +316,7 @@ class _FlashcardManagerScreenState extends State<FlashcardManagerScreen>
                       final item = collections[index];
 
                       return CollectionCard(
+                        key: index == 0 ? _flashcardKey : null,
                         title: item['title'],
                         subtitle: item['subtitle'],
                         setsCount: item['totalCards'],
