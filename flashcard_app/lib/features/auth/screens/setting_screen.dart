@@ -107,34 +107,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ]),
           const SizedBox(height: 16),
-          _sectionLabel("Languages"),
-          _card([
-            _navTile(
-              icon: Icons.language_rounded,
-              iconBg: const Color(0xFFE1F5EE),
-              iconColor: const Color(0xFF0F6E56),
-              title: "Languages",
-              trailing: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: const Color.fromARGB(255, 245, 231, 234),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  language,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: AppColors.highlightColor,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              onTap: showLanguageDialog,
-            ),
-          ]),
+          // _sectionLabel("Languages"),
+          // _card([
+          //   _navTile(
+          //     icon: Icons.language_rounded,
+          //     iconBg: const Color(0xFFE1F5EE),
+          //     iconColor: const Color(0xFF0F6E56),
+          //     title: "Languages",
+          //     trailing: Container(
+          //       padding: const EdgeInsets.symmetric(
+          //         horizontal: 10,
+          //         vertical: 4,
+          //       ),
+          //       decoration: BoxDecoration(
+          //         color: const Color.fromARGB(255, 245, 231, 234),
+          //         borderRadius: BorderRadius.circular(20),
+          //       ),
+          //       child: Text(
+          //         language,
+          //         style: const TextStyle(
+          //           fontSize: 13,
+          //           color: AppColors.highlightColor,
+          //           fontWeight: FontWeight.bold,
+          //         ),
+          //       ),
+          //     ),
+          //     onTap: showLanguageDialog,
+          //   ),
+          // ]),
           const SizedBox(height: 16),
           _sectionLabel("Account"),
           _card([
@@ -313,18 +313,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
     ),
   );
 
-  void showLanguageDialog() {
-    LanguageBottomSheet.show(
-      context,
-      selectedCode: _selectedCode,
-      onSelected: (lang) {
-        setState(() {
-          _selectedCode = lang.code;
-          language = lang.name;
-        });
-      },
-    );
-  }
+  // void showLanguageDialog() {
+  //   LanguageBottomSheet.show(
+  //     context,
+  //     selectedCode: _selectedCode,
+  //     onSelected: (lang) {
+  //       setState(() {
+  //         _selectedCode = lang.code;
+  //         language = lang.name;
+  //       });
+  //     },
+  //   );
+  // }
 
   void showLogoutDialog() {
     LogoutDialog.show(

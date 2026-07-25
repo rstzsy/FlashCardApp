@@ -19,6 +19,8 @@ class SuggestionAgentExecutor {
       );
 
       final words = result["suggested_words"] as List?;
+      final sessionMeta = result["session_meta"] as Map<String, dynamic>?;
+      final note = sessionMeta?["note"] as String?;
 
       if (words == null || words.isEmpty) {
         return ChatMessage(
@@ -27,10 +29,13 @@ class SuggestionAgentExecutor {
         );
       }
 
+      final baseMessage =
+          "I found ${words.length} vocabulary cards that you should review today";
+      final fullMessage = note != null ? "$baseMessage\n\n$note" : baseMessage;
+
       return ChatMessage(
         isBot: true,
-        message:
-            "I found ${words.length} vocabulary cards that you should review today",
+        message: fullMessage,
         suggestions: words,
       );
     } catch (e) {

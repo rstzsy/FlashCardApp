@@ -1,242 +1,265 @@
 import json
-import math
 import re
 import time
-from datetime import datetime, timezone
 from google import genai
 from google.genai import types
-from config.settings import GEMINI_API_KEY
+from config.settings import (
+    GEMINI_API_KEY,
+    GEMINI_MODEL,
+    OVERLOAD_THRESHOLD,
+    WEIGHT_SRS,
+    WEIGHT_LAPSE,
+    WEIGHT_DIFFICULTY,
+    WEIGHT_TOPIC,
+)
 
 _client = genai.Client(api_key=GEMINI_API_KEY)
 
-
-# ── FSRS helpers ──────────────────────────────────────────────────────────────
-
-def _to_aware_dt(val) -> datetime | None:
-    if val is None:
-        return None
-    if isinstance(val, datetime):
-        return val if val.tzinfo else val.replace(tzinfo=timezone.utc)
-    if hasattr(val, 'seconds'):                          # Firestore Timestamp object
-        try:
-            return datetime.fromtimestamp(val.seconds, tz=timezone.utc)
-        except (OSError, OverflowError, ValueError):
-            return None
-    if isinstance(val, (int, float)):
-        ts = val
-        # Detect milliseconds (> year 3000 if treated as seconds)
-        if ts > 32503680000:
-            ts = ts / 1000
-        try:
-            return datetime.fromtimestamp(ts, tz=timezone.utc)
-        except (OSError, OverflowError, ValueError):
-            return None
-    return None
+VALID_TAGS = {"overdue", "due_today", "new_word", "difficult", "review"}
 
 
-def _days_since(dt_val) -> float | None:
-    dt = _to_aware_dt(dt_val)
-    if dt is None:
-        return None
-    return max(0.0, (datetime.now(timezone.utc) - dt).total_seconds() / 86400)
+# ── Prompt construction ──────────────────────────────────────────────────────
 
-
-def _forgetting_pct(stability: float, days_elapsed: float) -> int:
-    """Estimated % chance the learner has FORGOTTEN the word (100 - retrievability)."""
-    if stability <= 0 or days_elapsed <= 0:
-        return 0
-    r = math.pow(1 + 0.9 / 0.1 * days_elapsed / stability, -0.5)
-    return max(0, min(100, round((1 - r) * 100)))
-
-
-def _extract_partial_json(raw: str) -> list[dict]:
-    """Recover complete JSON objects from a truncated array string."""
-    pattern = re.compile(
-        r'\{\s*"cardId"\s*:\s*"([^"]+)"\s*,\s*"reason"\s*:\s*"((?:[^"\\]|\\.)*)"\s*\}'
-    )
-    return [{"cardId": m.group(1), "reason": m.group(2)} for m in pattern.finditer(raw)]
-
-
-# ── Main ──────────────────────────────────────────────────────────────────────
-
-def generate_suggestion_reasons(
-    user_context: dict,
-    candidate_words: list[dict],
-) -> dict[str, str]:
-    if not candidate_words:
-        return {}
-
-    # ── Build per-word coaching brief ─────────────────────────────────────────
-    word_blocks = []
-    for i, w in enumerate(candidate_words, 1):
-        card_id      = w.get("cardId", "")
-        word         = w.get("word", "")
-        meaning      = w.get("meaning", "")
-        example      = w.get("example", "")
-        topic        = w.get("topic", "")
-        tag          = w.get("tag", "")
-        lapses       = int(w.get("lapses", 0))
-        reps         = int(w.get("reps", 0))
-        stability    = float(w.get("stability", 0))
-        difficulty   = float(w.get("difficulty", 5.0))
-        state        = w.get("state", "new")
-        due_days_ago = w.get("due_days_ago")
-        last_review  = w.get("last_review")
-
-        days_since_review = _days_since(last_review)
-        forgotten_pct = _forgetting_pct(stability, days_since_review) if stability > 0 and days_since_review else 0
-
-        # ── Translate FSRS data into user-facing language ──────────────────
-
-        # 1. Study history
-        if state == "new":
-            study_history = "Never studied before — brand new word."
-        elif reps == 1:
-            study_history = "Studied only once so far."
-        else:
-            days_str = f"{round(days_since_review)} day(s) ago" if days_since_review else "recently"
-            study_history = f"Studied {reps} times total, last reviewed {days_str}."
-
-        # 2. Risk of skipping today
-        if tag == "overdue":
-            if forgotten_pct >= 70:
-                danger = f"HIGH FORGET RISK ({forgotten_pct}%) — {due_days_ago} day(s) overdue, memory is rapidly fading."
-            elif forgotten_pct >= 40:
-                danger = f"{due_days_ago} day(s) overdue — ~{forgotten_pct}% chance of forgetting, needs urgent review."
-            else:
-                danger = f"{due_days_ago} day(s) overdue — review soon to avoid having to relearn from scratch."
-        elif tag == "due_today":
-            if forgotten_pct >= 30:
-                danger = f"Due today — memory weakening (~{forgotten_pct}% forget risk). This is the algorithmically optimal review window."
-            else:
-                danger = "Due today — reviewing right now maximises long-term retention efficiency."
-        elif tag == "new_word":
-            danger = "New word — studying today starts the spaced repetition clock."
-        else:
-            danger = "Coming up for review — catch it before the memory fades."
-
-        # 3. Lapse history
-        if lapses == 0 and reps > 0:
-            lapse_story = f"Never forgotten across {reps} review(s) — a personal record worth protecting."
-        elif lapses == 1:
-            lapse_story = "Forgotten once before — has a weak spot that today's review can fix."
-        elif lapses == 2:
-            lapse_story = "Forgotten twice — this word keeps slipping, needs deliberate attention."
-        elif lapses >= 3:
-            lapse_story = f"Forgotten {lapses} times — one of the hardest words in the deck, but also the one that needs review most."
-        else:
-            lapse_story = ""
-
-        # 4. Actual difficulty
-        if difficulty >= 8.5:
-            diff_story = f"Very high difficulty ({difficulty:.1f}/10) — among the top hardest words."
-        elif difficulty >= 7.0:
-            diff_story = f"Hard word ({difficulty:.1f}/10) — requires more repetitions than average."
-        elif difficulty >= 5.0:
-            diff_story = f"Moderate difficulty ({difficulty:.1f}/10)."
-        else:
-            diff_story = f"Relatively easy ({difficulty:.1f}/10) — a quick confidence win."
-
-        block = f"""=== WORD {i} ===
-cardId: {card_id}
-Word: "{word}" — {meaning}
-Set: {topic}
-Study history: {study_history}
-Today: {danger}"""
-        if lapse_story:
-            block += f"\nLapse history: {lapse_story}"
-        block += f"\nDifficulty: {diff_story}"
-        if example:
-            block += f'\nExample sentence: "{example}"'
-
-        word_blocks.append(block)
-
-    # ── User context ──────────────────────────────────────────────────────────
-    english_level  = user_context.get("englishLevel", "intermediate")
-    interests      = user_context.get("interests", "general")
-    streak         = user_context.get("streak", 0)
-    streak_at_risk = user_context.get("streakAtRisk", False)
-    target_goal    = user_context.get("targetGoal", "")
-
-    if streak_at_risk:
-        streak_ctx = f"STREAK ALERT: The learner has a {streak}-day streak but hasn't studied today. Weave streak urgency naturally into at least 2 reasons."
-    elif streak >= 14:
-        streak_ctx = f"Strong {streak}-day streak — briefly acknowledge momentum in 1-2 reasons where it fits naturally."
-    elif streak >= 3:
-        streak_ctx = f"Building a {streak}-day streak — keep the momentum going."
+def _word_block(i: int, c: dict) -> str:
+    lines = [
+        f'=== ỨNG VIÊN {i} ===',
+        f'cardId: {c["cardId"]}',
+        f'Từ: "{c["word"]}" — {c["meaning"]}',
+        f'Chủ đề: {c["topic"]} (thẻ được đánh dấu yêu thích: {c["is_favourite_card"]}, chủ đề đang học dở: {c["is_in_progress_set"]})',
+        f'Trạng thái FSRS: {c["state"]} | reps={c["reps"]} | lapses={c["lapses"]} | difficulty={c["difficulty"]:.1f}/10',
+    ]
+    if c["state"] != "new":
+        if c["days_overdue"] > 0:
+            lines.append(f'Quá hạn {c["days_overdue"]} ngày | Nguy cơ đã quên: ~{c["forgetting_pct"]}%')
+        elif c["is_due_today"]:
+            lines.append(f'Đến hạn hôm nay | Nguy cơ đã quên: ~{c["forgetting_pct"]}%')
+        elif c["is_upcoming"]:
+            lines.append(f'Sắp đến hạn (trong vài ngày tới) | Nguy cơ đã quên: ~{c["forgetting_pct"]}%')
+        if c["days_since_review"] is not None:
+            lines.append(f'Lần ôn gần nhất: {round(c["days_since_review"])} ngày trước')
     else:
-        streak_ctx = ""
+        lines.append("Từ mới — chưa học lần nào.")
+    if c["is_chronically_hard"]:
+        lines.append(f'⚠ Đã quên {c["lapses"]} lần — thuộc nhóm từ khó nhớ nhất của user.')
+    if c.get("example"):
+        lines.append(f'Ví dụ: "{c["example"]}"')
+    return "\n".join(lines)
 
-    goal_ctx = f"Goal: {target_goal}." if target_goal else ""
 
-    prompt = f"""You are a sharp, caring language coach writing personalised micro-motivations for a Vietnamese learner's flashcard app.
+def _build_prompt(candidates: list[dict], user_context: dict, session_ctx: dict) -> str:
+    blocks = "\n\n".join(_word_block(i, c) for i, c in enumerate(candidates, 1))
 
-LEARNER PROFILE:
-- English level: {english_level}
-- Interests: {interests}
-- Current streak: {streak} days
-- {goal_ctx}
-{streak_ctx}
+    streak = user_context.get("streak", 0)
+    streak_at_risk = session_ctx.get("streakAtRisk", False)
+    level = user_context.get("englishLevel", "intermediate")
+    goal = user_context.get("targetGoal", "")
+    current_set_id = session_ctx.get("currentSetId")
+    max_words = session_ctx["max_words"]
+    words_studied_today = session_ctx.get("words_studied_today", 0)
+    has_any_fsrs_history = any(c["state"] != "new" for c in candidates)
 
-YOUR JOB:
-For each word below, write ONE reason (2-3 sentences, max 60 words) that convinces the learner to review THIS specific word TODAY.
+    guidance = []
+    if not has_any_fsrs_history:
+        guidance.append(
+            "Đây là user MỚI, chưa có lịch sử FSRS thật (toàn bộ thẻ đều 'new'). "
+            "Hãy chọn 5-10 từ thuộc chủ đề user quan tâm/đã tạo gần đây nhất, sắp xếp có hệ thống."
+        )
+    if streak_at_risk:
+        guidance.append(
+            f"Streak {streak} ngày đang có nguy cơ đứt (chưa học hôm nay). Ưu tiên xen kẽ vài từ QUEN THUỘC/dễ "
+            "(không chỉ từ khó) để user hoàn thành phiên nhanh, không nản — nhưng đừng bỏ qua từ có nguy cơ quên cao."
+        )
+    if words_studied_today > OVERLOAD_THRESHOLD:
+        guidance.append(
+            f"User đã học {words_studied_today} từ hôm nay rồi — có dấu hiệu quá tải. "
+            "Chỉ chọn những từ THỰC SỰ cấp thiết (quá hạn nặng, nguy cơ quên cao), bỏ bớt từ mới."
+        )
+    if max_words < 5:
+        guidance.append(
+            "Thời gian phiên học rất ngắn — chỉ chọn từ quá hạn/đến hạn hôm nay, KHÔNG thêm từ mới."
+        )
+    if not any(c["days_overdue"] > 0 or c["is_due_today"] for c in candidates):
+        guidance.append(
+            "Không có từ nào quá hạn hoặc đến hạn hôm nay — đây là dấu hiệu TỐT. "
+            "Hãy khen ngợi ngắn trong lý do, và gợi ý từ mới thuộc chủ đề đang học dở hoặc liên quan mục tiêu."
+        )
+    if current_set_id:
+        guidance.append(f"User đang học bộ thẻ '{current_set_id}' — ưu tiên nhẹ cho từ trong bộ này nếu phù hợp.")
 
-QUALITY STANDARDS — every reason MUST:
-✅ Reference the learner's ACTUAL data (times forgotten, days overdue, forgetting risk %, sessions invested) — translate it into human language, not raw stats
-✅ State a CONCRETE CONSEQUENCE of skipping today ("you'll have to relearn from scratch", "X sessions of effort wasted")
-✅ Connect to the learner's interests ({interests}) or goal when it fits naturally
-✅ Open with a UNIQUE phrase — no two reasons can start the same way
-✅ Tone: direct, warm, honest — like a trusted study partner, not a marketing copy
+    guidance_block = "\n".join(f"- {g}" for g in guidance) if guidance else "- Không có tình huống đặc biệt."
 
-STRICTLY FORBIDDEN:
-❌ "Today is the perfect...", "Let's", "It's time to", "Your memory of X is at its peak"
-❌ Repeating the same sentence structure across reasons
-❌ Generic reasons that could apply to any word
-❌ Exposing raw technical numbers ("difficulty = 7.2", "stability = 3.4")
+    return f"""Bạn là một AI chuyên gia về khoa học ghi nhớ (spaced repetition, đường cong quên Ebbinghaus, FSRS).
+Nhiệm vụ của bạn KHÔNG phải áp một công thức cố định — hãy PHÂN TÍCH dữ liệu từng từ bên dưới và tự quyết định
+từ nào nên đưa vào phiên học hôm nay, xếp thứ tự ưu tiên, gắn nhãn, và viết lý do thuyết phục.
 
-{chr(10).join(word_blocks)}
+HỒ SƠ NGƯỜI HỌC:
+- Trình độ: {level}
+- Mục tiêu: {goal or "chưa đặt mục tiêu cụ thể"}
+- Streak hiện tại: {streak} ngày
 
-Return ONLY a valid JSON array — no markdown, no explanation, nothing else:
-[{{"cardId": "...", "reason": "..."}}, ...]
-Exactly {len(candidate_words)} items, using the EXACT cardId values shown above.
+BỐI CẢNH PHIÊN HỌC HÔM NAY:
+- Sức chứa tối đa của phiên: {max_words} từ (đây là giới hạn CỨNG do thời gian, không được vượt quá)
+- Đã học hôm nay: {words_studied_today} từ
+{guidance_block}
+
+NGUYÊN TẮC PHÂN TÍCH (tự suy luận, không phải công thức cộng điểm cứng):
+- Nguy cơ quên càng cao (forgetting % cao, quá hạn càng lâu so với stability) → càng cấp thiết
+- Từ hay bị quên (lapses cao) cần được ưu tiên đưa vào đều đặn hơn, không để "rơi" khỏi vòng ôn tập
+- Từ mới nên được rải đều, không dồn hết vào 1 phiên, và không được lấn át từ cần ôn gấp
+- Sự phù hợp chủ đề/mục tiêu là yếu tố cộng thêm, không phải yếu tố quyết định chính
+- Đảm bảo trong danh sách cuối cùng có sự cân bằng hợp lý giữa "quá hạn/đến hạn" và "từ mới" — không cứng nhắc theo tỷ lệ % nào, hãy dùng phán đoán
+
+DANH SÁCH ỨNG VIÊN:
+{blocks}
+
+YÊU CẦU LÝ DO (mỗi từ, 2-3 câu, tối đa 60 từ):
+✅ Dựa vào dữ liệu THẬT của từ đó (số lần quên, số ngày quá hạn, % nguy cơ quên...) — diễn giải bằng ngôn ngữ con người, không phô số liệu kỹ thuật
+✅ Nêu hậu quả cụ thể nếu bỏ qua hôm nay
+✅ Câu mở đầu mỗi lý do phải khác nhau, không lặp cấu trúc
+❌ Không dùng "Hôm nay là thời điểm hoàn hảo...", "Hãy...", không lộ số liệu thô kiểu "difficulty=7.2"
+
+Trả về DUY NHẤT một JSON array, không markdown, không giải thích thêm, tối đa {max_words} phần tử,
+đã được BẠN xếp theo thứ tự ưu tiên giảm dần (phần tử đầu = nên học đầu tiên):
+[{{"cardId": "...", "priority_score": 0.0-1.0, "tag": "overdue|due_today|new_word|difficult|review", "reason": "..."}}]
+
+priority_score là đánh giá CHỦ QUAN của bạn (mức độ cấp thiết, 0-1), không phải kết quả một công thức có sẵn.
+Chỉ dùng cardId có trong danh sách ứng viên ở trên.
 """
 
-    last_error = None
+
+# ── Parsing / validation ─────────────────────────────────────────────────────
+
+def _extract_partial_json(raw: str) -> list[dict]:
+    pattern = re.compile(
+        r'\{\s*"cardId"\s*:\s*"([^"]+)"\s*,\s*"priority_score"\s*:\s*([\d.]+)\s*,\s*"tag"\s*:\s*"([^"]+)"\s*,\s*"reason"\s*:\s*"((?:[^"\\]|\\.)*)"\s*\}'
+    )
+    return [
+        {"cardId": m.group(1), "priority_score": float(m.group(2)), "tag": m.group(3), "reason": m.group(4)}
+        for m in pattern.finditer(raw)
+    ]
+
+
+def _validate_and_clip(items: list[dict], candidates_by_id: dict, top_n: int, max_words: int) -> list[dict]:
+    """Hard safety rails only: real cardId, valid tag, no dupes, respect the request's limits."""
+    limit = min(top_n, max_words)
+    seen = set()
+    clean = []
+    for item in items:
+        cid = item.get("cardId")
+        if not cid or cid not in candidates_by_id or cid in seen:
+            continue
+        tag = item.get("tag") if item.get("tag") in VALID_TAGS else _infer_tag(candidates_by_id[cid])
+        score = item.get("priority_score", 0.5)
+        try:
+            score = max(0.0, min(1.0, float(score)))
+        except (TypeError, ValueError):
+            score = 0.5
+        clean.append({
+            "cardId": cid,
+            "priority_score": round(score, 4),
+            "tag": tag,
+            "reason": item.get("reason", "").strip() or _fallback_reason(candidates_by_id[cid]),
+        })
+        seen.add(cid)
+        if len(clean) >= limit:
+            break
+    return clean
+
+
+def _infer_tag(c: dict) -> str:
+    if c["days_overdue"] > 0:
+        return "overdue"
+    if c["is_due_today"]:
+        return "due_today"
+    if c["state"] == "new":
+        return "new_word"
+    if c["difficulty"] >= 7.0:
+        return "difficult"
+    return "review"
+
+
+def _fallback_reason(c: dict) -> str:
+    w, meaning, topic = c["word"], c["meaning"], c["topic"]
+    if c["days_overdue"] > 0:
+        return f'"{w}" ({meaning}) đã quá hạn {c["days_overdue"]} ngày, nguy cơ quên ~{c["forgetting_pct"]}%. Ôn ngay để tránh học lại từ đầu.'
+    if c["is_due_today"]:
+        return f'"{w}" ({meaning}) đến hạn ôn hôm nay — đây là thời điểm SRS tối ưu để ghi nhớ lâu dài.'
+    if c["state"] == "new":
+        return f'Từ mới "{w}" ({meaning}) thuộc chủ đề {topic}. Bắt đầu hôm nay để khởi động chu trình ghi nhớ.'
+    if c["is_chronically_hard"]:
+        return f'"{w}" ({meaning}) đã bị quên {c["lapses"]} lần — cần ôn đều đặn để thoát khỏi vòng lặp quên.'
+    return f'"{w}" ({meaning}) sắp đến hạn — ôn sớm giúp củng cố trí nhớ trước khi nó bắt đầu phai.'
+
+
+# ── Deterministic fallback ranking (only used if Gemini is unreachable) ─────
+
+def _fallback_ranking(candidates: list[dict], top_n: int, max_words: int) -> list[dict]:
+    def score(c):
+        srs = 1.0 if c["days_overdue"] > 3 else 0.85 if c["days_overdue"] > 0 else 0.70 if c["is_due_today"] else 0.50 if c["state"] == "new" else 0.10
+        lapse = 0.0 if c["lapses"] == 0 else 0.3 if c["lapses"] <= 2 else 0.6 if c["lapses"] <= 4 else 1.0
+        diff = (max(1.0, min(10.0, c["difficulty"])) - 1) / 9
+        topic = 1.0 if c["is_favourite_card"] else 0.7 if c["is_in_progress_set"] else 0.1
+        return WEIGHT_SRS * srs + WEIGHT_LAPSE * lapse + WEIGHT_DIFFICULTY * diff + WEIGHT_TOPIC * topic
+
+    ranked = sorted(candidates, key=score, reverse=True)[: min(top_n, max_words)]
+    return [
+        {
+            "cardId": c["cardId"],
+            "priority_score": round(score(c), 4),
+            "tag": _infer_tag(c),
+            "reason": _fallback_reason(c),
+        }
+        for c in ranked
+    ]
+
+
+# ── Main entry point ──────────────────────────────────────────────────────────
+
+def select_and_explain(
+    candidates: list[dict],
+    user_context: dict,
+    session_ctx: dict,
+    top_n: int,
+) -> list[dict]:
+    """
+    Returns an ordered list of dicts: {cardId, priority_score, tag, reason}.
+    Selection, ranking, tagging and reasoning are all Gemini's output — the
+    only Python-side enforcement is _validate_and_clip's safety rails.
+    """
+    if not candidates:
+        return []
+
+    candidates_by_id = {c["cardId"]: c for c in candidates}
+    max_words = session_ctx["max_words"]
+    prompt = _build_prompt(candidates, user_context, session_ctx)
+
     for attempt in range(3):
         try:
             response = _client.models.generate_content(
-                model="gemini-2.5-flash",
+                model=GEMINI_MODEL,
                 contents=prompt,
                 config=types.GenerateContentConfig(
-                    temperature=0.95,
+                    temperature=0.7,
                     max_output_tokens=8192,
                     response_mime_type="application/json",
                 ),
             )
-
             raw = response.text.strip()
             raw = re.sub(r"^```json\s*|^```\s*|```$", "", raw, flags=re.MULTILINE).strip()
-            print(f"[GeminiService] Response {len(raw)} chars (attempt {attempt+1})")
 
             try:
                 items = json.loads(raw)
             except json.JSONDecodeError:
-                print("[GeminiService] Truncated — attempting partial extraction...")
                 items = _extract_partial_json(raw)
                 if not items:
                     raise
 
-            result = {item["cardId"]: item["reason"] for item in items if "cardId" in item}
-
-            # Fill any missing cardIds with rule-based fallback
-            for cw in candidate_words:
-                if cw["cardId"] not in result:
-                    result[cw["cardId"]] = _fallback_reason(cw)
-
-            return result
+            result = _validate_and_clip(items, candidates_by_id, top_n, max_words)
+            if result:
+                return result
+            break  # AI returned nothing usable — fall through to fallback
 
         except Exception as e:
-            last_error = e
             msg = str(e)
             print(f"[GeminiService] Attempt {attempt+1} failed: {msg}")
             if "503" in msg or "UNAVAILABLE" in msg or "overloaded" in msg.lower():
@@ -244,40 +267,5 @@ Exactly {len(candidate_words)} items, using the EXACT cardId values shown above.
                 continue
             break
 
-    print("[GeminiService] All attempts failed — using rule-based fallback.")
-    return {w["cardId"]: _fallback_reason(w) for w in candidate_words}
-
-
-def _fallback_reason(word: dict) -> str:
-    tag         = word.get("tag", "")
-    lapses      = int(word.get("lapses", 0))
-    reps        = int(word.get("reps", 0))
-    w           = word.get("word", "this word")
-    meaning     = word.get("meaning", "")
-    topic       = word.get("topic", "")
-    stability   = float(word.get("stability", 0))
-    last_review = word.get("last_review")
-
-    days_since  = _days_since(last_review)
-    forgotten   = _forgetting_pct(stability, days_since) if stability > 0 and days_since else 0
-    topic_ctx   = f" ({topic})" if topic else ""
-    meaning_ctx = f' — "{meaning}"' if meaning else ""
-
-    if tag == "overdue":
-        lapse_note = f" Forgotten {lapses} times before." if lapses >= 2 else ""
-        mem_note   = f" Forget risk: ~{forgotten}%." if forgotten > 30 else ""
-        return f"\"{w}\"{topic_ctx}{meaning_ctx} is overdue.{mem_note}{lapse_note} Review now to avoid relearning from scratch."
-
-    if tag == "due_today":
-        mem_note = f" Memory is at ~{forgotten}% risk — today is the optimal moment." if forgotten > 20 else " Today is the optimal SRS window."
-        return f"\"{w}\"{meaning_ctx}{topic_ctx} is due today.{mem_note}"
-
-    if tag == "new_word":
-        return f"First encounter with \"{w}\"{meaning_ctx}{topic_ctx}. Starting today activates the spaced repetition cycle — the sooner you begin, the faster it sticks."
-
-    if tag == "difficult":
-        lapse_note = f" Forgotten {lapses} times already." if lapses > 0 else ""
-        return f"\"{w}\"{topic_ctx} is one of your hardest words{meaning_ctx}.{lapse_note} Regular review is the only way to tame it."
-
-    reps_note = f" You've invested {reps} sessions into it" if reps > 0 else ""
-    return f"Keep \"{w}\"{topic_ctx} solid with a quick review today.{reps_note} — don't let that effort go to waste."
+    print("[GeminiService] Gemini unavailable — using deterministic fallback ranking.")
+    return _fallback_ranking(candidates, top_n, max_words)

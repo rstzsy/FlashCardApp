@@ -31,4 +31,4 @@ def suggest_vocabulary(request: SuggestionRequest):
 
 @router.get("/suggest-vocabulary/health")
 def health():
-    return {"status": "ok", "agent": "VocabularySuggestionAgent"}
+    return {"status": "ok", "agent": "VocabularySuggestionAgent", "selection_engine": "gemini-driven"}

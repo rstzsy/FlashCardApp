@@ -72,6 +72,87 @@ class FirestoreService:
                     result[card_id] = card
         return result
 
+    # ── Merged cards (FSRS stats + Flashcard content) ────────────────────────
+
+    def get_full_cards_for_user(
+        self, user_id: str
+    ) -> tuple[list[dict], list[dict]]:
+        """
+        Merges FSRS scheduling data (fsrs_progress/{userId}/cards/{setId}_{cardId})
+        with Flashcard content (Word, Meaning, Example, IsFavorite...) into one
+        dict per card, keyed by the real cardId field (NOT doc.id, since doc.id
+        is '{setId}_{cardId}' per fsrs_service.dart).
+
+        Returns (merged_cards, user_sets) — user_sets is returned alongside
+        so the caller (candidate_pool.py) doesn't need a second query.
+        """
+        user_sets = self.get_user_sets(user_id)
+        set_ids = [s.get("SetId") for s in user_sets if s.get("SetId")]
+
+        # cardId -> flashcard content (+ 'topic' injected from set title)
+        content_by_id = self.get_all_cards_for_user(user_id, set_ids, user_sets=user_sets)
+
+        # cardId -> FSRS scheduling stats
+        fsrs_docs = (
+            self.db.collection("fsrs_progress")
+            .document(user_id)
+            .collection("cards")
+            .stream()
+        )
+
+        merged: dict[str, dict] = {}
+        for doc in fsrs_docs:
+            data = doc.to_dict() or {}
+            card_id = data.get("cardId")
+            if not card_id:
+                continue  # malformed doc, skip rather than guess
+            content = content_by_id.get(card_id, {})
+
+            merged[card_id] = {
+                "cardId": card_id,
+                "SetId": content.get("SetId") or data.get("setId", ""),
+                "setId": content.get("SetId") or data.get("setId", ""),
+                "Word": content.get("Word", ""),
+                "Meaning": content.get("Meaning", ""),
+                "Phonetic": content.get("Phonetic"),
+                "Example": content.get("Example", ""),
+                "IsFavorite": content.get("IsFavorite", False),
+                "topic": content.get("topic", ""),
+                # FSRS fields — field names confirmed from fsrs_service.dart
+                "state": data.get("state", "new"),
+                "stability": data.get("stability", 0),
+                "difficulty": data.get("difficulty", 5.0),
+                "lapses": data.get("lapses", 0),
+                "reps": data.get("reps", 0),
+                "due": data.get("due"),
+                "lastReview": data.get("lastReview"),
+            }
+
+        # Cards that exist in Flashcards but have NO fsrs doc yet = 'new'
+        for card_id, content in content_by_id.items():
+            if card_id in merged:
+                continue
+            merged[card_id] = {
+                "cardId": card_id,
+                "SetId": content.get("SetId", ""),
+                "setId": content.get("SetId", ""),
+                "Word": content.get("Word", ""),
+                "Meaning": content.get("Meaning", ""),
+                "Phonetic": content.get("Phonetic"),
+                "Example": content.get("Example", ""),
+                "IsFavorite": content.get("IsFavorite", False),
+                "topic": content.get("topic", ""),
+                "state": "new",
+                "stability": 0,
+                "difficulty": 5.0,
+                "lapses": 0,
+                "reps": 0,
+                "due": None,
+                "lastReview": None,
+            }
+
+        return list(merged.values()), user_sets
+
     # ── Study Sessions ────────────────────────────────────────────────────────
 
     def get_study_sessions(self, user_id: str) -> list[dict]:
