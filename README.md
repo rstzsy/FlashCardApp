@@ -188,7 +188,7 @@ Before running the project, install:
 ## Clone Repository
 
 ```bash
-git clone https://github.com/your_username/Mofu.git
+git clone https://github.com/rstzsy/FlashCardApp.git
 
 cd flashcardApp
 ```
