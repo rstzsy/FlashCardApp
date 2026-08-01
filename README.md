@@ -450,7 +450,7 @@ flutter pub get
 
 # Authors
 
-**Nguyen Thuy Khanh**
+**Nguyen Thuy Khanh** **Nguyen Tran Mai Thanh**
 
 Faculty of Information Technology
 
