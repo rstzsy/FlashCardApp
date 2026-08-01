@@ -1,21 +1,21 @@
 # Mofu – AI-Powered English Vocabulary Learning Application
 
-Mofu is an AI-powered mobile application designed to help learners acquire, review, and retain English vocabulary more effectively. The application combines flashcard-based learning, the Free Spaced Repetition Scheduler (FSRS), Artificial Intelligence, gamification, and collaborative learning to provide a personalized and engaging learning experience.
+Mofu is an AI-powered English vocabulary learning mobile application designed to help learners acquire, review, and retain vocabulary effectively. The application combines flashcard-based learning, the Free Spaced Repetition Scheduler (FSRS), Artificial Intelligence, gamification, and collaborative learning to provide a personalized and engaging learning experience.
 
-The application is developed using Flutter for cross-platform mobile development, FastAPI for AI backend services, and Firebase for cloud-based authentication and data management.
+The system is developed using **Flutter** for cross-platform mobile development, **FastAPI** for AI backend services, and **Firebase** for authentication, cloud database management, and data synchronization.
 
 ---
 
-## Table of Contents
+# Table of Contents
 
 1. Overview
 2. Features
 3. System Architecture
 4. Technologies
-5. Prerequisites
-6. Installation
-7. Running the Project
-8. Project Structure
+5. Project Structure
+6. Prerequisites
+7. Installation
+8. Running the Project
 9. AI Services
 10. Firebase Configuration
 11. Environment Variables
@@ -26,15 +26,15 @@ The application is developed using Flutter for cross-platform mobile development
 
 # Overview
 
-Mofu provides an intelligent vocabulary learning environment by integrating Artificial Intelligence with adaptive review scheduling.
+Mofu is an intelligent English vocabulary learning application that integrates Artificial Intelligence and adaptive learning technologies to improve long-term vocabulary retention.
 
-The application supports:
+The application provides:
 
 - Flashcard-based vocabulary learning
 - AI-generated flashcards
 - AI vocabulary recommendations
-- Personalized study roadmaps
-- FSRS adaptive review scheduling
+- Personalized learning roadmaps
+- Adaptive review scheduling using FSRS
 - Learning statistics
 - Gamification
 - Collaborative learning
@@ -48,7 +48,7 @@ The application supports:
 
 - Google Sign-In
 - Firebase Authentication
-- User profile
+- User profile management
 
 ---
 
@@ -57,8 +57,8 @@ The application supports:
 - Create flashcards manually
 - AI-generated flashcards
 - Organize flashcards into collections
-- Import and manage vocabulary sets
-- Flashcard review
+- Vocabulary review
+- Adaptive review scheduling (FSRS)
 
 ---
 
@@ -66,23 +66,23 @@ The application supports:
 
 ### Flashcard Generation Agent
 
-Automatically generates flashcards from a given topic.
+Automatically generates flashcards from user-selected topics.
 
 ### Vocabulary Suggestion Agent
 
-Recommends vocabulary based on learning history and review performance.
+Recommends vocabulary based on users' learning history and review performance.
 
 ### Learning Roadmap Agent
 
-Creates personalized vocabulary learning roadmaps according to user goals.
+Creates personalized learning roadmaps according to users' goals and learning progress.
 
 ---
 
 ## Adaptive Learning
 
-- FSRS (Free Spaced Repetition Scheduler)
-- Adaptive review intervals
-- Personalized review scheduling
+- Free Spaced Repetition Scheduler (FSRS)
+- Personalized review intervals
+- Memory-based scheduling
 
 ---
 
@@ -94,8 +94,8 @@ Creates personalized vocabulary learning roadmaps according to user goals.
 - Achievement Badges
 - Monthly Badges
 - Mini Games
-- Learning Statistics
 - Study Heatmap
+- Learning Statistics
 - XP and Streak Tracking
 
 ---
@@ -121,9 +121,9 @@ Creates personalized vocabulary learning roadmaps according to user goals.
 
 # System Architecture
 
-The system consists of three major components:
+The application consists of three major components.
 
-## Mobile Application
+### Mobile Application
 
 - Flutter
 - Provider State Management
@@ -132,23 +132,23 @@ The system consists of three major components:
 
 ↓
 
-## Backend AI Services
+### AI Backend Services
 
 FastAPI REST APIs
 
-- Flashcard Agent
+- Flashcard Generation Agent
 - Vocabulary Suggestion Agent
 - Learning Roadmap Agent
 
 ↓
 
-## Cloud Services
+### Cloud Services
 
 Firebase
 
-- Authentication
+- Firebase Authentication
 - Cloud Firestore
-- Cloud Storage
+- Firebase Storage
 - Cloud Functions
 
 ---
@@ -157,29 +157,67 @@ Firebase
 
 | Technology | Purpose |
 |------------|---------|
-| Flutter | Mobile Application |
+| Flutter | Cross-platform Mobile Application |
 | Dart | Programming Language |
 | FastAPI | AI Backend Services |
-| Firebase Authentication | User Authentication |
-| Cloud Firestore | Database |
-| Firebase Storage | File Storage |
+| Firebase Authentication | Google Sign-In Authentication |
+| Cloud Firestore | Cloud Database |
+| Firebase Storage | Image Storage |
+| Cloud Functions | Backend Automation |
 | Google Gemini | Large Language Model |
-| FSRS | Adaptive Review Scheduling |
+| FSRS | Adaptive Review Algorithm |
 | Provider | State Management |
+| HTTP | API Communication |
+
+---
+
+# Project Structure
+
+```
+FlashCardApp
+│
+├── Untitled
+│   │
+│   ├── flashcard_app/
+│   │   ├── android/
+│   │   ├── ios/
+│   │   ├── lib/
+│   │   ├── assets/
+│   │   ├── pubspec.yaml
+│   │   └── ...
+│   │
+│   ├── flashcard_agent/
+│   │   ├── main.py
+│   │   ├── requirements.txt
+│   │   └── ...
+│   │
+│   ├── roadmap_agent/
+│   │   ├── main.py
+│   │   ├── requirements.txt
+│   │   └── ...
+│   │
+│   └── suggestion_agent/
+│       ├── main.py
+│       ├── requirements.txt
+│       └── ...
+│
+├── .gitignore
+└── firebase-debug.log
+```
 
 ---
 
 # Prerequisites
 
-Before running the project, install:
+Before running the project, make sure the following software is installed.
 
-- Flutter SDK 3.7+
+- Flutter SDK (3.7 or later)
 - Dart SDK
 - Python 3.11+
 - Firebase CLI
-- Xcode (for iOS)
-- Android Studio (for Android)
-- Google Cloud Firebase Project
+- Android Studio or VS Code
+- Xcode (for iOS development)
+- Google Firebase Project
 
 ---
 
@@ -190,14 +228,16 @@ Before running the project, install:
 ```bash
 git clone https://github.com/rstzsy/FlashCardApp.git
 
-cd flashcardApp
+cd FlashCardApp
 ```
 
 ---
 
-## Install Flutter Packages
+## Install Flutter Dependencies
 
 ```bash
+cd Untitled/flashcard_app
+
 flutter pub get
 ```
 
@@ -205,15 +245,15 @@ flutter pub get
 
 ## Install Python Dependencies
 
-Flashcard Agent
+### Flashcard Agent
 
 ```bash
-cd Untitled/flashcard_agent
+cd ../flashcard_agent
 
 pip install -r requirements.txt
 ```
 
-Roadmap Agent
+### Learning Roadmap Agent
 
 ```bash
 cd ../roadmap_agent
@@ -221,7 +261,7 @@ cd ../roadmap_agent
 pip install -r requirements.txt
 ```
 
-Suggestion Agent
+### Vocabulary Suggestion Agent
 
 ```bash
 cd ../suggestion_agent
@@ -233,7 +273,7 @@ pip install -r requirements.txt
 
 # Running the Project
 
-## Start Flashcard Agent
+## Start Flashcard Generation Agent
 
 ```bash
 cd Untitled/flashcard_agent
@@ -266,7 +306,7 @@ python3 -m uvicorn main:app --host 0.0.0.0 --port 8002 --reload
 ## Run Flutter Application
 
 ```bash
-flutter pub get
+cd Untitled/flashcard_app
 
 flutter run
 ```
@@ -281,133 +321,66 @@ flutter run
 
 ---
 
-# Project Structure
-
-```
-flashcardApp
-
-│
-
-├── lib/
-
-│   ├── core/
-
-│   ├── features/
-
-│   ├── models/
-
-│   ├── services/
-
-│   ├── routes/
-
-│   └── widgets/
-
-│
-
-├── assets/
-
-│
-
-├── Untitled/
-
-│   ├── flashcard_agent/
-
-│   ├── roadmap_agent/
-
-│   └── suggestion_agent/
-
-│
-
-└── functions/
-```
-
----
-
 # AI Services
 
-## Flashcard Agent
-
-Port:
-
-```
-8000
-```
-
-Function
-
-- Generate flashcards
-- Create definitions
-- Generate examples
-
----
-
-## Learning Roadmap Agent
-
-Port
-
-```
-8001
-```
-
-Function
-
-- Analyze user goals
-- Generate personalized study roadmap
-
----
-
-## Vocabulary Suggestion Agent
-
-Port
-
-```
-8002
-```
-
-Function
-
-- Recommend vocabulary
-- Analyze learning history
-- Prioritize difficult words
+| Service | Port | Description |
+|----------|------|-------------|
+| Flashcard Generation Agent | 8000 | Generate flashcards from learning topics |
+| Learning Roadmap Agent | 8001 | Generate personalized vocabulary learning roadmaps |
+| Vocabulary Suggestion Agent | 8002 | Recommend vocabulary based on users' learning history and review performance |
 
 ---
 
 # Firebase Configuration
 
-Firebase services used in this project:
+The application integrates the following Firebase services:
 
 - Firebase Authentication
 - Cloud Firestore
 - Firebase Storage
 - Cloud Functions
 
+To configure Firebase, run:
+
+```bash
+flutterfire configure
+```
+
+Ensure the following configuration files are added correctly:
+
+### Android
+
+```
+android/app/google-services.json
+```
+
+### iOS
+
+```
+ios/Runner/GoogleService-Info.plist
+```
+
 ---
 
 # Environment Variables
 
-Create a `.env` file for each AI service.
+Each AI service requires a `.env` file containing the Gemini API key.
 
-Example
+Example:
 
 ```env
-GEMINI_API_KEY=YOUR_API_KEY
-```
-
-Flutter Firebase configuration should be generated using
-
-```bash
-flutterfire configure
+GEMINI_API_KEY=YOUR_GEMINI_API_KEY
 ```
 
 ---
 
 # Troubleshooting
 
-## AI service cannot connect
+### Flutter cannot connect to AI services
 
-Check whether all FastAPI servers are running.
+Ensure all FastAPI servers are running.
 
-Ports
+Required ports:
 
 ```
 8000
@@ -417,41 +390,32 @@ Ports
 
 ---
 
-## Flutter cannot connect to backend
+### AI features do not work
 
-Verify the backend IP address configured in
-
-```
-lib/core/config/env.dart
-```
-
-Ensure the simulator/device and backend are on the same network.
+- Verify the Gemini API key.
+- Check whether the API quota has been exceeded.
+- Ensure all AI services are running successfully.
 
 ---
 
-## Firebase Authentication Error
+### Firebase Authentication Error
 
-Run
+Run:
 
 ```bash
 flutterfire configure
 ```
 
-Ensure the correct
+Verify that:
 
-- GoogleService-Info.plist
-
-or
-
-- google-services.json
-
-is included.
+- Google Sign-In is enabled in Firebase Authentication.
+- `google-services.json` and `GoogleService-Info.plist` are correctly configured.
 
 ---
 
-## iOS Simulator Issues
+### iOS Simulator Issues
 
-Restart Simulator
+Restart the simulator.
 
 ```bash
 xcrun simctl shutdown all
@@ -461,11 +425,39 @@ open -a Simulator
 
 ---
 
+### Flutter Dependencies Error
+
+Run:
+
+```bash
+flutter clean
+
+flutter pub get
+```
+
+---
+
 # Future Improvements
 
-- Support additional languages.
-- Integrate offline learning mode.
-- Add speech recognition for pronunciation assessment.
+- Support multiple languages.
+- Integrate speech recognition for pronunciation assessment.
 - Deploy AI services to cloud infrastructure.
-- Introduce additional AI Agents for grammar correction and conversational learning.
-- Expand gamification with seasonal events and competitive challenges.
+- Add offline learning support.
+- Introduce additional AI agents for grammar correction and conversational learning.
+- Expand gamification with seasonal events, leaderboards, and collaborative challenges.
+
+---
+
+# Authors
+
+**Nguyen Thuy Khanh**
+
+Faculty of Information Technology
+
+Ton Duc Thang University
+
+---
+
+# License
+
+This project is developed for academic and research purposes as part of a graduation thesis at Ton Duc Thang University.
