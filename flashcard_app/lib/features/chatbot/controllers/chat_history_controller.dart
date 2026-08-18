@@ -13,7 +13,7 @@ class ChatHistoryController extends ChangeNotifier {
 
   Future<void> startConversation({
     required String userId,
-    required String firstMessage,
+    required ChatMessage firstMessage,
   }) async {
     currentConversationId = await _service.createConversation(
       userId: userId,
@@ -21,6 +21,21 @@ class ChatHistoryController extends ChangeNotifier {
     );
 
     await loadHistories(userId);
+  }
+
+   Future<void> updateConversationTitle(String title) async {
+    if (currentConversationId == null) return;
+
+    await _service.updateConversationTitle(
+      conversationId: currentConversationId!,
+      title: title,
+    );
+
+    final idx = histories.indexWhere((e) => e.id == currentConversationId);
+    if (idx != -1) {
+      histories[idx] = histories[idx].copyWith(title: title);
+      notifyListeners();
+    }
   }
 
   Future<void> updateConversation(String message) async {
@@ -34,21 +49,17 @@ class ChatHistoryController extends ChangeNotifier {
 
   Future<void> loadHistories(String userId) async {
     histories = await _service.getHistories(userId);
-
     notifyListeners();
   }
 
   Future<void> deleteHistory(String conversationId) async {
     await _service.deleteConversation(conversationId);
-
     histories.removeWhere((e) => e.id == conversationId);
-
     notifyListeners();
   }
 
   Future<void> addUserMessage(String message) async {
     if (currentConversationId == null) return;
-
     await _service.addMessage(
       conversationId: currentConversationId!,
       message: message,
@@ -58,7 +69,6 @@ class ChatHistoryController extends ChangeNotifier {
 
   Future<void> addBotMessage(String message) async {
     if (currentConversationId == null) return;
-
     await _service.addMessage(
       conversationId: currentConversationId!,
       message: message,
@@ -68,14 +78,13 @@ class ChatHistoryController extends ChangeNotifier {
 
   Future<void> addMessage(ChatMessage message) async {
     if (currentConversationId == null) return;
-
     await _service.addChatMessage(
       conversationId: currentConversationId!,
       chatMessage: message,
     );
   }
 
-  Future<List<ChatMessage>> loadConversation(String conversationId) async {
+   Future<List<ChatMessage>> loadConversation(String conversationId) async {
     return await _service.getConversationMessages(conversationId);
   }
 

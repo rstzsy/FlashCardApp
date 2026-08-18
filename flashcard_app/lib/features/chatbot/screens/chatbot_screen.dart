@@ -29,7 +29,9 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
 
     controller = ChatbotController();
 
-    // Show a popup whenever an agent detects invalid user input.
+    controller.setChatbotVisible(true);
+    controller.initialize();
+
     controller.onValidationError = (title, message) {
       if (!mounted) return;
 
@@ -59,6 +61,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
     controller.dispose();
     _controller.dispose();
     _scrollController.dispose();
+    controller.setChatbotVisible(false);
     super.dispose();
   }
 
