@@ -74,7 +74,7 @@ class ExcelGenerator:
         self._create_assessment_sheet(wb, roadmap)
         self._create_strategy_sheet(wb, roadmap)
         self._create_weekly_plan_sheet(wb, roadmap)
-        self._create_tracking_sheet(wb, roadmap)
+        # self._create_tracking_sheet(wb, roadmap)
 
         wb.save(file_path)
         print("---- roadmap -----")
@@ -376,45 +376,45 @@ class ExcelGenerator:
         self._create_chart(ws, row)
 
     # progress tracking sheet
-    def _create_tracking_sheet(self, wb, roadmap):
-        ws = wb.create_sheet("Progress Tracking")
-        self._enable_gridlines(ws)
+    # def _create_tracking_sheet(self, wb, roadmap):
+    #     ws = wb.create_sheet("Progress Tracking")
+    #     self._enable_gridlines(ws)
 
-        ws.cell(row=2, column=2, value="MILESTONE TRACKING").font = self.SECTION_FONT
+    #     ws.cell(row=2, column=2, value="MILESTONE TRACKING").font = self.SECTION_FONT
 
-        headers = ["Week", "Status", "Accuracy (%)", "Notes & Reflections"]
-        self._write_header(ws, headers, start_col=2, start_row=3)
+    #     headers = ["Week", "Status", "Accuracy (%)", "Notes & Reflections"]
+    #     self._write_header(ws, headers, start_col=2, start_row=3)
 
-        weekly_plan = roadmap.get("weeklyPlan", [])
-        row = 4
+    #     weekly_plan = roadmap.get("weeklyPlan", [])
+    #     row = 4
 
-        for item in weekly_plan:
-            c1 = ws.cell(row, 2, item.get("week"))
-            c2 = ws.cell(row, 3, "Unassigned")  # status to be updated by user
-            c3 = ws.cell(row, 4, "")               
-            c4 = ws.cell(row, 5, "")               
+    #     for item in weekly_plan:
+    #         c1 = ws.cell(row, 2, item.get("week"))
+    #         c2 = ws.cell(row, 3, "Unassigned")  # status to be updated by user
+    #         c3 = ws.cell(row, 4, "")               
+    #         c4 = ws.cell(row, 5, "")               
 
-            c1.alignment = Alignment(horizontal="center", vertical="center")
-            c2.alignment = Alignment(horizontal="center", vertical="center")
-            c3.alignment = Alignment(horizontal="right", vertical="center")
-            c4.alignment = Alignment(horizontal="left", vertical="center")
+    #         c1.alignment = Alignment(horizontal="center", vertical="center")
+    #         c2.alignment = Alignment(horizontal="center", vertical="center")
+    #         c3.alignment = Alignment(horizontal="right", vertical="center")
+    #         c4.alignment = Alignment(horizontal="left", vertical="center")
             
-            ws.row_dimensions[row].height = 26
+    #         ws.row_dimensions[row].height = 26
             
-            # format data %
-            c3.number_format = '0.0%'
+    #         # format data %
+    #         c3.number_format = '0.0%'
 
-            row_fill = PatternFill("solid", fgColor=self.PRIMARY_LIGHT) if row % 2 == 0 else None
-            for col_idx in range(2, 6):
-                cell = ws.cell(row, col_idx)
-                cell.font = self.TEXT_FONT
-                cell.border = self.BORDER_CELL
-                if row_fill:
-                    cell.fill = row_fill
+    #         row_fill = PatternFill("solid", fgColor=self.PRIMARY_LIGHT) if row % 2 == 0 else None
+    #         for col_idx in range(2, 6):
+    #             cell = ws.cell(row, col_idx)
+    #             cell.font = self.TEXT_FONT
+    #             cell.border = self.BORDER_CELL
+    #             if row_fill:
+    #                 cell.fill = row_fill
 
-            row += 1
+    #         row += 1
 
-        self._auto_width(ws)
+    #     self._auto_width(ws)
 
     # sync layout helper methods
     def _write_header(self, ws, headers, start_col=1, start_row=1):

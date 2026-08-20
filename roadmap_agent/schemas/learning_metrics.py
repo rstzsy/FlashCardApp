@@ -22,3 +22,10 @@ class LearningMetrics(BaseModel):
     favorite_sets: int
 
     recommended_topics: list[str]
+
+    # Placement Test
+    placement_test_score: int = 0
+    placement_test_total: int = 0
+    placement_test_percentage: int = 0
+    placement_test_level: str = "Unknown"
+    placement_test_completed: bool = False

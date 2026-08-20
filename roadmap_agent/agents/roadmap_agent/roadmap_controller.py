@@ -11,6 +11,7 @@ from integrations.study_session_service import StudySessionService
 from integrations.user_service import UserService
 from integrations.roadmap_service import RoadmapService
 
+from integrations.placement_test_service import PlacementTestService
 from tools.analytics_tool import AnalyticsTool
 from tools.tavily_tool import TavilyTool
 from tools.gemini_tool import GeminiTool
@@ -63,6 +64,11 @@ class RoadmapAgent:
                 .get_results(user_id)
             )
 
+            placement_test = await (
+                PlacementTestService()
+                .get_result(user_id)
+            )
+
             # analyze
 
             metrics = AnalyticsTool().build_metrics(
@@ -70,7 +76,8 @@ class RoadmapAgent:
                 profile,
                 flashcard_items,
                 sessions,
-                games
+                games,
+                placement_test
             )
 
             # search context
