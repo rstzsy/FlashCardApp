@@ -10,6 +10,7 @@ import '../../../models/chatModel.dart';
 import '../services/chatbot_service.dart';
 import '../services/flashcard_agent_service.dart';
 import '../services/roadmap_agent_service.dart';
+import '../widgets/messageNotification.dart';
 import 'flashcard_agent_controller.dart';
 import 'flashcard_agent_executor.dart';
 import 'roadmap_agent_controller.dart';
@@ -38,6 +39,44 @@ class ChatbotController extends ChangeNotifier {
   bool isLoading = false;
   bool isProcessing = false;
 
+  // handle logic out chatbot
+  bool _isChatbotVisible = true;
+
+  bool get isChatbotVisible => _isChatbotVisible;
+
+  void setChatbotVisible(bool visible) {
+    _isChatbotVisible = visible;
+
+    // when user return to chat, clear background task flag
+    if (visible && _hasBackgroundTask) {
+      _hasBackgroundTask = false;
+      _backgroundTaskMessage = null;
+    }
+  }
+
+  // add background task
+  bool _hasBackgroundTask = false;
+  String? _backgroundTaskMessage;
+
+  bool get hasBackgroundTask => _hasBackgroundTask;
+  String? get backgroundTaskMessage => _backgroundTaskMessage;
+
+  // create helper instead of notifylistener
+  bool _isDisposed = false;
+
+  @override
+  void dispose() {
+    _isDisposed = true;
+    _isChatbotVisible = false;
+    super.dispose();
+  }
+
+  void _safeNotify() {
+    if (!_isDisposed) {
+      notifyListeners();
+    }
+  }
+
   /// The chat screen (View) sets this to show a validation-error popup
   /// whenever the user's input doesn't match what an agent expects.
   void Function(String title, String message)? onValidationError;
@@ -55,48 +94,89 @@ class ChatbotController extends ChangeNotifier {
     ].contains(msg);
   }
 
-  ChatbotController() {
-    messages.add(
-      ChatMessage(
-        isBot: true,
-        message:
-            "Hi there! I'm your Mofu Assistant!\nWhat would you like to do today?",
-        options: ["Create flashcards", "Suggest vocabulary", "Study plan"],
-      ),
+  Future<void> initialize() async {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) return;
+
+    if (historyController.currentConversationId != null) {
+      return;
+    }
+
+    const text =
+        "Hi there! I'm your Mofu Assistant!\nWhat would you like to do today?";
+
+    final botMessage = ChatMessage(
+      isBot: true,
+      message: text,
+      options: ["Create flashcards", "Suggest vocabulary", "Study plan"],
     );
+
+    messages.add(botMessage);
+
+    // Conversation start with greeting of bot
+    await historyController.startConversation(
+      userId: user.uid,
+      firstMessage: botMessage,
+    );
+
+    _safeNotify();
   }
 
   Future<void> _showFirstMenu() async {
     const text =
         "Hi there! I'm your Mofu Assistant!\nWhat would you like to do today?";
 
-    messages.add(
-      ChatMessage(
-        isBot: true,
-        message: text,
-        options: ["Create flashcards", "Suggest vocabulary", "Study plan"],
-      ),
+    final botMessage = ChatMessage(
+      isBot: true,
+      message: text,
+      options: ["Create flashcards", "Suggest vocabulary", "Study plan"],
     );
 
-    await historyController.addBotMessage(text);
+    messages.add(botMessage);
 
-    notifyListeners();
+    await historyController.addMessage(botMessage);
+
+    _safeNotify();
   }
 
-  Future<void> _showMainMenu() async {
-    const text = "Task complete successfully! What would you like to do next?";
+  // handle background task
+  Future<void> _handleBackgroundCompletion(String message) async {
+    _hasBackgroundTask = true;
+    _backgroundTaskMessage = message;
 
-    messages.add(
-      ChatMessage(
-        isBot: true,
-        message: text,
-        options: ["Create flashcards", "Suggest vocabulary", "Study plan"],
-      ),
+    if (!_isChatbotVisible) {
+      AppNotification.show(message);
+    }
+
+    _safeNotify(); // UI update
+  }
+
+  Future<void> _completeAgentTask({
+    required List<ChatMessage> resultMessages,
+    required String backgroundNotification,
+  }) async {
+    for (final msg in resultMessages) {
+      await historyController.addMessage(msg);
+    }
+    messages.addAll(resultMessages);
+
+    const menuText =
+        "Task complete successfully! What would you like to do next?";
+    final menuMessage = ChatMessage(
+      isBot: true,
+      message: menuText,
+      options: ["Create flashcards", "Suggest vocabulary", "Study plan"],
     );
 
-    await historyController.addBotMessage(text);
+    messages.add(menuMessage);
+    await historyController.addBotMessage(menuText);
 
-    notifyListeners();
+    if (_isChatbotVisible) {
+      _safeNotify();
+    } else {
+      await _handleBackgroundCompletion(backgroundNotification);
+    }
   }
 
   Future<void> restoreConversation(String conversationId) async {
@@ -107,38 +187,42 @@ class ChatbotController extends ChangeNotifier {
 
     historyController.currentConversationId = conversationId;
 
-    notifyListeners();
+    _safeNotify();
   }
 
   void selectAgent(String option) async {
     if (isProcessing) return;
 
+    // chat title get by first option selected by user
+    await historyController.updateConversationTitle(option);
+
     switch (option) {
       case "Create flashcards":
         currentAgent = ChatAgentType.flashcard;
-
         await flashcardAgent.start(messages, saveChatMessage);
-
         break;
 
       case "Suggest vocabulary":
         currentAgent = ChatAgentType.vocabulary;
         suggestionAgent.start(messages);
+        await historyController.addBotMessage(
+          "How many minutes do you usually study in one session?",
+        );
         notifyListeners();
         break;
 
       case "Study plan":
         currentAgent = ChatAgentType.studyPlan;
         _handleRoadmapByAgent();
+        _safeNotify();
         break;
     }
 
-    notifyListeners();
+    _safeNotify();
   }
 
   Future<void> sendMessage(String text) async {
     // history
-
     if (text.trim().isEmpty) return;
 
     final user = FirebaseAuth.instance.currentUser;
@@ -150,14 +234,13 @@ class ChatbotController extends ChangeNotifier {
     // add message
     messages.add(ChatMessage(message: text, isBot: false));
 
-    notifyListeners();
+    _safeNotify();
 
     // save history
-
     if (historyController.currentConversationId == null) {
       await historyController.startConversation(
         userId: user.uid,
-        firstMessage: text,
+        firstMessage: ChatMessage(message: text, isBot: false),
       );
     } else {
       await historyController.addUserMessage(text);
@@ -178,16 +261,16 @@ class ChatbotController extends ChangeNotifier {
         // Invalid input: notify the view to show a popup, keep the current
         // step so the bot doesn't advance to the next question.
         onValidationError?.call(error.title, error.message);
-        notifyListeners();
+        _safeNotify();
         return;
       }
 
-      notifyListeners();
+      _safeNotify();
 
       if (flashcardAgent.isCompleted) {
         isProcessing = true;
         isLoading = true;
-        notifyListeners();
+        _safeNotify();
 
         try {
           final user = FirebaseAuth.instance.currentUser;
@@ -201,29 +284,22 @@ class ChatbotController extends ChangeNotifier {
               difficulty: flashcardAgent.difficulty!,
             );
 
-            messages.addAll(responses);
-
-            for (final msg in responses) {
-              await historyController.addMessage(msg);
-            }
+            await _completeAgentTask(
+              resultMessages: responses,
+              backgroundNotification:
+                  "Your flashcards are ready! Open the chatbot to view the result.",
+            );
           }
-
-          flashcardAgent.reset();
-
-          _showMainMenu();
         } catch (e) {
           final botMessage = "Flashcard failed: $e";
-
           messages.add(ChatMessage(isBot: true, message: botMessage));
-
           await historyController.addBotMessage(botMessage);
-
-          notifyListeners();
+          _safeNotify();
         }
 
         isProcessing = false;
         isLoading = false;
-        notifyListeners();
+        _safeNotify();
       }
 
       return;
@@ -234,27 +310,34 @@ class ChatbotController extends ChangeNotifier {
       final error = suggestionAgent.processMessage(text, messages);
 
       if (error != null) {
-        // Invalid input: notify the view to show a popup, keep the current
-        // step so the bot doesn't advance to the next question.
         onValidationError?.call(error.title, error.message);
-        notifyListeners();
+        _safeNotify();
         return;
       }
 
-      notifyListeners();
+      // User answer session duration
+      // Agent will ask for topN if step is topN
+      if (suggestionAgent.step == SuggestionStep.topN) {
+        await historyController.addBotMessage(
+          "How many vocabulary suggestions do you want?",
+        );
+      }
+
+      _safeNotify();
 
       if (suggestionAgent.isCompleted) {
         isProcessing = true;
         isLoading = true;
-        notifyListeners();
+        _safeNotify();
 
         try {
           final user = FirebaseAuth.instance.currentUser;
 
           if (user == null) {
-            messages.add(
-              ChatMessage(isBot: true, message: "Please login first."),
-            );
+            const botMessage = "Please login first.";
+            messages.add(ChatMessage(isBot: true, message: botMessage));
+            await historyController.addBotMessage(botMessage);
+            _safeNotify();
           } else {
             final result = await suggestionExecutor.generate(
               userId: user.uid,
@@ -262,27 +345,24 @@ class ChatbotController extends ChangeNotifier {
               topN: suggestionAgent.topN!,
             );
 
-            messages.add(result);
+            suggestionAgent.reset();
 
-            await historyController.addMessage(result);
+            await _completeAgentTask(
+              resultMessages: [result],
+              backgroundNotification:
+                  "Your vocabulary suggestions are ready! Open the chatbot to view the result.",
+            );
           }
-
-          flashcardAgent.reset();
-
-          _showMainMenu();
         } catch (e) {
           final botMessage = "Suggestion failed: $e";
-
           messages.add(ChatMessage(isBot: true, message: botMessage));
-
           await historyController.addBotMessage(botMessage);
-
-          notifyListeners();
+          _safeNotify();
         }
 
         isProcessing = false;
         isLoading = false;
-        notifyListeners();
+        _safeNotify();
       }
 
       return;
@@ -307,7 +387,7 @@ class ChatbotController extends ChangeNotifier {
 
     await historyController.addBotMessage(botMessage);
 
-    notifyListeners();
+    _safeNotify();
   }
 
   Future<void> _handleRoadmapByAgent() async {
@@ -315,7 +395,7 @@ class ChatbotController extends ChangeNotifier {
 
     isProcessing = true;
     isLoading = true;
-    notifyListeners();
+    _safeNotify();
 
     try {
       final user = FirebaseAuth.instance.currentUser;
@@ -325,26 +405,21 @@ class ChatbotController extends ChangeNotifier {
         message: "create roadmap",
       );
 
-      print("FILE URL: ${result.fileUrl}");
-
-      messages.add(result);
-
-      await historyController.addMessage(result);
-
-      _showMainMenu();
+      await _completeAgentTask(
+        resultMessages: [result],
+        backgroundNotification:
+            "Your study plan is ready! Open the chatbot to view the result.",
+      );
     } catch (e) {
       final botMessage = "Road map failed: $e";
-
       messages.add(ChatMessage(isBot: true, message: botMessage));
-
       await historyController.addBotMessage(botMessage);
-
-      notifyListeners();
+      _safeNotify();
     }
 
     isProcessing = false;
     isLoading = false;
-    notifyListeners();
+    _safeNotify();
   }
 
   // helper

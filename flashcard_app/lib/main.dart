@@ -4,10 +4,9 @@ import 'package:provider/provider.dart';
 import 'package:flashcard_app/features/auth/screens/auth_wrapper.dart';
 import '../routes/app_router.dart';
 import 'core/firebase/firebase_config.dart';
+import 'features/chatbot/widgets/messageNotification.dart';
 import 'features/group/controllers/group_controller.dart';
 import 'routes/main_navigation.dart';
-
-final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 
 void main() async {
@@ -25,7 +24,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => GroupController()),
       ],
       child: MaterialApp(
-        navigatorKey: navigatorKey,
+        // navigatorKey: navigatorKey,
         debugShowCheckedModeBanner: false,
         title: 'Study English',
 
@@ -34,12 +33,8 @@ class MyApp extends StatelessWidget {
             Theme.of(context).textTheme,
           ),
         ),
-        //initialRoute: AppRoutes.homeScreen, 
-        //initialRoute: AppRoutes.initialSetup,
-        //initialRoute: AppRoutes.fertilizerChallenge,
-        // home: MainNavigation(),
-        // initialRoute: AppRoutes.introHomeScreen,
-        // home: const AuthWrapper(),
+        navigatorKey: AppNotification.navigatorKey,
+        scaffoldMessengerKey: AppNotification.messengerKey,
         home: MainNavigation(key: mainNavKey),
         onGenerateRoute: AppRouter.generateRoute,
       ),

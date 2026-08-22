@@ -10,7 +10,8 @@ class AnalyticsTool:
         profile,
         flashcards,
         sessions,
-        games
+        games,
+        placement_test=None
     ):
 
         total_words = sum(
@@ -89,6 +90,36 @@ class AnalyticsTool:
                     "interests"
                 )
             ],
+
+            placement_test_score=(
+                placement_test.get("score", 0)
+                if placement_test
+                else 0
+            ),
+
+            placement_test_total=(
+                placement_test.get("total", 0)
+                if placement_test
+                else 0
+            ),
+
+            placement_test_percentage=(
+                placement_test.get("percentage", 0)
+                if placement_test
+                else 0
+            ),
+
+            placement_test_level=(
+                placement_test.get("level", "Unknown")
+                if placement_test
+                else "Unknown"
+            ),
+
+            placement_test_completed=(
+                placement_test.get("completed", False)
+                if placement_test
+                else False
+            ),
 
             average_accuracy=avg_accuracy,
 
