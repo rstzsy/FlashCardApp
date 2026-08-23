@@ -8,9 +8,12 @@ import 'core/themes/theme_provider.dart';
 import 'features/chatbot/widgets/messageNotification.dart';
 import 'features/group/controllers/group_controller.dart';
 import 'routes/main_navigation.dart';
+import 'features/flashcard/services/flashcard_notification_service.dart';
 
 void main() async {
   await FirebaseConfig.init();
+  await FlashcardNotificationService.instance.init();
+  await FlashcardNotificationService.instance.requestPermission();
   runApp(const MyApp());
 }
 

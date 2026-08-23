@@ -7,10 +7,16 @@ import '../screens/flashcard_update_screen.dart';
 
 class FlashcardStudyHeader extends StatelessWidget {
   final String setId;
+  final String? setName;
   final VoidCallback? onReload;
   final deleteController = FlashcardDeleteController();
 
-  FlashcardStudyHeader({super.key, required this.setId, this.onReload});
+  FlashcardStudyHeader({
+    super.key,
+    required this.setId,
+    this.setName,
+    this.onReload,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -23,18 +29,21 @@ class FlashcardStudyHeader extends StatelessWidget {
             onPressed: () => Navigator.pop(context),
           ),
 
-          const Spacer(),
+          const SizedBox(width: 4),
 
-          const Text(
-            "Study Flashcards",
-            style: TextStyle(
-              fontSize: 25,
-              fontWeight: FontWeight.bold,
-              color: AppColors.highlightColor,
+          Expanded(
+            child: Text(
+              setName ?? "Study Flashcards",
+              textAlign: TextAlign.left,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 30,
+                fontWeight: FontWeight.bold,
+                color: AppColors.highlightColor,
+              ),
             ),
           ),
-
-          const Spacer(),
 
           // edit
           _circleButton(
