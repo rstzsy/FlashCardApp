@@ -172,15 +172,15 @@ class _IntroGameScreenState extends State<IntroGameScreen>
           ),
 
 
-          Positioned(
-            top: MediaQuery.of(context).padding.top + 14,
-            right: 18,
-            child: _SettingsButton(
-              onTap: () {
-                print("Settings clicked");
-              },
-            ),
-          ),
+          // Positioned(
+          //   top: MediaQuery.of(context).padding.top + 14,
+          //   right: 18,
+          //   child: _SettingsButton(
+          //     onTap: () {
+          //       print("Settings clicked");
+          //     },
+          //   ),
+          // ),
 
 
           Positioned(
