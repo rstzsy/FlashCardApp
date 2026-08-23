@@ -63,8 +63,8 @@ class _ProfileContent extends StatelessWidget {
               const SizedBox(height: 25),
               const StudyHeatmapSection(),
 
-              const SizedBox(height: 25),
-              const MonthlyBadgeSection(),
+              // const SizedBox(height: 25),
+              // const MonthlyBadgeSection(),
 
               const SizedBox(height: 25),
               HarvestAchievementSection(

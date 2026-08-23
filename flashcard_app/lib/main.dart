@@ -8,9 +8,8 @@ import 'features/chatbot/widgets/messageNotification.dart';
 import 'features/group/controllers/group_controller.dart';
 import 'routes/main_navigation.dart';
 
-
 void main() async {
-  await FirebaseConfig.init();
+  await FirebaseConfig.init();  
   runApp(const MyApp());
 }
 

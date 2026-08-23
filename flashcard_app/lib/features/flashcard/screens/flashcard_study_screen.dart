@@ -67,6 +67,7 @@ class _FlashcardStudyScreenState extends State<FlashcardStudyScreen>
       (_) => _refreshDueCards(),
     );
   }
+  
 
   @override
   void dispose() {

@@ -75,8 +75,9 @@ class _MainNavigationState extends State<MainNavigation> {
                       navItem(Icons.style, 1),
                       navItem(Icons.bar_chart_rounded, 2),
                       navItem(Icons.sports_esports, 3),
-                      navItem(Icons.article_outlined, 6), // ← blog
                       navItem(Icons.group, 5),
+                      navItem(Icons.article_outlined, 6), // ← blog
+                      
                     ],
                   ),
                 ),
