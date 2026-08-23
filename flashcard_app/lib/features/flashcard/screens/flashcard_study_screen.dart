@@ -1,5 +1,6 @@
 import 'package:flashcard_app/core/themes/app_colors.dart';
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../core/widgets/app_popup.dart';
 import '../../../models/flashcardModel.dart';
 import '../../exercise/screens/intro_exercise_screen.dart';
@@ -14,11 +15,17 @@ import '../../auth/service/study_streak_service.dart';
 import '../services/fsrs_service.dart';
 import '../models/flashcard_fsrs_data.dart';
 import 'dart:async';
+import '../services/flashcard_notification_service.dart';
 
 class FlashcardStudyScreen extends StatefulWidget {
   final String setId;
+  final String? setName; // ← truyền sẵn tên bộ từ khi navigate (không bắt buộc)
 
-  const FlashcardStudyScreen({super.key, required this.setId});
+  const FlashcardStudyScreen({
+    super.key,
+    required this.setId,
+    this.setName,
+  });
 
   @override
   State<FlashcardStudyScreen> createState() => _FlashcardStudyScreenState();
@@ -41,16 +48,18 @@ class _FlashcardStudyScreenState extends State<FlashcardStudyScreen>
   bool _isRating = false;
   Timer? _dueRefreshTimer;
 
+  String? _setName; // tên bộ từ thật, dùng cho thông báo (và header nếu cần)
+
   @override
   void initState() {
     super.initState();
 
+    _setName = widget.setName; // nếu đã được truyền sẵn thì dùng luôn, khỏi query
+
     _tabController = TabController(length: 2, vsync: this);
     _tabController!.addListener(() {
-      // Chỉ xử lý khi tab đã settle xong (không còn đang animate)
       if (!_tabController!.indexIsChanging) {
         if (_tabController!.index == 0) {
-          // Quay về Due tab → refresh ngay và reset state
           _refreshDueCards();
           setState(() => _dueShowRating = false);
         }
@@ -67,7 +76,6 @@ class _FlashcardStudyScreenState extends State<FlashcardStudyScreen>
       (_) => _refreshDueCards(),
     );
   }
-  
 
   @override
   void dispose() {
@@ -79,7 +87,8 @@ class _FlashcardStudyScreenState extends State<FlashcardStudyScreen>
 
   void _loadData() {
     setState(() {
-      futureCards = controller.getFlashcardsBySetId(widget.setId).then((cards) {
+      futureCards =
+          controller.getFlashcardsBySetId(widget.setId).then((cards) async {
         final now = DateTime.now();
         _allCards = cards;
         _dueCards = cards.where((c) {
@@ -91,6 +100,7 @@ class _FlashcardStudyScreenState extends State<FlashcardStudyScreen>
         _allIndex = 0;
         _dueShowRating = false;
         _allShowRating = false;
+        await _scheduleSetReminder();
         return cards;
       });
     });
@@ -107,10 +117,65 @@ class _FlashcardStudyScreenState extends State<FlashcardStudyScreen>
         return fsrs.due?.isBefore(now) ?? true;
       }).toList();
 
-      // Reset về 0 thay vì chỉ clamp — tránh index lệch khi list thay đổi
       _dueIndex = 0;
       _dueShowRating = false;
     });
+
+    _scheduleSetReminder(); // gọi ngoài setState vì là hàm async
+  }
+
+  /// Lấy tên bộ từ thật từ Firestore (chỉ chạy nếu chưa có sẵn _setName)
+  Future<void> _loadSetName() async {
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('FlashcardSets')
+          .doc(widget.setId)
+          .get();
+      final data = doc.data();
+      _setName = data?['Name'] ??
+          data?['name'] ??
+          data?['Title'] ??
+          data?['SetName'] ??
+          widget.setId;
+    } catch (_) {
+      _setName = widget.setId;
+    }
+  }
+
+  Future<void> _scheduleSetReminder() async {
+    if (_allCards.isEmpty) return;
+
+    if (_setName == null) {
+      await _loadSetName();
+    }
+
+    DateTime? earliestDue;
+    for (final c in _allCards) {
+      final fsrs = c.fsrsData;
+      final due = (fsrs == null || fsrs.state == 'new')
+          ? DateTime.now()
+          : fsrs.due;
+      if (due == null) continue;
+      if (earliestDue == null || due.isBefore(earliestDue)) earliestDue = due;
+    }
+    if (earliestDue == null) return;
+
+    // Đếm số thẻ sẽ due tính đến đúng thời điểm earliestDue (không phải chỉ due NGAY BÂY GIỜ)
+    final dueAtEarliest = _allCards.where((c) {
+      final fsrs = c.fsrsData;
+      final due = (fsrs == null || fsrs.state == 'new')
+          ? DateTime.now()
+          : fsrs.due;
+      if (due == null) return false;
+      return !due.isAfter(earliestDue!);
+    }).length;
+
+    FlashcardNotificationService.instance.scheduleReminder(
+      setId: widget.setId,
+      setName: _setName ?? widget.setId,
+      dueTime: earliestDue,
+      dueCount: dueAtEarliest > 0 ? dueAtEarliest : 1,
+    );
   }
 
   @override
@@ -172,7 +237,6 @@ class _FlashcardStudyScreenState extends State<FlashcardStudyScreen>
         final allIdx = _allCards.indexWhere((c) => c.id == card.id);
         if (allIdx != -1) _allCards[allIdx] = updatedCard;
 
-        // Rebuild _dueCards sau mỗi lần rate (dù đang ở tab nào)
         final now = DateTime.now();
         _dueCards = _allCards.where((c) {
           final fsrs = c.fsrsData;
@@ -192,12 +256,12 @@ class _FlashcardStudyScreenState extends State<FlashcardStudyScreen>
       _isRating = false;
       _dueShowRating = false;
       _allShowRating = false;
-      // Giữ _dueIndex hợp lệ sau khi list rebuild
       if (_dueIndex >= _dueCards.length) {
         _dueIndex = (_dueCards.length - 1).clamp(0, 99999);
       }
     });
 
+    await _scheduleSetReminder(); // cập nhật lại lịch nhắc sau mỗi lần rate
     await _advanceCard();
   }
 
@@ -283,11 +347,11 @@ class _FlashcardStudyScreenState extends State<FlashcardStudyScreen>
     }
 
     return Scaffold(
-       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
           children: [
-            FlashcardStudyHeader(setId: widget.setId, onReload: _loadData),
+            FlashcardStudyHeader(setId: widget.setId, setName: widget.setName, onReload: _loadData),
             Expanded(
               child: FutureBuilder<List<FlashcardModel>>(
                 future: futureCards,

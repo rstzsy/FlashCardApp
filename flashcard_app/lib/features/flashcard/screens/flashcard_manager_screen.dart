@@ -331,6 +331,7 @@ class _FlashcardManagerScreenState extends State<FlashcardManagerScreen>
                               builder:
                                   (_) => FlashcardStudyScreen(
                                     setId: item['setId'],
+                                    setName: item['title'],
                                   ),
                             ),
                           );

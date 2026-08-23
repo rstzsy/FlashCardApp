@@ -11,12 +11,12 @@ const List<_Anchor> _kAnchors = [
   _Anchor(cx: 0.500, cy: 0.500),
   _Anchor(cx: 0.330, cy: 0.555),
   _Anchor(cx: 0.670, cy: 0.550),
-  _Anchor(cx: 0.150, cy: 0.595),
+  _Anchor(cx: 0.150, cy: 0.578),
   _Anchor(cx: 0.520, cy: 0.580),
   _Anchor(cx: 0.885, cy: 0.575),
-  _Anchor(cx: 0.320, cy: 0.615),
-  _Anchor(cx: 0.720, cy: 0.615),
-  _Anchor(cx: 0.520, cy: 0.685),
+  _Anchor(cx: 0.320, cy: 0.605),
+  _Anchor(cx: 0.720, cy: 0.605),
+  _Anchor(cx: 0.520, cy: 0.667),
 ];
 
 class _Anchor {

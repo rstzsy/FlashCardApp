@@ -13,6 +13,7 @@ import '../../../core/widgets/app_popup.dart';
 import '../../../routes/main_navigation.dart'; // import mainNavKey
 import '../../../core/themes/theme_provider.dart';
 import 'package:provider/provider.dart';
+import '../../flashcard/services/flashcard_notification_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -79,15 +80,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
         children: [
           _sectionLabel("Customs"),
           _card([
-            // SettingsSwitchTile(
-            //   icon: Icons.notifications_rounded,
-            //   iconBg: const Color(0xFFEAF3DE),
-            //   iconColor: const Color(0xFF3B6D11),
-            //   title: "Notification",
-            //   subtitle: "Receive notifications from App",
-            //   value: notification,
-            //   onChanged: (v) => setState(() => notification = v),
-            // ),
+            SettingsSwitchTile(
+              icon: Icons.notifications_rounded,
+              iconBg: const Color(0xFFEAF3DE),
+              iconColor: const Color(0xFF3B6D11),
+              title: "Notification",
+              subtitle: "Receive notifications from App",
+              value: notification,
+              onChanged: (v) => setState(() => notification = v),
+            ),
+            _divider(),
+            _navTile(
+              icon: Icons.notifications_active_rounded,
+              iconBg: const Color(0xFFFFF3E0),
+              iconColor: const Color(0xFFE65100),
+              title: "Test Notification",
+              subtitle: "Bấm để bắn thông báo ngay",
+              onTap: () {
+                FlashcardNotificationService.instance.showDueNowNotification(
+                  setId: 'test_set',
+                  setName: 'Bộ từ Test',
+                  dueCount: 5,
+                );
+              },
+            ),
             _divider(),
             SettingsSwitchTile(
               icon: Icons.dark_mode_rounded,

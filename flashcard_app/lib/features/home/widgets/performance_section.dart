@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:math';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../auth/service/study_streak_service.dart';
+import '../service/widget_sync_service.dart';
 
 class PerformanceSection extends StatefulWidget {
   const PerformanceSection({super.key});
@@ -67,6 +68,11 @@ class PerformanceSectionState extends State<PerformanceSection>
           _isLoading     = false;
         });
       }
+
+      await WidgetSyncService.syncStreakData(
+        streakDays: _streakDays,
+        completedDays: _completedDays,
+      );
     } catch (_) {
       if (mounted) setState(() => _isLoading = false);
     }
