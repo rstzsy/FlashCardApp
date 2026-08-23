@@ -304,6 +304,7 @@ class ChatbotController extends ChangeNotifier {
 
       return;
     }
+    
     // ------ suggestion agent -----
     if (currentAgent == ChatAgentType.vocabulary &&
         suggestionAgent.isCollecting) {
@@ -315,13 +316,6 @@ class ChatbotController extends ChangeNotifier {
         return;
       }
 
-      // User answer session duration
-      // Agent will ask for topN if step is topN
-      if (suggestionAgent.step == SuggestionStep.topN) {
-        await historyController.addBotMessage(
-          "How many vocabulary suggestions do you want?",
-        );
-      }
 
       _safeNotify();
 

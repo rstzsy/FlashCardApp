@@ -35,7 +35,8 @@ class MyApp extends StatelessWidget {
         ),
         navigatorKey: AppNotification.navigatorKey,
         scaffoldMessengerKey: AppNotification.messengerKey,
-        home: MainNavigation(key: mainNavKey),
+        // home: MainNavigation(key: mainNavKey),
+        home: const AuthWrapper(),   
         onGenerateRoute: AppRouter.generateRoute,
       ),
     );

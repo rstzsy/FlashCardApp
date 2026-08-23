@@ -9,6 +9,7 @@ import '../services/group_service.dart';
 import '../widgets/group_card.dart';
 import 'add_group_screen.dart';
 import 'group_dashboard_screen.dart';
+import '../widgets/delete_group_dialog.dart';
 
 class GroupListPage extends StatefulWidget {
   const GroupListPage({super.key});
@@ -49,45 +50,12 @@ class _GroupListPageState extends State<GroupListPage> {
   }
 
   void _confirmDeleteGroup(BuildContext context, GroupModel group) {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        backgroundColor: AppColors.mainColor,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text(
-          'Delete group?',
-          style: TextStyle(
-            color: AppColors.highlightColor,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        content: Text(
-          'Group "${group.name}" and all its content will be permanently deleted.',
-          style: TextStyle(color: Colors.grey.shade400),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              'Cancel',
-              style: TextStyle(color: Colors.grey.shade500),
-            ),
-          ),
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              await GroupService.deleteGroup(group.id);
-            },
-            child: const Text(
-              'Delete',
-              style: TextStyle(
-                color: Colors.red,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ],
-      ),
+    DeleteGroupDialog.show(
+      context,
+      groupName: group.name,
+      onConfirm: () async {
+        await GroupService.deleteGroup(group.id);
+      },
     );
   }
 

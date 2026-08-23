@@ -17,13 +17,10 @@ def _compute_session_capacity(session_duration_min: int, words_studied_today: in
     return max_words
 
 
-def _build_capacity_note(session_duration_min: int, max_words: int, requested_top_n: int) -> str | None:
-    """Chỉ trả về note khi capacity thực tế bị giới hạn thấp hơn số user yêu cầu."""
-    if max_words >= requested_top_n:
-        return None
+def _build_capacity_note(session_duration_min: int, max_words: int) -> str:
     return (
-        f"Với {session_duration_min} phút, mình chỉ gợi ý được tối đa "
-        f"{max_words} từ để bạn học kịp."
+        f"Với {session_duration_min} phút, mình gợi ý {max_words} từ "
+        f"để bạn học vừa sức trong phiên này."
     )
 
 
@@ -92,7 +89,7 @@ class SuggestionController:
             new_count=new_count,
             review_count=review_count,
             estimated_duration_min=request.sessionDuration,
-            note=_build_capacity_note(request.sessionDuration, max_words, request.topN),
+            note=_build_capacity_note(request.sessionDuration, max_words),
         )
 
         return SuggestionResponse(suggested_words=suggested_words, session_meta=meta)

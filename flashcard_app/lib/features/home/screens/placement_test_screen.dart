@@ -527,12 +527,6 @@ class _PlacementTestScreenState extends State<PlacementTestScreen> {
                 ),
               ),
               const SizedBox(width: 8),
-              Icon(
-                _currentIndex == _totalQuestions - 1
-                    ? Icons.emoji_events_rounded
-                    : Icons.arrow_forward_rounded,
-                size: 18,
-              ),
             ],
           ),
         ),

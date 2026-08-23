@@ -3,10 +3,12 @@ import '../../../models/chatModel.dart';
 enum SuggestionStep {
   none,
   sessionDuration,
-  topN,
 }
 
 class SuggestionAgent {
+  // Số lượng gợi ý mặc định khi không còn hỏi người dùng nữa
+  static const int defaultTopN = 50;
+
   SuggestionStep step = SuggestionStep.none;
 
   int? sessionDuration;
@@ -51,26 +53,7 @@ class SuggestionAgent {
         }
 
         sessionDuration = n;
-        step = SuggestionStep.topN;
-
-        messages.add(
-          ChatMessage(
-            isBot: true,
-            message: "How many vocabulary suggestions do you want?",
-          ),
-        );
-        return null;
-
-      case SuggestionStep.topN:
-        final n = int.tryParse(input);
-        if (n == null || n <= 0 || n > 50) {
-          return (
-            title: "Invalid number",
-            message: "Please enter a whole number between 1 and 50.\nExample: 10",
-          );
-        }
-
-        topN = n;
+        topN = defaultTopN; // dùng mặc định thay vì hỏi lại
         step = SuggestionStep.none;
         return null;
 

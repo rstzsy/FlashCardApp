@@ -69,11 +69,11 @@ class _PromoBannerState extends State<PromoBanner> {
           ),
         ),
 
-        const SizedBox(height: 12),
+        const SizedBox(height: 2),
 
         // ── SizedBox cao hơn card để ảnh có chỗ nhô lên ──
         SizedBox(
-          height: 140, // card cao 110, ảnh nhô lên 30px
+          height: 160, // card cao 110, ảnh nhô lên 30px
           child: PageView.builder(
             controller: _controller,
             itemCount: _items.length,
@@ -116,8 +116,8 @@ class _PromoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const double cardHeight = 110;
-    const double imageSize  = 140; 
+    const double cardHeight = 120;
+    const double imageSize  = 150; 
     const double imageBottom = 0;  
 
     return Padding(

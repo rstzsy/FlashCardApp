@@ -12,7 +12,7 @@ class SuggestionContext(BaseModel):
 class SuggestionRequest(BaseModel):
     userId: str
     sessionDuration: int = 20   # minutes
-    topN: int = 10
+    topN: int = 50
     context: Optional[SuggestionContext] = None
 
 
