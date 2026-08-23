@@ -242,7 +242,7 @@ class _UpdateFlashcardScreenState extends State<UpdateFlashcardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.mainColor,
+       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text(
           "Update Flashcard Set",
@@ -251,7 +251,7 @@ class _UpdateFlashcardScreenState extends State<UpdateFlashcardScreen> {
             fontWeight: FontWeight.bold,
           ),
         ),
-        backgroundColor: AppColors.mainColor,
+         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         actions: [
           if (isSaving)
             const Padding(

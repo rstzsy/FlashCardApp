@@ -95,7 +95,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final topPadding = MediaQuery.of(context).padding.top;
 
     return Scaffold(
-      backgroundColor: const Color.fromARGB(255, 225, 249, 252),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SingleChildScrollView(
         child: Column(
           children: [

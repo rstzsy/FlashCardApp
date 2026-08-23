@@ -83,7 +83,7 @@ class _AppPopupContentState extends State<_AppPopupContent>
   Widget build(BuildContext context) {
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
-      backgroundColor: AppColors.mainColor,
+       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       child: ClipRRect(
         borderRadius: BorderRadius.circular(25),
         child: Stack(

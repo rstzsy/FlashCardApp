@@ -62,7 +62,7 @@ class _StatisticsScreenState extends State<StatisticsScreen>
   Widget build(BuildContext context) {
     if (isLoading) {
       return const Scaffold(
-        backgroundColor: AppColors.mainColor,
+         backgroundColor: AppColors.mainColor,
         body: Center(child: CircularProgressIndicator(color: P.green)),
       );
     }
@@ -73,9 +73,9 @@ class _StatisticsScreenState extends State<StatisticsScreen>
     final isHappy = memoryRate >= 50;
 
     return Scaffold(
-      backgroundColor: AppColors.mainColor,
+       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: AppColors.mainColor,
+         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         centerTitle: true,
         title: const Text(

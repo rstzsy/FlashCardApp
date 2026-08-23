@@ -148,7 +148,7 @@ class _IntroHomeScreenState extends State<IntroHomeScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.mainColor,
+       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Stack(
         children: [
           _buildBackgroundBlobs(),

@@ -144,7 +144,7 @@ class _HarvestAchievementSectionState
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: AppColors.mainColor,
+         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
         ),

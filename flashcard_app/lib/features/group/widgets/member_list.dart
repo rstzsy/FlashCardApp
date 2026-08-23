@@ -167,7 +167,7 @@ class _MemberListState extends State<MemberList> {
 
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppColors.mainColor,
+       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),

@@ -47,7 +47,7 @@ class HeaderSection extends StatelessWidget {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        backgroundColor: AppColors.mainColor,
+         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         shape:
             RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text(

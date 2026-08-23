@@ -133,7 +133,7 @@ class _SentenceGameScreenState extends State<SentenceGameScreen> {
     }
 
     return Scaffold(
-      backgroundColor: AppColors.mainColor,
+       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),

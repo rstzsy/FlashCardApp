@@ -11,6 +11,8 @@ import '../../../routes/app_routes.dart';
 import 'edit_account_screen.dart';
 import '../../../core/widgets/app_popup.dart';
 import '../../../routes/main_navigation.dart'; // import mainNavKey
+import '../../../core/themes/theme_provider.dart';
+import 'package:provider/provider.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -60,14 +62,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = context.watch<ThemeProvider>();
     return Scaffold(
-      backgroundColor: AppColors.mainColor,
+       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text(
           "Settings",
           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
         ),
-        backgroundColor: AppColors.mainColor,
+         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         foregroundColor: AppColors.highlightColor,
         elevation: 0,
       ),
@@ -85,17 +88,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
             //   value: notification,
             //   onChanged: (v) => setState(() => notification = v),
             // ),
-            // _divider(),
-            // SettingsSwitchTile(
-            //   icon: Icons.dark_mode_rounded,
-            //   iconBg: const Color(0xFFEEEDFE),
-            //   iconColor: const Color(0xFF534AB7),
-            //   title: "Dark Mode",
-            //   subtitle: "Dark theme interfaces",
-            //   value: darkMode,
-            //   onChanged: (v) => setState(() => darkMode = v),
-            // ),
-            // _divider(),
+            _divider(),
+            SettingsSwitchTile(
+              icon: Icons.dark_mode_rounded,
+              iconBg: const Color(0xFFEEEDFE),
+              iconColor: const Color(0xFF534AB7),
+              title: "Dark Mode",
+              subtitle: "Dark theme interfaces",
+              value: themeProvider.isDarkMode,
+              onChanged: (v) => context.read<ThemeProvider>().toggleTheme(v),
+            ),
+            _divider(),
             SettingsSwitchTile(
               icon: Icons.verified_user_rounded,
               iconBg: const Color(0xFFE8F4FD),

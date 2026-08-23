@@ -188,7 +188,7 @@ class _FlashcardManagerScreenState extends State<FlashcardManagerScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.mainColor,
+       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
 
       floatingActionButton: Padding(

@@ -95,7 +95,7 @@ class DeleteFlashcardDialog extends StatelessWidget {
                   child: TextButton(
                     onPressed: () => Navigator.pop(context),
                     style: TextButton.styleFrom(
-                      backgroundColor: AppColors.mainColor,
+                       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
                       padding: const EdgeInsets.symmetric(vertical: 13),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),

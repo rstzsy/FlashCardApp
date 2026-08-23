@@ -283,7 +283,7 @@ class _FlashcardStudyScreenState extends State<FlashcardStudyScreen>
     }
 
     return Scaffold(
-      backgroundColor: AppColors.mainColor,
+       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
           children: [

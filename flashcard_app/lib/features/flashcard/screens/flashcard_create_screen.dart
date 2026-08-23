@@ -162,7 +162,7 @@ class _CreateFlashcardScreenState extends State<CreateFlashcardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.mainColor,
+       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text(
           "Create Flashcard",
@@ -171,7 +171,7 @@ class _CreateFlashcardScreenState extends State<CreateFlashcardScreen> {
             fontWeight: FontWeight.bold,
           ),
         ),
-        backgroundColor: AppColors.mainColor,
+         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       ),
       body: Column(
         children: [

@@ -76,7 +76,7 @@ class _BlogScreenState extends State<BlogScreen> {
 
   Widget _buildNoGroupsScreen() {
     return Scaffold(
-      backgroundColor: AppColors.mainColor,
+       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: CustomScrollView(
         slivers: [
           SliverToBoxAdapter(child: _buildHeader()),
@@ -130,7 +130,7 @@ class _BlogScreenState extends State<BlogScreen> {
     final canPost = BlogService.canPost(_myRole);
 
     return Scaffold(
-      backgroundColor: AppColors.mainColor,
+       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: CustomScrollView(
         slivers: [
           // Header

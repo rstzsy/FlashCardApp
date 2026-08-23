@@ -146,7 +146,7 @@ class _LanguageBottomSheetState extends State<LanguageBottomSheet> {
               child: TextButton(
                 onPressed: () => Navigator.pop(context),
                 style: TextButton.styleFrom(
-                  backgroundColor: AppColors.mainColor,
+                   backgroundColor: Theme.of(context).scaffoldBackgroundColor,
                   padding: const EdgeInsets.symmetric(vertical: 15),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(18),

@@ -71,7 +71,7 @@ class _LoginScreenState extends State<LoginScreen>
       child: Consumer<LoginController>(
         builder: (context, controller, _) {
           return Scaffold(
-            backgroundColor: AppColors.mainColor,
+             backgroundColor: Theme.of(context).scaffoldBackgroundColor,
             body: Stack(
               children: [
                 _buildBackgroundBlobs(),
